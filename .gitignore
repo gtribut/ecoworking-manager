@@ -28,3 +28,10 @@ Homestead.json
 .env.production
 .phpactor.json
 auth.json
+
+# VS Code — config locale user (préserver les settings partagés du repo)
+.vscode/*.log
+.vscode/*.local.json
+
+# Foam — cache
+.foam/

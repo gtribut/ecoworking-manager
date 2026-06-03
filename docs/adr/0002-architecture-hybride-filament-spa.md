@@ -84,7 +84,7 @@ Adopter une **architecture hybride dans un repo unique** :
 ## Références
 
 - Filament 5 docs : https://filamentphp.com/docs/5.x
-- Sanctum SPA authentication : https://laravel.com/docs/11.x/sanctum#spa-authentication
+- Sanctum SPA authentication : https://laravel.com/docs/13.x/sanctum#spa-authentication
 - ADR-0001 (choix Laravel)
 - ADR-0003 (auth portail Sanctum SPA)
 - ADR-0004 (sous-domaines)

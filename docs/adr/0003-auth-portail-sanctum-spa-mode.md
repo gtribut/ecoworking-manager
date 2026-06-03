@@ -78,7 +78,7 @@ Reste valide si une app mobile native arrive un jour, en complément de Sanctum 
 
 ## Références
 
-- Documentation officielle Sanctum SPA : https://laravel.com/docs/11.x/sanctum#spa-authentication
+- Documentation officielle Sanctum SPA : https://laravel.com/docs/13.x/sanctum#spa-authentication
 - OWASP : "JWT" attack vectors : https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html
 - ADR-0002 (architecture hybride)
 - ADR-0004 (sous-domaines)

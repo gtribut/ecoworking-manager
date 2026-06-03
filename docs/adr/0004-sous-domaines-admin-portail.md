@@ -131,7 +131,7 @@ Route::domain(config('app.portal_domain'))->middleware('auth:sanctum')->group(fu
 
 ## Références
 
-- Laravel routing by domain : https://laravel.com/docs/11.x/routing#route-group-subdomain-routing
-- Filament multi-tenancy / domain config : https://filamentphp.com/docs/3.x/panels/configuration
+- Laravel routing by domain : https://laravel.com/docs/13.x/routing#route-group-subdomain-routing
+- Filament multi-tenancy / domain config : https://filamentphp.com/docs/5.x/panels/configuration
 - ADR-0002 (architecture hybride)
 - ADR-0003 (Sanctum SPA)

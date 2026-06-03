@@ -93,7 +93,7 @@ sudo mv composer.phar /usr/local/bin/composer
 # Node 26 via fnm
 curl -fsSL https://fnm.vercel.app/install | bash
 exec $SHELL
-fnm install 22 && fnm default 22
+fnm install 26 && fnm default 26
 
 # pnpm
 npm install -g pnpm

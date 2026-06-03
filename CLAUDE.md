@@ -430,9 +430,9 @@ Si l'une de ces situations se présente, **arrêter et demander** :
 - `docs/PRD.md` — spec fonctionnelle détaillée (portail client + back-office admin)
 - `docs/data_model.md` — modèle de données détaillé (à produire)
 - `docs/adr/` — Architecture Decision Records
-- Doc Laravel : https://laravel.com/docs/11.x
+- Doc Laravel : https://laravel.com/docs/13.x
 - Doc Filament 5 : https://filamentphp.com/docs/5.x
-- Doc Sanctum SPA : https://laravel.com/docs/11.x/sanctum#spa-authentication
+- Doc Sanctum SPA : https://laravel.com/docs/13.x/sanctum#spa-authentication
 - Doc Pest : https://pestphp.com/
 - Doc TanStack Query : https://tanstack.com/query/latest
 

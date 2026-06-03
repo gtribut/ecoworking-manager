@@ -162,7 +162,7 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 | `laravel/fortify` | Auth scaffolding (login, register, 2FA TOTP) |
 | `laravel/sanctum` | Auth SPA + tokens API |
 | `laravel/socialite` | OAuth Google pour admins |
-| `filament/filament` ^3 | Panel admin |
+| `filament/filament` ^5 | Panel admin |
 | `spatie/laravel-permission` | Rôles & permissions |
 | `spatie/laravel-activitylog` | Audit log automatique |
 | `spatie/laravel-backup` | Backups DB + storage |
@@ -858,9 +858,9 @@ sudo mv composer.phar /usr/local/bin/composer
 # Node 26 (Current, LTS oct 2026) via fnm (rapide, gère plusieurs versions)
 curl -fsSL https://fnm.vercel.app/install | bash
 # reload shell, puis:
-fnm install 22
-fnm use 22
-fnm default 22
+fnm install 26
+fnm use 26
+fnm default 26
 
 # pnpm (plus rapide que npm, mais npm marche aussi)
 npm install -g pnpm
@@ -1311,7 +1311,7 @@ Conventionnels (cf. section Git).
 - **Laravel Bootcamp** (officiel, gratuit) : https://bootcamp.laravel.com/
 - **Laracasts** (~150€/an mais essentiel) : https://laracasts.com/ — séries "30 Days to Learn Laravel" et "Laravel 13 from Scratch"
 - **Laravel: Up & Running** (Matt Stauffer, 4e édition Laravel 13) — livre de référence
-- Documentation officielle : https://laravel.com/docs/11.x
+- Documentation officielle : https://laravel.com/docs/13.x
 
 ### Filament 5 (semaine 3)
 - **Filament Bootcamp** (officiel, gratuit) : https://filamentphp.com/tricks

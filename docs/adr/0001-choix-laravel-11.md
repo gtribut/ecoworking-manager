@@ -83,5 +83,5 @@ Verdict : Go reste un excellent langage backend, mais son ratio effort/valeur li
 
 ## Références
 
-- Documentation Laravel : https://laravel.com/docs/11.x
+- Documentation Laravel : https://laravel.com/docs/13.x
 - Documentation Filament 5 : https://filamentphp.com/docs/5.x

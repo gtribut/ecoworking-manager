@@ -139,9 +139,9 @@ Application générale : à chaque dépendance qu'on envisage d'ajouter, se dema
 
 ## Références
 
-- Documentation Laravel queues (driver database) : https://laravel.com/docs/11.x/queues#driver-prerequisites
-- Documentation Laravel cache (driver database) : https://laravel.com/docs/11.x/cache#prerequisites
-- Documentation Laravel sessions (driver database) : https://laravel.com/docs/11.x/session#driver-prerequisites
-- Laravel Pulse (monitoring) : https://laravel.com/docs/11.x/pulse
+- Documentation Laravel queues (driver database) : https://laravel.com/docs/13.x/queues#driver-prerequisites
+- Documentation Laravel cache (driver database) : https://laravel.com/docs/13.x/cache#prerequisites
+- Documentation Laravel sessions (driver database) : https://laravel.com/docs/13.x/session#driver-prerequisites
+- Laravel Pulse (monitoring) : https://laravel.com/docs/13.x/pulse
 - ADR-0001 (choix Laravel)
 - ADR-0003 (Sanctum SPA — sessions sur Postgres)

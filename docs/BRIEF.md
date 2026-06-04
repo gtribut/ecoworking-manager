@@ -2,7 +2,7 @@
 
 > **Statut** : v1 validée — prêt à servir d'input pour un PRD détaillé dans Claude Code.
 > **Auteur** : Guillaume (Ecoworking / DOWiNO)
-> **Dernière mise à jour** : 2026-05-14
+> **Dernière mise à jour** : 2026-06-04
 
 ---
 
@@ -632,6 +632,9 @@ Les deux sous-domaines pointent **vers la même application Clever Cloud**. Le r
   ```
 - Configurer Sail/Nginx pour répondre aux deux hosts
 - En dev, certificat self-signed via `mkcert` ou simplement HTTP
+- Flush DNS Windows après édition du hosts : `ipconfig /flushdns` (PowerShell admin)
+
+> ⚠️ `.test` est un TLD **réservé** garanti non-routable (RFC 6761), à préférer à `.local` (collisions mDNS) ou `.dev` (forcé en HTTPS via HSTS preload par les navigateurs).
 
 ### Phase de dev — pas de cloud nécessaire
 
@@ -641,12 +644,156 @@ Pour une démo intermédiaire avant prod, alternatives gratuites :
 - **Tunnel localhost** : `ngrok`, `cloudflared`, ou Laravel Herd `share`
 - **Hébergement temporaire** : Fly.io free tier ou Railway crédits gratuits
 
+### Provisioning & premier déploiement Clever Cloud (pas-à-pas CLI)
+
+> Runbook complet pour la **mise en ligne initiale**. À faire **plus tard**, quand une première version tourne en local. Pour démarrer le dev, le setup local (§14) suffit.
+>
+> Ce qu'on provisionne : 1 application PHP/Laravel (sert `admin.` ET `portail.ecoworking.fr` via routing sous-domaine), 1 add-on **PostgreSQL 16**, 1 add-on **Cellar** (S3 : mandats SEPA, photos profil, PDF factures), 1 add-on **FS Bucket** (volume disque pour les écritures `storage/`). Coût estimé **~30 €/mois** (cf. §21).
+
+#### 11.1 Créer le compte
+
+1. https://www.clever-cloud.com/ → "Sign in" → inscription par email, valider l'email
+2. Organisation : nom `Ecoworking` (namespace propre), pays France, type Personnel/Entreprise selon facturation
+3. Ajouter un moyen de paiement (CB / SEPA). Pas de débit avant la fin du 1er mois — on peut configurer sans payer
+
+#### 11.2 Installer le CLI `clever-tools`
+
+```bash
+npm install -g clever-tools
+clever --version
+clever login          # ouvre un navigateur, valide → token sauvegardé localement
+```
+
+#### 11.3 Créer les add-ons (avant l'app, qui aura besoin de leurs credentials)
+
+```bash
+# PostgreSQL 16 — plan XS (~7€/mois, 512 MB RAM, 10 Go)
+clever addon create postgresql-addon ecoworking-pg \
+    --plan xs_sml --region par --version 16
+
+# Cellar (S3-compatible) — gratuit jusqu'à 25 Go, puis ~1€/100Go/mois
+clever addon create cellar-addon ecoworking-cellar --region par
+```
+
+Postgres XS est largement dimensionné pour la volumétrie (cf. §3 : ~100 comptes, ~75 entités, ~800 factures/an). Récupérer les credentials :
+
+```bash
+clever addon env ecoworking-pg        # POSTGRESQL_ADDON_*
+clever addon env ecoworking-cellar    # CELLAR_ADDON_*
+```
+
+#### 11.4 Créer l'application PHP
+
+```bash
+# Depuis le repo Laravel cloné en local
+clever create --type php ecoworking-app --region par --org "Ecoworking"
+```
+
+Crée l'app, ajoute un remote git `clever`, et permet de déployer via `git push clever main`. Lier les add-ons :
+
+```bash
+clever service link-addon ecoworking-pg
+clever service link-addon ecoworking-cellar
+```
+
+Les variables des add-ons sont alors **injectées automatiquement** dans l'environnement de l'app (pas de copier-coller de credentials).
+
+#### 11.5 Configurer l'app (variables d'environnement)
+
+```bash
+# Versions runtime (cf. ADR-0008)
+clever env set CC_PHP_VERSION 8.5
+clever env set CC_NODE_VERSION 26
+
+# Application Laravel
+clever env set APP_ENV production
+clever env set APP_DEBUG false
+clever env set APP_KEY "base64:..."                 # via php artisan key:generate
+clever env set APP_URL https://admin.ecoworking.fr  # primaire ; l'autre via Route::domain
+
+# Base de données (références aux variables injectées par l'add-on, quotes simples)
+clever env set DB_CONNECTION pgsql
+clever env set DB_HOST '$POSTGRESQL_ADDON_HOST'
+clever env set DB_PORT '$POSTGRESQL_ADDON_PORT'
+clever env set DB_DATABASE '$POSTGRESQL_ADDON_DB'
+clever env set DB_USERNAME '$POSTGRESQL_ADDON_USER'
+clever env set DB_PASSWORD '$POSTGRESQL_ADDON_PASSWORD'
+
+# Cache/sessions/queues sur Postgres (cf. ADR-0007 : pas de Redis en MVP)
+clever env set CACHE_STORE database
+clever env set SESSION_DRIVER database
+clever env set QUEUE_CONNECTION database
+
+# Sanctum SPA + isolation cookies (cf. ADR-0003 / ADR-0004)
+clever env set SANCTUM_STATEFUL_DOMAINS "portail.ecoworking.fr"
+clever env set SESSION_DOMAIN ""                    # NULL → cookie scopé au host courant
+
+# Cellar (storage S3)
+clever env set FILESYSTEM_DISK s3
+clever env set AWS_ACCESS_KEY_ID '$CELLAR_ADDON_KEY_ID'
+clever env set AWS_SECRET_ACCESS_KEY '$CELLAR_ADDON_KEY_SECRET'
+clever env set AWS_DEFAULT_REGION par
+clever env set AWS_BUCKET ecoworking-storage        # à créer dans la console Cellar
+clever env set AWS_ENDPOINT '$CELLAR_ADDON_HOST'
+
+# Build / run
+clever env set CC_POST_BUILD_HOOK "./bin/post-build.sh"
+clever env set CC_RUN_COMMAND "php artisan migrate --force && php-fpm"
+```
+
+> ⚠️ Les `'$POSTGRESQL_ADDON_HOST'` (quotes simples) sont des **références** résolues au runtime par Clever Cloud — ne pas mettre la valeur en dur.
+
+**Créer le bucket Cellar** (console web) : Add-ons → `ecoworking-cellar` → onglet "Buckets" → "New bucket" → nom `ecoworking-storage`, ACL `private`.
+
+#### 11.6 Configurer les sous-domaines
+
+Console Clever Cloud → app `ecoworking-app` → "Domain names" → "Add domain name" : ajouter `admin.ecoworking.fr` (toggle "primary") puis `portail.ecoworking.fr`. Clever fournit une cible DNS du type `app_xxxxx.cleverapps.io`.
+
+Côté DNS du registrar `ecoworking.fr` :
+
+```
+admin.ecoworking.fr     CNAME    app_xxxxx.cleverapps.io.
+portail.ecoworking.fr   CNAME    app_xxxxx.cleverapps.io.
+```
+
+⚠️ Ne **pas** toucher l'apex `ecoworking.fr` (site marketing existant, hors scope). Le certificat Let's Encrypt est généré automatiquement quelques minutes après propagation des CNAMEs (vérifier `dig admin.ecoworking.fr`).
+
+#### 11.7 Premier déploiement
+
+```bash
+git push clever main           # depuis le repo local, après commit propre sur main
+clever logs --follow           # suivre le build/deploy en direct
+```
+
+Clever clone le code, `composer install`, build des assets Node si script présent, puis lance `CC_RUN_COMMAND` (incluant `php artisan migrate --force`). Une fois ✔ vert :
+
+```bash
+curl -I https://admin.ecoworking.fr     # 200 ou 302 (redirect login Filament)
+```
+
+#### 11.8 Suivi quotidien
+
+```bash
+clever logs --follow           # logs live
+clever logs --since 10m        # X dernières minutes
+clever status                  # état de l'app
+clever restart                 # restart sans redéployer
+clever ssh                     # accès SSH debug (rare)
+```
+
+Pour les add-ons, la console web est plus pratique : Add-ons → `ecoworking-pg` → onglets "Metrics" (CPU/mémoire/disque) et "Logs" (slow queries).
+
 ### Backups
 
 - **Postgres** : snapshots automatiques quotidiens via Clever Cloud
 - **Cellar (S3)** : redondance native Clever
 - **Backup externalisé** (best practice) : `spatie/laravel-backup` quotidien → dump SQL + storage zip → bucket Scaleway Object Storage (région différente) ou Backblaze B2
+- **Backup manuel avant grosse opération** : bouton "Trigger a backup now" (console → Add-ons → `ecoworking-pg` → "Backups", rétention 7 j en plan XS)
 - Test de restauration trimestriel
+
+**Sécurité compte Clever Cloud** :
+- **2FA recommandé** sur le compte (Profil → Security → Enable 2FA)
+- Restrictions IP optionnelles sur Postgres pour durcir (moins critique car l'app accède en réseau privé)
 
 ---
 
@@ -870,21 +1017,20 @@ npm install -g pnpm
 
 **VS Code** (sur Windows, mais utilisé via Remote WSL) :
 - Télécharger : https://code.visualstudio.com/
-- Extensions essentielles :
-  - **WSL** (Microsoft) — connexion à WSL2 (indispensable)
-  - **PHP Intelephense** — autocomplete PHP
-  - **Laravel Pint** — formatter Laravel
-  - **ESLint** + **Biome** — lint JS/TS
-  - **Tailwind CSS IntelliSense**
-  - **Prisma** (si Drizzle/Prisma utilisés ailleurs, sinon ignore)
-  - **Pretty TypeScript Errors**
-  - **GitLens** — historique git enrichi
-  - **Error Lens** — affichage erreurs inline
-  - **Conventional Commits** — assistant messages de commit
-  - **GitHub Pull Requests** — gestion PR depuis VS Code
-  - **Docker** — visualisation containers
-  - **DotENV** — coloration `.env`
-  - **Pest snippets**
+- Extensions essentielles (ID `publisher.extension` entre backticks) :
+  - `ms-vscode-remote.remote-wsl` — Remote WSL (indispensable)
+  - `bmewburn.vscode-intelephense-client` — PHP Intelephense (autocomplete)
+  - `open-southeners.laravel-pint` — Laravel Pint (formatter)
+  - `biomejs.biome` — Biome (lint/format TS/React)
+  - `bradlc.vscode-tailwindcss` — Tailwind CSS IntelliSense
+  - `eamodio.gitlens` — GitLens (historique git enrichi)
+  - `usernamehw.errorlens` — Error Lens (erreurs inline)
+  - `github.vscode-pull-request-github` — GitHub Pull Requests
+  - `ms-azuretools.vscode-docker` — Docker (visualisation containers)
+  - `mikestead.dotenv` — coloration `.env`
+  - Optionnelles : Pretty TypeScript Errors, Conventional Commits, Pest snippets
+
+Ouvrir le projet via `code .` depuis WSL2 dans le dossier projet.
 
 **Alternatives IDE** : PhpStorm (payant, ~100€/an, excellent pour Laravel) — à considérer si tu veux le meilleur outillage PHP. Sinon VS Code suffit largement.
 
@@ -912,7 +1058,9 @@ sudo apt install -y httpie
 sudo apt install -y jq
 ```
 
-### Initialiser le projet Laravel
+### Initialiser le projet Laravel (bootstrap initial, une seule fois)
+
+> À n'utiliser que pour **créer** le projet la première fois (avant qu'il existe dans le repo). Si le repo est déjà cloné, voir « Quick start » ci-dessous.
 
 ```bash
 # Dans WSL2, cd dans ton dossier projets (idéalement sous ~/projects, pas sur /mnt/c)
@@ -933,6 +1081,33 @@ cd ecoworking
 echo "alias sail='[ -f sail ] && sh sail || sh vendor/bin/sail'" >> ~/.bashrc
 source ~/.bashrc
 ```
+
+### Quick start (repo déjà cloné, env configuré)
+
+Le flow courant une fois le setup système (ci-dessus) fait :
+
+```bash
+git clone git@github.com:gtribut/ecoworking-manager.git
+cd ecoworking-manager
+
+# Dépendances
+composer install
+(cd portal-spa && pnpm install)
+
+# Env + base
+cp .env.example .env
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate --seed
+
+# SPA en dev (autre terminal)
+(cd portal-spa && pnpm dev)
+```
+
+Accès local :
+- **Admin Filament** : http://admin.ecoworking.test
+- **Portail SPA** : http://portail.ecoworking.test
+- **Mailpit** (emails dev) : http://localhost:8025
 
 ### Notifications de fin de tâche (déjà en place)
 

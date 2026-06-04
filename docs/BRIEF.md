@@ -1030,6 +1030,74 @@ cat ~/.ssh/id_ed25519.pub
 
 **Bonus sécurité** : signer les commits avec GPG ou SSH (en V2, non critique MVP).
 
+#### Persistance de la passphrase SSH (ssh-agent via systemd user)
+
+> **Contexte** : la clé `~/.ssh/id_ed25519` est protégée par passphrase. Sans agent persistant, sous WSL2 chaque nouveau shell relance un `ssh-agent` distinct (agents orphelins) et redemande la passphrase. La solution retenue : un **service utilisateur systemd** qui héberge un agent unique, partagé par tous les shells, qui survit à la fermeture des fenêtres et redémarre au boot. WSL2 a systemd actif (`systemctl --user` opérationnel), ce qui rend cette approche native.
+>
+> **Important** : un ssh-agent ne stocke la clé déchiffrée qu'**en RAM**, jamais sur disque. La passphrase n'est donc **pas** conservée après un reboot complet — comportement visé : **une seule saisie de passphrase par démarrage de la machine**, puis tous les shells réutilisent l'agent. (Pour « zéro saisie même après reboot », seule l'option agent OpenSSH **Windows** relayé dans WSL le permet — non retenue ici car plus de pièces à maintenir.)
+
+Mise en place (faite le 2026-06-04) :
+
+1. **Service** `~/.config/systemd/user/ssh-agent.service` :
+
+   ```ini
+   [Unit]
+   Description=SSH key agent (per-user)
+   Documentation=man:ssh-agent(1)
+
+   [Service]
+   Type=simple
+   Environment=SSH_AUTH_SOCK=%t/ssh-agent.socket
+   ExecStart=/usr/bin/ssh-agent -D -a $SSH_AUTH_SOCK
+   # -D : foreground (requis par Type=simple) ; -a : socket à chemin fixe
+
+   [Install]
+   WantedBy=default.target
+   ```
+
+   (`%t` = `XDG_RUNTIME_DIR`, soit `/run/user/<uid>` → socket `/run/user/1000/ssh-agent.socket`.)
+
+2. **Pointer les shells vers cet agent** — ajouté à `~/.bashrc` :
+
+   ```bash
+   # --- ssh-agent géré par systemd user (ssh-agent.service) ---
+   export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"
+   ```
+
+3. **Chargement auto de la clé au premier usage** — `~/.ssh/config` (perms `600`) :
+
+   ```sshconfig
+   Host *
+       AddKeysToAgent yes
+       IdentityFile ~/.ssh/id_ed25519
+
+   Host github.com
+       HostName github.com
+       User git
+       IdentityFile ~/.ssh/id_ed25519
+       IdentitiesOnly yes
+   ```
+
+4. **Activer le service + lingering** (l'agent persiste sans session ouverte et au boot) :
+
+   ```bash
+   loginctl enable-linger "$(id -un)"
+   systemctl --user daemon-reload
+   systemctl --user enable --now ssh-agent.service
+   ```
+
+Vérification (dans un **nouveau** terminal) :
+
+```bash
+echo $SSH_AUTH_SOCK     # → /run/user/1000/ssh-agent.socket
+ssh -T git@github.com   # demande la passphrase 1×, puis "Hi <user>! You've successfully authenticated..."
+ssh-add -l              # liste la clé chargée
+```
+
+Dépannage utile :
+- **`ssh_askpass: ... No such file or directory`** lors d'un `ssh-add` manuel : le shell n'a pas de TTY et `DISPLAY` est défini → forcer la saisie au terminal avec `SSH_ASKPASS_REQUIRE=never DISPLAY= ssh-add ~/.ssh/id_ed25519`, ou lancer la commande dans un vrai terminal interactif.
+- **Plusieurs agents orphelins** accumulés (anciens `eval "$(ssh-agent -s)"`) : `pkill ssh-agent` puis rouvrir un terminal (le service en relance un seul, propre).
+
 ### Convention de commits
 
 Format conventionnel (facilite changelog auto et revue) :

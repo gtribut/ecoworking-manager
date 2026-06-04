@@ -66,7 +66,7 @@ Les deux surfaces partagent la même base de données et la même logique métie
 - **~50 externals en BDD** mais **usage réel faible** : 10-30 tickets consommés / mois au total → **5-10% du CA max**. Compte portail créé mais beaucoup de comptes dormants ou occasionnels
 - Optionnellement : contacts facturation purs (gestionnaires de facturation d'une entreprise non membre) avec compte portail mais aucun rôle membre
 
-> **Implication produit** : prioriser l'UX du **flow résident** (90% du CA, usage quotidien intensif sur résa salle + occupation bureau). Le flow external reste nécessaire (achat tickets, résa salle via ticket, indication dispo bureau) mais peut accepter une UX un peu moins léchée sans impact business significatif. Pas de sur-investissement à prévoir sur ce module.
+> **Implication produit** : prioriser l'UX du **flow résident** (90% du CA, usage quotidien intensif sur résa salle + occupation bureau). Le flow external reste nécessaire (réservation salle/bureau via tickets crédités par l'admin, indication de dispo) mais peut accepter une UX un peu moins léchée sans impact business significatif. Pas de sur-investissement à prévoir sur ce module.
 
 **Personnel Ecoworking** :
 - 1 manageuse de l'espace (bureau attitré) — rôle `admin` + `staff` (cumul typique)
@@ -195,7 +195,7 @@ $user->assignRole(['admin', 'resident']);
 | Voir le calendrier des salles (réunion + event) | ✅ | ✅ | ✅ | ✅ | hérité | ❌ |
 | Occuper son bureau attitré | ✅ (`assigned_resident`) | ❌ (utilise libre, pas de suivi) | ❌ | ✅ (`assigned_staff`) | hérité | ❌ |
 | Marquer son bureau vacant (jour / plage / récurrence) | ✅ | ❌ | ❌ | ✅ | hérité | ❌ |
-| Acheter un ticket "bureau libre demi-journée" | ❌ | ❌ | ✅ | ❌ | hérité | ❌ |
+| Acheter un ticket sur le portail (bureau ou salle) | ❌ | ❌ | ❌ *(V2)* | ❌ | hérité | ❌ |
 | Réserver une salle de réunion gratuitement (24/24 7/7) | ✅ | ✅ | ❌ | ✅ | hérité | ❌ |
 | Réserver une salle de réunion via ticket demi-journée (jours ouvrés) | ❌ | ❌ | ✅ | ❌ | hérité | ❌ |
 | Réserver la salle event | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -557,10 +557,10 @@ UX++ rapide :
 
 **Pour `external` : réservation via ticket demi-journée**
 
-Workflow différent (puisque résa payante via ticket) :
-1. **Pré-requis** : avoir des tickets "Salle de réunion demi-journée" disponibles, OU les acheter à la volée (module Achats)
+Workflow (l'external consomme un ticket **déjà crédité** par l'admin — pas d'achat sur le portail en MVP, cf. §3.5.6) :
+1. **Pré-requis** : avoir des tickets "Salle de réunion demi-journée" disponibles (crédités par l'admin)
 2. Sélection du créneau : uniquement 9h-13h (matin) ou 14h-18h (après-midi), uniquement jours ouvrés (L-V hors fériés)
-3. Si l'external n'a pas de ticket disponible : modal "Acheter un ticket et réserver" qui combine achat + résa en un flow
+3. Si l'external n'a **aucun** ticket disponible : message l'invitant à **contacter Ecoworking** pour en obtenir (pas d'achat en ligne en MVP)
 4. Validation serveur : créneau libre + ticket dispo + jour ouvré + heures conformes
 5. Consommation du ticket à l'émission de la résa
 6. Confirmation, toast, calendrier rafraîchi
@@ -588,16 +588,18 @@ Visible dans le calendrier (mode lecture seule) mais :
 - **Pour external avec ticket consommé** : l'annulation dans le délai **restitue automatiquement le ticket** (statut → `available`, date d'utilisation effacée)
 - Audit log obligatoire pour toute annulation (resident/additional/external)
 
-#### 3.5.6 Achats de tickets
+#### 3.5.6 Mes tickets (external)
 
-Seuls les `external` peuvent acheter des tickets (Q21 résolue) :
-- **Tickets bureau libre demi-journée** : achat à l'unité ou en pack (2, 10) avec dégressivité
-- **Tickets salle de réunion demi-journée** (matin ou après-midi) : achat à l'unité ou en pack
-- Tickets achetés → visibles dans "Mes tickets" du module, avec statut (disponible / utilisé / restitué) — pas de date d'expiration (tickets sans limite de durée)
+> **MVP : aucun achat ni paiement en ligne sur le portail** (cf. BRIEF — paiement en ligne renvoyé en V2). L'external ne peut **pas** acheter de tickets depuis le portail ; il ne fait que **réserver** avec ses tickets déjà crédités.
 
-**Conséquence** : un `resident`, `additional` ou `staff` qui veut inviter ponctuellement un collègue ou tiers doit passer par l'admin (pas de self-service pour acheter un ticket au nom de quelqu'un d'autre).
+- **Obtention des tickets = par l'admin** (cf. §4.8.1) :
+  - soit l'admin crée une **facture** avec le nombre de tickets souhaités (par type) → tickets **crédités automatiquement** ;
+  - soit l'admin fait un **crédit manuel** (personne venue sans réserver, offre/geste commercial).
+- **Paiement encaissé physiquement** (SEPA / virement / CB / chèque / espèces sur place), marqué par l'admin.
+- Côté portail, vue **"Mes tickets"** : compteurs par type (bureau / salle), statut (disponible / utilisé / restitué) — **lecture seule**. Les tickets se consomment **uniquement en réservant** (salle §3.5.3, bureau §3.5.9).
+- Si plus aucun ticket disponible : message invitant à **contacter Ecoworking** (`mailto:` / téléphone) pour en obtenir — pas d'achat en ligne.
 
-🟡 Achat : workflow simple en MVP (pas de paiement en ligne — admin marque comme payé après réception SEPA/virement/CB physique, cf. BRIEF §5.5)
+> 🟡 **V2** : achat + paiement en ligne self-service (Stripe Cashier) — hors MVP.
 
 #### 3.5.7 Liste "Mes prochaines réservations"
 
@@ -618,7 +620,7 @@ Seuls les `external` peuvent acheter des tickets (Q21 résolue) :
 
 #### 3.5.9 Cas particulier external — choix du bureau & dispo
 
-Pour les **tickets bureau libre demi-journée**, l'external **choisit un bureau libre précis** via une **vue plan** dédiée :
+Pour réserver un bureau, l'external doit avoir des **tickets bureau crédités** par l'admin (pas d'achat sur le portail en MVP, cf. §3.5.6). Il **choisit un bureau libre précis** via une **vue plan** dédiée :
 
 - Sélecteur de date + période (matin / après-midi / journée)
 - **Vue plan filtrée** ne montrant **que les bureaux `unassigned` libres** sur la période choisie (cliquables pour sélection). L'external **ne voit pas** les bureaux des résidents (ni ceux laissés vacants par une absence) ni aucune information d'identité → confidentialité (cf. Q16 : l'annuaire complet n'est pas accessible aux external). Réutilise le même SVG que le plan des étages (§3.7 / §4.12), en vue restreinte « places libres ».
@@ -735,7 +737,7 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
 
 **Clic sur un bloc bureau libre (non attitré)**
 - Modal courte : "Bureau libre — Pour réserver ce type de bureau à la demi-journée, contactez-nous"
-- 🟡 Pour les externals (qui n'accèdent pas à ce module) : le mécanisme passe directement par l'achat de ticket via le module Réservation ressources (cf. §3.5.9)
+- 🟡 Pour les externals (qui n'accèdent pas à ce module annuaire) : ils réservent un bureau libre via la vue plan filtrée du module Réservation ressources (cf. §3.5.9), en consommant un ticket crédité par l'admin
 
 **Clic sur un bloc bureau attitré dont le résident a opt-out de l'annuaire**
 - Tooltip / modal : "Coworker (souhaite rester discret)" — pas de détails personnels affichés
@@ -1187,10 +1189,10 @@ Pour **les deux types**, le créneau **matin (9h-13h) ou après-midi (14h-18h)**
 - Recherche : nom membre, code purchase
 - 🟡 Vue regroupée par membre avec compteurs par type ("X tickets bureau dispo / Y tickets salle dispo / Z tickets utilisés")
 
-**Création (automatique via purchases)**
-- Création automatique lors d'un `purchase` d'une offre `pack` ou `one_shot` ticket
-- Tickets générés à partir du purchase selon l'offre (1 purchase pack de 10 tickets bureau → 10 tickets `desk_half_day`)
-- L'admin peut créer un `purchase` manuel (cas : offre cadeau, compensation, ajustement)
+**Création (toujours via l'admin en MVP — pas d'achat sur le portail)**
+- **Via facturation** : l'admin crée une **facture** avec le nombre de tickets souhaités (par type) → tickets **crédités automatiquement** au user à l'émission (1 ligne « pack 10 tickets bureau » → 10 tickets `desk_half_day`). Techniquement, un `purchase` est rattaché à la facture.
+- **Crédit manuel** : l'admin peut créditer/ajuster des tickets directement (personne venue sans réserver, offre cadeau, compensation) — avec ou sans facture selon le cas.
+- Paiement encaissé **physiquement** et marqué par l'admin (cf. §4.9.2). Pas de paiement en ligne en MVP.
 
 **Actions admin (super-pouvoirs métier)**
 
@@ -1435,7 +1437,7 @@ Page de référence quotidienne pour l'admin, accessible en un clic depuis le da
 
 **Déclencheurs de facturation** (✅ Q7.3-2 résolue) :
 - **Récurrent mensuel (cron)** : automatique le **1er du mois**, pour tous les abonnements mensuels en cours (résidents + additionals). Facturation **en avance** (le mois qui démarre).
-- **À l'instant T** : pour les abonnements mensuels qui **démarrent en cours de mois** (facture au prorata, cf. « Règle de prorata » ci-dessous, émise au démarrage) et pour les **commandes external** (tickets bureau/salle ou commande spécifique, via le module « Achats » du portail ou une création manuelle admin) → facture générée au moment de la commande.
+- **À l'instant T** : pour les abonnements mensuels qui **démarrent en cours de mois** (facture au prorata, cf. « Règle de prorata » ci-dessous, émise au démarrage) et pour les **commandes external** (tickets bureau/salle ou commande spécifique) — **créées par l'admin**, la facture créditant automatiquement les tickets → facture générée au moment de la commande.
 - **Fallback manuel** : l'admin peut déclencher la génération mensuelle à la main (incident cron, ou anticipation).
 
 > **Idempotence obligatoire** : toute génération (cron, instant T ou manuelle) **vérifie d'abord qu'aucune facture n'existe déjà** pour la même cible + période avant de créer — jamais de doublon.
@@ -1610,7 +1612,7 @@ Pas de "réservation" classique — gestion par **occupation** et **absence** :
 - **`resident`** : occupation **implicite** de son bureau attitré tous les jours ouvrés (pas de déclaration quotidienne). Peut **marquer son bureau vacant** sur des dates précises ou en récurrence (cf. §3.4.6) pour libérer la place
 - **`staff`** : occupation **implicite** de son bureau attitré tous les jours ouvrés. Peut aussi marquer son bureau vacant. Bureau **non utilisable** par d'autres en cas d'absence (sauf cas marginal admin)
 - **`additional`** : utilise librement les bureaux des résidents de son entité juridique. **Aucun suivi explicite dans l'app** (placement informel)
-- **`external`** : achète un ticket bureau libre demi-journée et **choisit un bureau `unassigned` libre** via la vue plan filtrée sur les places libres de la période (cf. §3.5.9). Aucune visibilité sur les bureaux des résidents (présents ou absents)
+- **`external`** : consomme un ticket bureau (crédité par l'admin, cf. §3.5.6) et **choisit un bureau `unassigned` libre** via la vue plan filtrée sur les places libres de la période (cf. §3.5.9). Aucune visibilité sur les bureaux des résidents (présents ou absents)
 
 **Calcul de la disponibilité bureau pour external** :
 ```
@@ -1649,12 +1651,13 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 | `desk_half_day` | 1 demi-journée de bureau libre | unité · pack 2 (= 1 journée) · pack 10 | **17,50 €** l'unité · **31,50 €** le pack 2 (−10 %) · **140 €** le pack 10 (−20 %) |
 | `meeting_room_half_day` | 1 demi-journée (matin ou après-midi) sur 1 salle de réunion | unité · pack 10 | **71 €** l'unité · **568 €** le pack 10 (−20 %) |
 
-> ✅ **Figé (Q20)** : prix unitaires et packs ci-dessus (montants HT). Dégressivité : achat groupé de 2 tickets bureau = −10 % (le « pack journée »), achat groupé de 10 tickets = −20 % (bureau comme salle). Le créneau matin/après-midi d'un ticket salle est choisi à la réservation, pas à l'achat (cf. §4.8.1). Les prix sont snapshotés sur le `purchase` au moment de l'achat (cf. CLAUDE.md §3.6).
+> ✅ **Figé (Q20)** : prix unitaires et packs ci-dessus (montants HT). Dégressivité : achat groupé de 2 tickets bureau = −10 % (le « pack journée »), achat groupé de 10 tickets = −20 % (bureau comme salle). Le créneau matin/après-midi d'un ticket salle est choisi à la réservation, pas à la commande (cf. §4.8.1). Les prix sont snapshotés sur le `purchase` au moment de la facturation par l'admin (cf. CLAUDE.md §3.6).
 
-#### Éligibilité à l'achat
+#### Éligibilité & obtention des tickets
 
-- **Seuls les `external` peuvent acheter des tickets** côté portail (Q21 tranchée).
-- L'admin peut créer un purchase manuel au nom de n'importe quel user (cas exceptionnel : offre cadeau, compensation, achat staff/resident pour usage interne).
+- **MVP : aucun achat de tickets sur le portail** (pas de paiement en ligne). Les tickets sont **crédités par l'admin** — via une **facture** (crédit auto) ou un **crédit manuel** (cf. §4.8.1). Paiement encaissé physiquement.
+- Les tickets concernent l'usage **`external`** ; l'admin peut exceptionnellement en créditer à un staff/resident pour un usage interne.
+- Côté portail, l'external **réserve** avec ses tickets crédités, il ne peut pas en acheter. (Q21 — qui peut acheter — devient sans objet en MVP ; **V2** : achat + paiement en ligne self-service via Stripe Cashier.)
 - Un `resident`/`additional`/`staff` qui souhaite inviter ponctuellement un tiers doit passer par l'admin.
 
 #### Validité
@@ -1732,7 +1735,7 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 | 18 | ~~Documents internes applicables à `external`~~ | Faible | ✅ Résolue (oui, même obligation de validation que les autres rôles) |
 | 19 | ~~Modélisation entité juridique d'un `external` particulier~~ | Moyen — DB | ✅ Résolue (type `individual` vs `company` sur entité) |
 | 20 | ~~Tarifs unitaires et structure des packs de tickets~~ | Moyen | ✅ Résolue (cf. §6.3 : bureau 17,50 € / pack 2 31,50 € / pack 10 140 € ; salle 71 € / pack 10 568 € — HT) |
-| 21 | ~~Achat de tickets bureau par resident/additional/staff~~ | Faible | ✅ Résolue (non, external uniquement — admin manuel pour les cas exceptionnels) |
+| 21 | ~~Achat de tickets bureau par resident/additional/staff~~ | Faible | ✅ Résolue. **MVP : aucun achat sur le portail** (paiement physique) — tickets crédités par l'admin (facture/manuel). Achat self-service = V2. |
 | 22 | ~~Annulation de résa external avec ticket~~ | Faible | ✅ Résolue (annulation possible jusqu'à l'heure de début, restitution auto du ticket) |
 | 23 | ~~Statut technique stagiaire/alternant~~ | Moyen | ✅ Résolue (rôle `staff` XOR avec resident/additional/external, pas de gestion facturation) |
 | 24 | Bureau `assigned_staff` utilisable par d'autres en cas d'absence du staff | Faible | ✅ Résolue (strictement réservé sauf cas marginal admin) |

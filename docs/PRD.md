@@ -608,16 +608,23 @@ Visible dans le calendrier (mode lecture seule) mais :
 - Mes résa à venir avec actions modifier/supprimer
 - Pour external : indication du ticket consommé pour chaque résa (traçabilité)
 
-#### 3.5.8 Sync Google Calendar
+#### 3.5.8 Abonnement agenda (iCal / Google)
 
-- Lien "Ajouter à mon agenda Google" dans le module
-- Format : URL iCal publique (lecture seule) du calendrier Google partagé Ecoworking
-- Le calendrier Google contient **les résa salles uniquement** (pas les occupations bureaux, qui sont gérées via le plan des étages)
-- Sync sortante uniquement
+**Trois liens iCal d'abonnement** (lecture seule), à ajouter dans Google Agenda / Apple Calendar :
+- **« Mes réservations »** : uniquement les résa salles du membre connecté.
+- **« Réservations de mon entité »** ✅ : **toutes** les résa salles des membres rattachés à la **même entité juridique** (coordination d'équipe).
+- **« Toutes les réservations Ecoworking »** : vue globale — le calendrier Google partagé public Ecoworking.
 
-> 🟡 **À envisager** : 2 liens iCal proposés
-> - "Mes réservations seules" (personnalisé)
-> - "Toutes les réservations Ecoworking" (vue globale)
+Contenu : **résa salles uniquement** (pas les occupations bureaux, gérées via le plan des étages).
+
+**Implémentation & coût** (pas de surcharge — voir ci-dessous) :
+- Les flux « Mes réservations » et « Réservations de mon entité » sont des **endpoints iCal générés par Laravel** (`.ics`) ; le flux global réutilise le calendrier Google partagé public.
+- **Pull-based** : le client agenda s'abonne et rafraîchit à son rythme (Google ~toutes les quelques heures, pas en temps réel) → **aucune charge de push/synchro côté serveur**, juste une génération `.ics` à la demande lors du poll.
+- Chaque flux = une requête `bookings` scopée (perso = `user_id`, entité = `company_id`) + sérialisation ics réutilisée. Volume négligeable.
+- **Sécurité** : URL de capacité avec **token secret par utilisateur** (révocable — les clients agenda ne peuvent pas s'authentifier par session). Le flux entité est scopé à l'entité du porteur du token.
+- **Privacy** : voir les résa de ses collègues d'entité est cohérent avec la transparence déjà retenue (Q4 — nom du réserveur visible aux membres).
+
+> Distinct de la **sync Google sortante côté admin** (BRIEF §10 : push des `bookings` vers un calendrier Google dédié via service account). Ici, ce sont les liens d'abonnement côté **membre**.
 
 #### 3.5.9 Cas particulier external — choix du bureau & dispo
 

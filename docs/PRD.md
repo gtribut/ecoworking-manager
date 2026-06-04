@@ -495,7 +495,7 @@ Trois modes d'absence :
 
 > 🟡 **Implémentation modèle de données** suggérée : table `desk_absences` avec colonnes `desk_id`, `user_id`, `date_start`, `date_end`, `period`, `recurrence_type`, `recurrence_day_of_week` (nullable), `notes`. La logique d'expansion des récurrences se fait à la lecture (ne pas pré-générer N lignes individuelles).
 
-> ❓ **À trancher** : faut-il une notification automatique à l'admin lors de l'enregistrement d'une absence longue (ex. > 5 jours) ?
+> ✅ **Résolu (Q25)** : notification admin **systématique** à chaque absence enregistrée via ce module. Le module ne sert qu'aux récurrences et aux absences longues en général → il est utile que l'admin ait l'info et la visibilité sur les bureaux libérés.
 
 ### 3.5 Réservation de ressources
 
@@ -1270,7 +1270,7 @@ Page de référence quotidienne pour l'admin, accessible en un clic depuis le da
 **Édition**
 - Brouillon : édition libre
 - Émise : édition **restreinte** (interdiction de modifier les montants, le numéro, le billable — uniquement notes admin et statut paiement)
-- Annulation : génère un avoir (V2) ou modification de statut "cancelled" avec audit log
+- Annulation d'une facture émise : **génération automatique d'un avoir** (V2, conformité légale) + passage au statut `cancelled` + audit log (cf. Q7.3-3)
 
 **Visualisation**
 - Aperçu PDF dans Filament
@@ -1404,10 +1404,15 @@ Page de référence quotidienne pour l'admin, accessible en un clic depuis le da
 
 > Workflow critique métier — à automatiser au max
 
-**Trigger** : cron job mensuel (1er du mois, ou configurable par admin)
+**Déclencheurs de facturation** (✅ Q7.3-2 résolue) :
+- **Récurrent mensuel (cron)** : automatique le **1er du mois**, pour tous les abonnements mensuels en cours (résidents + additionals). Facturation **en avance** (le mois qui démarre).
+- **À l'instant T** : pour les abonnements mensuels qui **démarrent en cours de mois** (facture au prorata, cf. « Règle de prorata » ci-dessous, émise au démarrage) et pour les **commandes external** (tickets bureau/salle ou commande spécifique, via le module « Achats » du portail ou une création manuelle admin) → facture générée au moment de la commande.
+- **Fallback manuel** : l'admin peut déclencher la génération mensuelle à la main (incident cron, ou anticipation).
 
-**Étapes** :
-1. Pour chaque abonnement `status=active` avec `billing_day` ≤ jour courant :
+> **Idempotence obligatoire** : toute génération (cron, instant T ou manuelle) **vérifie d'abord qu'aucune facture n'existe déjà** pour la même cible + période avant de créer — jamais de doublon.
+
+**Étapes (cron mensuel)** :
+1. Pour chaque abonnement mensuel `status=active` (résident/additional) :
    - Vérifier qu'aucune facture n'a déjà été émise pour ce mois sur cet abonnement (idempotence)
    - Créer une facture brouillon
    - Ajouter une ligne d'abonnement (snapshot prix de l'abonnement)
@@ -1465,7 +1470,7 @@ Où :
 **Étapes** :
 1. Document créé en DB avec version, audience cible
 2. Tous les membres concernés voient le doc apparaître dans le bloc "Documents à valider" sur leur accueil portail
-3. 🟡 Notification email au membre lors de la publication
+3. Notification email au membre lors de la publication, l'informant qu'une **nouvelle validation est requise** de sa part (✅ Q7.3-1)
 4. Membre télécharge le doc, le lit, clique "Valider"
 5. Création d'un enregistrement `member_document_validations` (user_id, document_id, version, validated_at, ip)
 6. Le doc disparaît de "Documents à valider" pour ce membre (sauf si nouvelle version)
@@ -1604,7 +1609,7 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 - `paid` : intégralement payée
 - `partially_paid` : partiellement payée
 - `overdue` : en retard (passe l'échéance, automatique via cron)
-- `cancelled` : annulée (avoir nécessaire pour conformité — V2)
+- `cancelled` : annulée (génération **automatique** d'un avoir pour conformité — V2)
 
 ### 6.3 Tickets
 
@@ -1689,7 +1694,7 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 | 22 | ~~Annulation de résa external avec ticket~~ | Faible | ✅ Résolue (annulation possible jusqu'à l'heure de début, restitution auto du ticket) |
 | 23 | ~~Statut technique stagiaire/alternant~~ | Moyen | ✅ Résolue (rôle `staff` XOR avec resident/additional/external, pas de gestion facturation) |
 | 24 | Bureau `assigned_staff` utilisable par d'autres en cas d'absence du staff | Faible | ✅ Résolue (strictement réservé sauf cas marginal admin) |
-| 25 | Notification automatique admin lors d'enregistrement d'une absence longue (> N jours) ? | Faible | Ouverte |
+| 25 | ~~Notification automatique admin lors d'enregistrement d'une absence~~ | Faible | ✅ Résolue (oui, notif admin à **chaque** absence enregistrée via le module) |
 | 26 | Facturation BtoC (`individual`) : règles spécifiques vs BtoB (notamment Factur-X 2027) | Moyen — facturation | ⏳ Reportée (Guillaume verra avec son comptable ; relève surtout de la V2 Factur-X, pas bloquant MVP) |
 
 ### 7.2 UI/UX
@@ -1704,11 +1709,11 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 
 ### 7.3 Workflows
 
-| # | Question | Impact |
-|---|---|---|
-| 1 | Notification email à chaque publication de document interne (oui par défaut ?) | Faible |
-| 2 | Cron facturation : lancement auto fin de mois, ou trigger manuel admin | Moyen |
-| 3 | Workflow avoir (V2) : génération automatique sur annulation ou manuel | Moyen |
+| # | Question | Impact | Statut |
+|---|---|---|---|
+| 1 | ~~Notification email à chaque publication de document interne~~ | Faible | ✅ Résolue (oui, avec mention que la validation du membre est requise — §5.3) |
+| 2 | ~~Cron facturation : auto ou manuel~~ | Moyen | ✅ Résolue (cron auto le 1er du mois pour le récurrent + instant T pour démarrages en cours de mois et commandes external + fallback manuel ; idempotence — §5.1) |
+| 3 | ~~Workflow avoir (V2) : auto ou manuel sur annulation~~ | Moyen | ✅ Résolue (génération **automatique** d'un avoir sur annulation de facture — conformité légale) |
 
 ### 7.4 Technique
 

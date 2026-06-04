@@ -709,7 +709,7 @@ clever env set CC_NODE_VERSION 26
 clever env set APP_ENV production
 clever env set APP_DEBUG false
 clever env set APP_KEY "base64:..."                 # via php artisan key:generate
-clever env set APP_URL https://admin.ecoworking.fr  # primaire ; l'autre via Route::domain
+clever env set APP_URL https://portail.ecoworking.fr  # base URL Laravel (liens des emails membres) ; aligné sur §13. L'admin est servi via Route::domain
 
 # Base de données (références aux variables injectées par l'add-on, quotes simples)
 clever env set DB_CONNECTION pgsql
@@ -732,7 +732,7 @@ clever env set SESSION_DOMAIN ""                    # NULL → cookie scopé au 
 clever env set FILESYSTEM_DISK s3
 clever env set AWS_ACCESS_KEY_ID '$CELLAR_ADDON_KEY_ID'
 clever env set AWS_SECRET_ACCESS_KEY '$CELLAR_ADDON_KEY_SECRET'
-clever env set AWS_DEFAULT_REGION par
+clever env set AWS_DEFAULT_REGION eu-west-1          # aligné sur §13 ; cosmétique pour Cellar (AWS_ENDPOINT fait foi)
 clever env set AWS_BUCKET ecoworking-storage        # à créer dans la console Cellar
 clever env set AWS_ENDPOINT '$CELLAR_ADDON_HOST'
 
@@ -743,11 +743,13 @@ clever env set CC_RUN_COMMAND "php artisan migrate --force && php-fpm"
 
 > ⚠️ Les `'$POSTGRESQL_ADDON_HOST'` (quotes simples) sont des **références** résolues au runtime par Clever Cloud — ne pas mettre la valeur en dur.
 
+> **À compléter** : le bloc ci-dessus ne couvre que les variables liées aux add-ons + runtime. Il faut **aussi** positionner les variables applicatives restantes documentées en **§13** : `APP_NAME`, `APP_TIMEZONE`, `APP_LOCALE`, `ADMIN_DOMAIN` / `PORTAL_DOMAIN` / `FILAMENT_DOMAIN`, `SESSION_LIFETIME`, mail prod (`MAIL_*` Brevo / `BREVO_API_KEY`), `SENTRY_LARAVEL_DSN` + `SENTRY_TRACES_SAMPLE_RATE`, et les `GOOGLE_*` (OAuth admin + Calendar). Les `CC_*` (`CC_PHP_VERSION`, `CC_NODE_VERSION`, `CC_POST_BUILD_HOOK`, `CC_RUN_COMMAND`) sont **spécifiques Clever Cloud** et n'ont donc pas leur place dans `.env.example`.
+
 **Créer le bucket Cellar** (console web) : Add-ons → `ecoworking-cellar` → onglet "Buckets" → "New bucket" → nom `ecoworking-storage`, ACL `private`.
 
 #### 11.6 Configurer les sous-domaines
 
-Console Clever Cloud → app `ecoworking-app` → "Domain names" → "Add domain name" : ajouter `admin.ecoworking.fr` (toggle "primary") puis `portail.ecoworking.fr`. Clever fournit une cible DNS du type `app_xxxxx.cleverapps.io`.
+Console Clever Cloud → app `ecoworking-app` → "Domain names" → "Add domain name" : ajouter `portail.ecoworking.fr` (toggle "primary", cohérent avec `APP_URL`) puis `admin.ecoworking.fr`. Clever fournit une cible DNS du type `app_xxxxx.cleverapps.io`. Le "primary domain" Clever (canonique du vhost) et `APP_URL` (base de génération des liens Laravel) sont deux notions distinctes mais qu'on garde alignées sur le portail.
 
 Côté DNS du registrar `ecoworking.fr` :
 
@@ -882,7 +884,7 @@ Option 2 (V2 si besoin de contrôle) : **Docker image**
 
 ### Variables d'environnement
 
-`.env.example` à versionner avec toutes les clés (valeurs vides ou placeholder) :
+`.env.example` à versionner avec toutes les clés (valeurs vides ou placeholder). En production, ces variables sont positionnées via `clever env set` (cf. **§11.5** pour celles liées aux add-ons/runtime ; les autres se reportent à l'identique depuis ce bloc) :
 
 ```env
 # App

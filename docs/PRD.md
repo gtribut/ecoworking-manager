@@ -535,10 +535,9 @@ Trois types de ressources, chacun avec des règles d'utilisation et d'affichage 
 **Navigation**
 - Boutons "Semaine précédente" / "Semaine suivante" / "Aujourd'hui"
 - Date picker pour aller à une semaine arbitraire
-- 🟡 Limite : pas de résa au-delà de X semaines dans le futur (configurable, par défaut 12 semaines ?)
+- **Pas de limite d'horizon** : réservation possible aussi loin dans le futur que souhaité (✅ décidé : aucune restriction).
 
-❓ **À trancher** : nom du réserveur visible aux autres ou anonyme (privacy) ?
-→ ✅ **Tranchée (Q4)** : nom du réserveur **visible** aux autres membres (tooltip ou clic sur la résa affiche "prénom + nom + entité juridique" et le libellé si renseigné).
+> ✅ **Tranché (Q4)** — privacy résa : nom du réserveur **visible** aux autres membres (tooltip ou clic sur la résa affiche "prénom + nom + entité juridique" et le libellé si renseigné).
 
 #### 3.5.3 Réserver une salle de réunion — flow par rôle
 
@@ -593,7 +592,7 @@ Visible dans le calendrier (mode lecture seule) mais :
 Seuls les `external` peuvent acheter des tickets (Q21 résolue) :
 - **Tickets bureau libre demi-journée** : achat à l'unité ou en pack (2, 10) avec dégressivité
 - **Tickets salle de réunion demi-journée** (matin ou après-midi) : achat à l'unité ou en pack
-- Tickets achetés → visibles dans "Mes tickets" du module, avec date d'expiration et statut (disponible / utilisé / expiré / restitué)
+- Tickets achetés → visibles dans "Mes tickets" du module, avec statut (disponible / utilisé / restitué) — pas de date d'expiration (tickets sans limite de durée)
 
 **Conséquence** : un `resident`, `additional` ou `staff` qui veut inviter ponctuellement un collègue ou tiers doit passer par l'admin (pas de self-service pour acheter un ticket au nom de quelqu'un d'autre).
 
@@ -616,16 +615,18 @@ Seuls les `external` peuvent acheter des tickets (Q21 résolue) :
 > - "Mes réservations seules" (personnalisé)
 > - "Toutes les réservations Ecoworking" (vue globale)
 
-#### 3.5.9 Cas particulier external — vérification dispo bureau
+#### 3.5.9 Cas particulier external — choix du bureau & dispo
 
-Pour les **tickets bureau libre demi-journée**, l'achat se fait sans choisir un bureau précis (les bureaux libres sont attribués au coup par coup). Avant l'achat, le système doit indiquer la disponibilité :
+Pour les **tickets bureau libre demi-journée**, l'external **choisit un bureau libre précis** via une **vue plan** dédiée :
 
-- Sur la page d'achat : sélecteur de date + période (matin / après-midi / journée)
-- Affichage du nombre de bureaux libres restants pour la période sélectionnée
-- Si zéro disponible : alerte avec message "Aucun bureau disponible sur ce créneau. Contactez-nous pour étudier les possibilités" + bouton `mailto:`
-- 🟡 Calcul : `total_bureaux_non_attitres - tickets_bureau_consommes_pour_cette_periode`
+- Sélecteur de date + période (matin / après-midi / journée)
+- **Vue plan filtrée** ne montrant **que les bureaux `unassigned` libres** sur la période choisie (cliquables pour sélection). L'external **ne voit pas** les bureaux des résidents (ni ceux laissés vacants par une absence) ni aucune information d'identité → confidentialité (cf. Q16 : l'annuaire complet n'est pas accessible aux external). Réutilise le même SVG que le plan des étages (§3.7 / §4.12), en vue restreinte « places libres ».
+- L'external clique sur un bureau libre → réservation pour la période (consommation d'un ticket bureau).
+- Affichage du nombre de bureaux libres restants pour la période.
+- Si zéro disponible : alerte "Aucun bureau disponible sur ce créneau. Contactez-nous pour étudier les possibilités" + bouton `mailto:`.
+- Calcul des bureaux proposés : bureaux `unassigned` non déjà occupés par un ticket sur la période (`total_bureaux_non_attitrés − occupations_external_de_la_période`).
 
-❓ **À trancher** : on doit également considérer les bureaux attitrés des résidents absents pour calculer la dispo réelle ? Probablement non (politique simple : on ne sait pas qui sera absent → on ne propose que les bureaux explicitement libres).
+> ✅ **Tranché** : les **bureaux attitrés de résidents absents ne sont PAS** comptés dans le pool libre proposé à l'external (seuls les `unassigned` explicitement libres). L'admin peut, lui, placer manuellement un external sur un bureau de résident absent (cas tendu — cf. §6.2).
 
 ### 3.6 Administratif & facturation
 
@@ -804,7 +805,7 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
     - Absence enregistrée par l'admin pour le résident
     - Annonce / event publié par l'admin (si visibilité applicable)
 - Stockage : table `notifications` Laravel native (driver `database`) — pas de WebSocket en MVP, refresh à la connexion / poll léger
-- 🟡 Notifications email : doubler les notifs in-app par un email pour les événements critiques (facture émise, document à valider) — toggle dans le profil utilisateur
+- **Notifications email + in-app** : les notifs in-app sont doublées par un email pour les événements critiques (facture émise, document à valider). **Toggles indépendants dans le profil** (emails d'une part, in-app d'autre part), **activés par défaut** (✅ décidé).
 
 ### 3.9 Layout & navigation
 
@@ -1180,7 +1181,7 @@ Pour **les deux types**, le créneau **matin (9h-13h) ou après-midi (14h-18h)**
 🟡 Architecture suggérée : tous les tickets dans une table commune `tickets` avec colonne `type`, pour simplicité de gestion (filtres, compteurs, consommation).
 
 **Listing**
-- Table : membre/external, type ticket, purchase parent, date d'expiration, statut (disponible / utilisé / expiré / annulé), date d'utilisation, ressource utilisée (si applicable)
+- Table : membre/external, type ticket, purchase parent, statut (disponible / utilisé / annulé), date d'utilisation, ressource utilisée (si applicable) — pas de date d'expiration (tickets sans limite de durée)
 - Filtres : membre, type, statut
 - Recherche : nom membre, code purchase
 - 🟡 Vue regroupée par membre avec compteurs par type ("X tickets bureau dispo / Y tickets salle dispo / Z tickets utilisés")
@@ -1195,14 +1196,14 @@ Pour **les deux types**, le créneau **matin (9h-13h) ou après-midi (14h-18h)**
 *Consommer manuellement un ticket pour un user* — cas typique = un external se présente sur place, l'admin lui décompte un ticket à la volée :
 1. Sélecteur de user → liste de ses tickets disponibles par type
 2. Choix d'un ticket + date + période (matin / après-midi)
-3. Si ticket bureau : pas de ressource précise (les bureaux libres sont attribués au coup par coup)
+3. Si ticket bureau : choisir un bureau `unassigned` libre pour la période (même vue plan filtrée sur les places libres, cf. §3.5.9)
 4. Si ticket salle de réunion : sélecteur de salle + créneau spécifique → création d'une `booking`
 5. Crée l'occupation correspondante (occupation bureau ou booking salle)
 6. Marque le ticket comme utilisé avec timestamp
 
 *Autres actions* :
 - Annuler une consommation (cas exceptionnel : erreur, no-show finalement) → ticket redevient disponible
-- Étendre date d'expiration (geste commercial)
+- Annuler / restituer un ticket (geste commercial) — pas d'expiration à gérer (tickets sans limite de durée)
 - Transférer un ticket à un autre user (V2, si politique le permet)
 
 #### 4.8.2 Occupations de bureau
@@ -1249,7 +1250,7 @@ L'admin peut :
 - Déclarer une **absence** pour un `resident`/`staff` (cas : la manageuse pose les vacances de quelqu'un à sa demande)
 - Modifier ou supprimer toute occupation ou absence existante (audit log obligatoire)
 
-❓ **À trancher** : un `staff` peut-il occuper ponctuellement un autre bureau si son bureau est en maintenance ? (cas marginal — Q24 : par défaut bureau staff strictement réservé)
+> ✅ **Tranché** : aucun besoin fonctionnel dans l'app pour le cas « bureau staff en maintenance » → géré **physiquement** sur place si nécessaire. Côté app, bureau staff strictement réservé (Q24).
 
 #### 4.8.3 Présences hors bureau
 
@@ -1472,7 +1473,7 @@ Où :
 - Le jour de début est inclus **et le jour de fin est inclus** (✅ figé : résiliation le 10 du mois = **10 jours facturés**, du 1er au 10 inclus)
 
 > ✅ **Comptage des jours figé** : bornes incluses (début et fin), cf. exemples ci-dessus.
-> 🟡 **Restant à confirmer ultérieurement avec l'expert-comptable** (défauts retenus en attendant) : arrondi au centime (`ROUND_HALF_UP`, 2 décimales) et TVA appliquée sur le montant proratisé (oui par défaut). Voir aussi Q26 (BtoC vs BtoB).
+> ✅ **Validé** : arrondi au centime (`ROUND_HALF_UP`, 2 décimales) et **TVA 20 %** appliquée sur le montant proratisé. (Reste seulement Q26 — BtoC vs BtoB — reportée avec l'expert-comptable.)
 
 ### 5.2 Création d'un nouveau membre
 
@@ -1608,7 +1609,7 @@ Pas de "réservation" classique — gestion par **occupation** et **absence** :
 - **`resident`** : occupation **implicite** de son bureau attitré tous les jours ouvrés (pas de déclaration quotidienne). Peut **marquer son bureau vacant** sur des dates précises ou en récurrence (cf. §3.4.6) pour libérer la place
 - **`staff`** : occupation **implicite** de son bureau attitré tous les jours ouvrés. Peut aussi marquer son bureau vacant. Bureau **non utilisable** par d'autres en cas d'absence (sauf cas marginal admin)
 - **`additional`** : utilise librement les bureaux des résidents de son entité juridique. **Aucun suivi explicite dans l'app** (placement informel)
-- **`external`** : achète un ticket bureau libre demi-journée, occupe un bureau `unassigned` disponible le jour J. Pas de choix précis du bureau (attribution au coup par coup)
+- **`external`** : achète un ticket bureau libre demi-journée et **choisit un bureau `unassigned` libre** via la vue plan filtrée sur les places libres de la période (cf. §3.5.9). Aucune visibilité sur les bureaux des résidents (présents ou absents)
 
 **Calcul de la disponibilité bureau pour external** :
 ```
@@ -1628,7 +1629,7 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 - Une facture brouillon ne consomme pas le compteur — seulement à l'émission définitive
 
 **Date d'échéance par défaut** :
-- 🟡 30 jours après émission (configurable par admin)
+- **Échéance = date d'émission + 14 jours** (2 semaines), uniformément pour **toutes** les factures (récurrentes du 1er, en cours de mois, ou ponctuelles). `due_date = issued_at + 14 jours`.
 
 **Statuts**
 - `draft` : brouillon, modifiable, non comptabilisée
@@ -1657,7 +1658,7 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 
 #### Validité
 
-- 🟡 Par défaut : **12 mois après l'achat** (configurable par offre)
+- **Aucune expiration** : un ticket est valable **sans limite de durée** (« à vie ») — ✅ décidé. Pas de date d'expiration ni de statut « expiré ».
 
 #### Consommation
 

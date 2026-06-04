@@ -624,6 +624,11 @@ Contenu : **résa salles uniquement** (pas les occupations bureaux, gérées via
 - **Sécurité** : URL de capacité avec **token secret par utilisateur** (révocable — les clients agenda ne peuvent pas s'authentifier par session). Le flux entité est scopé à l'entité du porteur du token.
 - **Privacy** : voir les résa de ses collègues d'entité est cohérent avec la transparence déjà retenue (Q4 — nom du réserveur visible aux membres).
 
+**Fraîcheur / temps réel** (attente à gérer) :
+- Le rafraîchissement d'un **abonnement iCal externe par Google n'est ni contrôlable ni temps réel** (observé : plusieurs heures, parfois ~24h). **Apple Calendar**, lui, laisse l'utilisateur choisir l'intervalle (jusqu'à ~5 min).
+- **La coordination temps réel passe par le calendrier du portail** (in-app, temps réel), qui affiche **déjà toutes les résa des salles** — donc celles des collègues d'entité incluses. Les flux iCal sont un **miroir passif** dans l'agenda perso, pas l'outil de coordination live.
+- Pour du **near-real-time dans Google** : seule voie = **push via l'API Google** (écrire les événements), comme le calendrier partagé Ecoworking (BRIEF §10) → near-real-time mais **vue globale** uniquement. Un near-real-time **scopé par entité** imposerait des calendriers Google dédiés par entité (ingérable à ~75 entités) ou un push OAuth dans l'agenda Google **personnel** (onboarding lourd, Google-only) → **hors MVP** (V2 si réel besoin).
+
 > Distinct de la **sync Google sortante côté admin** (BRIEF §10 : push des `bookings` vers un calendrier Google dédié via service account). Ici, ce sont les liens d'abonnement côté **membre**.
 
 #### 3.5.9 Cas particulier external — choix du bureau & dispo

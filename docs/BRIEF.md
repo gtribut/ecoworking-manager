@@ -168,7 +168,8 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 | `spatie/laravel-backup` | Backups DB + storage |
 | `spatie/laravel-settings` | Settings typés |
 | `spatie/laravel-data` | DTOs typés |
-| `barryvdh/laravel-dompdf` | PDF basique (peut suffire MVP) |
+| `intervention/image` | Redimensionnement des images à l'upload (photos profil, couvertures annonces → tailles fixes stockées sur Cellar) |
+| `barryvdh/laravel-dompdf` | Génération PDF facture (MVP — retenu, cf. PRD §7.4) |
 | `spatie/browsershot` | PDF haute qualité via Chrome headless (V2) |
 | `google/apiclient` | Sync Google Calendar |
 | `sentry/sentry-laravel` | Monitoring erreurs |
@@ -265,7 +266,7 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 | Better Stack | Uptime monitoring externe |
 | Healthchecks.io | Surveillance cron jobs |
 | Brevo | Email transactionnel |
-| ImageKit (optionnel) | CDN images si upload volumineux (aligné Teetsh) |
+| ImageKit | ❌ Écarté MVP (réservé V3) — images servies depuis Cellar, redim. via `intervention/image` (cf. PRD §7.4 Q1) |
 | Google Cloud Console | Credentials OAuth + Calendar API |
 
 ---

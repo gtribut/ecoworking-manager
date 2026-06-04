@@ -423,8 +423,8 @@ Page de gestion des données personnelles + visualisation des données entrepris
 - M'inscrire à la newsletter (bool, opt-in)
 
 > 🟡 **Ajout à valider** :
-> - Photo de profil : redimensionnement automatique (~400×400 max stocké), génération d'avatar par défaut (initiales + couleur de fond générée du nom) si absente
-> - Stockage : ImageKit recommandé pour transformations à la volée (résolution adaptée à l'usage : 80×80 pour annuaire, 200×200 pour modal détail)
+> - Photo de profil : génération d'avatar par défaut (initiales + couleur de fond générée du nom) si absente
+> - Stockage : **Cellar direct** (✅ Q7.4-1). Redimensionnement **côté serveur à l'upload** via Intervention Image en tailles fixes (80×80 annuaire, 200×200 modal, 400×400 source), stockées sur Cellar. Pas de tiers de transformation (ImageKit écarté : sous-traitant RGPD inutile à cette échelle, cf. §7.4).
 > - Présentation : éditeur markdown avec preview (lib type @uiw/react-md-editor ou similaire). Rendu via une lib markdown sécurisée (XSS-safe, par ex. `marked` + `dompurify` côté front, ou `commonmark` côté back si on préfère rendre en SSR)
 
 #### 3.4.3 Section "Mon entreprise"
@@ -1342,7 +1342,7 @@ Page de référence quotidienne pour l'admin, accessible en un clic depuis le da
 
 #### 4.11.2 Édition
 
-- Formulaire : titre, type, corps (markdown ou WYSIWYG), date début / date fin (pour events), lieu, max participants, requires_registration, date de publication, visibilité (tous / résidents / additional / billing_contact), image de couverture (upload via ImageKit)
+- Formulaire : titre, type, corps (markdown ou WYSIWYG), date début / date fin (pour events), lieu, max participants, requires_registration, date de publication, visibilité (tous / résidents / additional / billing_contact), image de couverture (upload sur Cellar)
 - Brouillon → Publication (workflow)
 
 #### 4.11.3 Suivi inscriptions
@@ -1533,7 +1533,7 @@ Où :
 
 **Étapes** :
 1. Numérotation atomique via `InvoiceNumberingService` (lock DB)
-2. Génération PDF via `react-pdf/renderer` ou `dompdf` (à figer cf. BRIEF)
+2. Génération PDF via **`barryvdh/laravel-dompdf`** (MVP — pur PHP, dans le Job de queue avec la logique de numérotation ; cf. Q7.4-3). V2 Factur-X (PDF/A-3 + XML CII) : assemblage via `atgp/factur-x` à partir du PDF + XML
 3. Stockage sur Cellar (S3) : `invoices/YYYY/EW-YYYY-NNNNN.pdf`
 4. Snapshot adresse facturation à l'émission (au cas où l'adresse de l'entité change ensuite)
 5. Job `SendInvoiceEmailJob` dispatché → email avec PDF en attachment au billing_contact
@@ -1717,11 +1717,11 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 
 ### 7.4 Technique
 
-| # | Question | Impact |
-|---|---|---|
-| 1 | Photo profil : ImageKit ou Cellar direct | Faible |
-| 2 | Stockage SVG plan : versionné dans le repo ou en DB | Faible |
-| 3 | Génération PDF facture : react-pdf vs dompdf vs browsershot (V2) | Moyen |
+| # | Question | Impact | Statut |
+|---|---|---|---|
+| 1 | ~~Photo profil : ImageKit ou Cellar direct~~ | Faible | ✅ Résolue (**Cellar direct** : redim. serveur via Intervention Image ; ImageKit réservé V3) |
+| 2 | ~~Stockage SVG plan : versionné dans le repo ou en DB~~ | Faible | ✅ Résolue (statique, **versionné dans le repo** — cf. §4.12, Q13) |
+| 3 | ~~Génération PDF facture : react-pdf vs dompdf vs browsershot~~ | Moyen | ✅ Résolue (MVP : **`barryvdh/laravel-dompdf`** ; react-pdf écarté ; V2 Factur-X : réévaluer avec `atgp/factur-x` pour le PDF/A-3) |
 
 ---
 

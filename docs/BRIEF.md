@@ -319,7 +319,7 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 ### Structure repo
 
 ```
-ecoworking/
+ecoworking-manager/
 ├── app/                          # Code Laravel
 │   ├── Filament/                 # Resources & pages admin
 │   ├── Http/
@@ -813,7 +813,7 @@ Pour les add-ons, la console web est plus pratique : Add-ons → `ecoworking-pg`
 
 ### Structure repo
 
-- Repo unique : `guillaume/ecoworking` (privé)
+- Repo unique : `gtribut/ecoworking-manager` (privé)
 - README avec setup local
 - `.github/workflows/` pour les Actions
 
@@ -1065,13 +1065,13 @@ sudo apt install -y jq
 > À n'utiliser que pour **créer** le projet la première fois (avant qu'il existe dans le repo). Si le repo est déjà cloné, voir « Quick start » ci-dessous.
 
 ```bash
-# Dans WSL2, cd dans ton dossier projets (idéalement sous ~/projects, pas sur /mnt/c)
-mkdir -p ~/projects && cd ~/projects
+# Dans WSL2, cd dans ton dossier projets (idéalement sous ~/projets, pas sur /mnt/c)
+mkdir -p ~/projets && cd ~/projets
 
 # Créer le projet
-curl -s "https://laravel.build/ecoworking?with=pgsql,mailpit" | bash
+curl -s "https://laravel.build/ecoworking-manager?with=pgsql,mailpit" | bash
 
-cd ecoworking
+cd ecoworking-manager
 
 # Lancer Sail
 ./vendor/bin/sail up -d
@@ -1124,7 +1124,7 @@ powershell.exe -Command "New-BurntToastNotification -Text 'Build OK', 'ecoworkin
 
 ### Performance — règles d'or
 
-1. **Toujours travailler dans le filesystem Linux** (`~/projects/`), pas sur `/mnt/c/...` (Windows monté). Différence : 5-10× sur les opérations I/O.
+1. **Toujours travailler dans le filesystem Linux** (`~/projets/`), pas sur `/mnt/c/...` (Windows monté). Différence : 5-10× sur les opérations I/O.
 2. **Allouer assez de RAM/CPU à WSL2** : créer `~/.wslconfig` (sur Windows, dans `C:\Users\<user>\`) :
 
 ```ini

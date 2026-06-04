@@ -96,7 +96,7 @@ sudo chown -R $USER:$USER .   # depuis WSL2
 ```
 
 ### Performance lente (I/O)
-Vérifier que le projet est dans `~/projects/` (filesystem Linux) et **pas** dans `/mnt/c/...` (montage Windows). Différence : 5-10× sur l'I/O.
+Vérifier que le projet est dans `~/projets/` (filesystem Linux) et **pas** dans `/mnt/c/...` (montage Windows). Différence : 5-10× sur l'I/O.
 
 ### Sous-domaines non résolus en dev
 Vérifier `C:\Windows\System32\drivers\etc\hosts` (`127.0.0.1 admin.ecoworking.test` + `portail.ecoworking.test`), puis `ipconfig /flushdns` (PowerShell admin).

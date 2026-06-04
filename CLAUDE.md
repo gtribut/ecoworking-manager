@@ -39,7 +39,7 @@ Outil de gestion sur-mesure pour Ecoworking (coworking lyonnais, SCOP, ~50 membr
 
 Arborescence repo :
 ```
-ecoworking/
+ecoworking-manager/
 ├── app/            # Code Laravel (Models, Controllers, Filament, Services, Jobs)
 ├── config/         # Configuration Laravel
 ├── database/       # Migrations, seeders, factories

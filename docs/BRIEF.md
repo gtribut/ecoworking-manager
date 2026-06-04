@@ -448,9 +448,9 @@ Inventaire des tables prévues (vue technique pour l'infra et les migrations) :
 | `purchases` | Achats ponctuels (tickets, packs) |
 | `resources` | Salles + bureaux (bookable). Type : `desk` (`assigned_resident` / `assigned_staff` / `unassigned`) / `meeting_room` (3 unités) / `event_room` (1 unité, admin only) |
 | `bookings` | Réservations de salles (meeting_room + event_room uniquement) |
-| `desk_occupations` | Occupations effectives des bureaux jour par jour (sources : `resident_default`, `external_ticket`) |
+| `desk_occupations` | Occupations effectives des bureaux par demi-journée (champ `period` : morning/afternoon/full_day ; sources : `resident_default`, `external_ticket`) |
 | `desk_absences` | Déclarations d'absence des résidents/staff sur leur bureau (date / plage / récurrence) |
-| `tickets` | Tickets achetés (types : desk_half_day, meeting_room_half_day_morning/afternoon) |
+| `tickets` | Tickets achetés (types : desk_half_day, meeting_room_half_day ; le créneau matin/après-midi est choisi à la réservation, pas au type) |
 | `invoices` | Factures émises |
 | `invoice_lines` | Lignes de factures |
 | `payments` | Encaissements (statuts manuels) |

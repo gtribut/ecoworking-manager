@@ -89,15 +89,15 @@ Issus des specs initiales et décisions actées :
 
 - **Intégration HTML/CSS full responsive** desktop + mobile (usage principal desktop, mobile important)
 - **UX++** : moderne, épuré, centré utilisabilité avant esthétique pure
-- **Identité graphique** : réutilisation de l'existant ecoworking.fr — **même logo et palette couleurs** (issues du logo). Codes hexa exacts à fournir par Guillaume (à intégrer dans `tailwind.config.js` comme couleurs custom du projet)
-- **Palette couleurs** : niveaux de gris + 2 primaires (vert + violet Ecoworking, codes hexa à figer)
+- **Identité graphique** : réutilisation de l'existant ecoworking.fr — **même logo et palette couleurs** (issues du logo), à intégrer comme couleurs custom du projet (thème Tailwind v4 via le bloc `@theme` côté SPA, thème Filament côté admin)
+- **Palette couleurs** : niveaux de gris + 2 primaires Ecoworking — **violet `#481944`** et **vert `#6AB024`** (issus du logo)
 - **Typographie** : **Inter** (sans-serif moderne, lisible, gratuite, multilingue, support emojis natif) → chargée via Google Fonts ou en self-hosted (préférable pour perf et conformité RGPD)
 - **Thème light/dark** avec :
   - Détection automatique du thème système (`prefers-color-scheme`) par défaut au premier accès
   - Switcher utilisateur (icône ☀️/🌙 dans le header)
   - Persistance de la préférence en localStorage côté SPA portail + en base côté admin (selon contexte)
 
-> 🟡 **Reste à fournir** : codes hexa exacts des primaires (Guillaume les fournira ultérieurement, à intégrer ensuite dans `tailwind.config.js` côté SPA + thème Filament côté admin)
+> ✅ **Résolu (Q7.2-1)** : primaires figées — violet `#481944`, vert `#6AB024`. À décliner en échelles de teintes (50→950) pour le bloc `@theme` Tailwind v4 côté SPA et le thème Filament côté admin.
 
 ---
 
@@ -395,7 +395,7 @@ Page d'accueil après connexion. Vue récapitulative qui agrège les infos perti
 - Desktop : grid responsive 2 colonnes (gauche : factures + résa, droite : actualités + documents) ou 1 colonne large
 - Mobile : 1 colonne, ordre vertical (entête → documents à valider en priorité si présents → factures → résa → actualités)
 
-> 🟡 **Ajout à valider** : ordre exact des blocs sur mobile et desktop, à affiner avec wireframes
+> ✅ **Résolu (Q7.2-4)** : l'ordre exact des blocs (mobile et desktop) est laissé à l'appréciation de Claude selon les best practices UI/UX (skill `ui-ux-pro-max`), affiné lors des itérations de wireframes. L'ordre mobile ci-dessus reste la base de départ.
 
 ### 3.4 Profil
 
@@ -982,7 +982,7 @@ Le formulaire d'édition affiche dynamiquement les champs pertinents selon le ty
 - Pour `company` : facture émise au nom de la raison sociale avec SIRET, TVA, etc.
 - Pour `individual` : facture émise au nom du particulier (prénom + nom + adresse), sans mention SIRET ni TVA (assujetti TVA à voir au cas par cas — la plupart du temps non, la facture est TTC simple)
 
-> 🟡 **À valider avec expert-comptable** : règles de facturation différentes entre BtoB (company) et BtoC (individual) — notamment côté Factur-X 2027 (le BtoC est-il dans le périmètre de l'obligation ? *a priori non*).
+> ⏳ **Reporté (cf. Q26)** : règles de facturation différentes entre BtoB (company) et BtoC (individual) — notamment côté Factur-X 2027 (le BtoC est-il dans le périmètre de l'obligation ? *a priori non*). Guillaume verra avec son comptable ; relève surtout de la V2, pas bloquant pour le MVP.
 
 ### 4.4 Contacts
 
@@ -1146,8 +1146,9 @@ L'admin a un **super-pouvoir** : créer une réservation au nom de n'importe que
 
 **Types de tickets en MVP**
 - `desk_half_day` : ticket bureau libre demi-journée (pour external typiquement)
-- `meeting_room_half_day_morning` : ticket salle de réunion matin 9h-13h (pour external)
-- `meeting_room_half_day_afternoon` : ticket salle de réunion après-midi 14h-18h (pour external)
+- `meeting_room_half_day` : ticket salle de réunion pour une demi-journée (pour external)
+
+Pour **les deux types**, le créneau **matin (9h-13h) ou après-midi (14h-18h)** est choisi au moment de la **réservation/consommation**, pas du type de ticket : un même ticket (`desk_half_day` comme `meeting_room_half_day`) est positionnable indifféremment sur l'un ou l'autre créneau (question de planning, pas de catalogue).
 
 🟡 Architecture suggérée : tous les tickets dans une table commune `tickets` avec colonne `type`, pour simplicité de gestion (filtres, compteurs, consommation).
 
@@ -1421,7 +1422,7 @@ Page de référence quotidienne pour l'admin, accessible en un clic depuis le da
 
 #### Règle de prorata
 
-**Formule par défaut** (à valider) :
+**Formule retenue** (Q9 + comptage des jours figés) :
 ```
 montant_proratisé = montant_mensuel_HT × (jours_consommés / jours_total_du_mois)
 ```
@@ -1436,13 +1437,10 @@ Où :
 - Abonnement à 300€/mois résilié le 10 d'un mois de 31 jours → facturé 300 × 10/31 = 96,77€ (10 jours = du 1 au 10 inclus)
 
 **Convention de comptage** :
-- Le jour de début est inclus, le jour de fin est inclus
-- 🟡 Convention à valider : faut-il exclure le jour de fin (date de résiliation effective vs date de dernière utilisation) ?
+- Le jour de début est inclus **et le jour de fin est inclus** (✅ figé : résiliation le 10 du mois = **10 jours facturés**, du 1er au 10 inclus)
 
-> ❓ **À valider précisément avec expert-comptable** :
-> - Convention exacte de comptage des jours (inclusion/exclusion bornes)
-> - Arrondi (au centime ? à l'euro ?)
-> - TVA appliquée sur le montant proratisé (oui par défaut)
+> ✅ **Comptage des jours figé** : bornes incluses (début et fin), cf. exemples ci-dessus.
+> 🟡 **Restant à confirmer ultérieurement avec l'expert-comptable** (défauts retenus en attendant) : arrondi au centime (`ROUND_HALF_UP`, 2 décimales) et TVA appliquée sur le montant proratisé (oui par défaut). Voir aussi Q26 (BtoC vs BtoB).
 
 ### 5.2 Création d'un nouveau membre
 
@@ -1612,13 +1610,12 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 
 #### Types de tickets
 
-| Type code | Usage | Format vendable | Prix unitaire HT |
+| Type code | Usage | Format vendable | Prix HT |
 |---|---|---|---|
-| `desk_half_day` | 1 demi-journée bureau libre | à l'unité, pack 2 (réduit), pack 10 (réduit++) | 🟡 à figer |
-| `meeting_room_half_day_morning` | 1 créneau matin 9h-13h sur 1 salle réunion | à l'unité, pack 🟡 | 🟡 à figer |
-| `meeting_room_half_day_afternoon` | 1 créneau après-midi 14h-18h sur 1 salle réunion | à l'unité, pack 🟡 | 🟡 à figer |
+| `desk_half_day` | 1 demi-journée de bureau libre | unité · pack 2 (= 1 journée) · pack 10 | **17,50 €** l'unité · **31,50 €** le pack 2 (−10 %) · **140 €** le pack 10 (−20 %) |
+| `meeting_room_half_day` | 1 demi-journée (matin ou après-midi) sur 1 salle de réunion | unité · pack 10 | **71 €** l'unité · **568 €** le pack 10 (−20 %) |
 
-> ❓ **À figer** : prix unitaires + structure des packs (nombre de tickets, dégressivité).
+> ✅ **Figé (Q20)** : prix unitaires et packs ci-dessus (montants HT). Dégressivité : achat groupé de 2 tickets bureau = −10 % (le « pack journée »), achat groupé de 10 tickets = −20 % (bureau comme salle). Le créneau matin/après-midi d'un ticket salle est choisi à la réservation, pas à l'achat (cf. §4.8.1). Les prix sont snapshotés sur le `purchase` au moment de l'achat (cf. BRIEF §3.6).
 
 #### Éligibilité à l'achat
 
@@ -1633,8 +1630,8 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 #### Consommation
 
 - Un ticket consommé crée :
-  - Pour `desk_half_day` : une ligne `desk_occupations` avec source = `external_ticket`
-  - Pour `meeting_room_half_day_*` : une ligne `bookings` sur une salle de réunion + créneau correspondant
+  - Pour `desk_half_day` : une ligne `desk_occupations` avec source = `external_ticket` + le créneau (matin/après-midi) choisi à la réservation
+  - Pour `meeting_room_half_day` : une ligne `bookings` sur une salle de réunion + le créneau (matin/après-midi) choisi à la réservation
 
 #### Annulation et restitution (Q22 tranchée)
 
@@ -1687,23 +1684,23 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 | 17 | ~~`additional` bureau préférentiel ?~~ | Faible | ✅ Résolue (pas de suivi, placement libre informel) |
 | 18 | ~~Documents internes applicables à `external`~~ | Faible | ✅ Résolue (oui, même obligation de validation que les autres rôles) |
 | 19 | ~~Modélisation entité juridique d'un `external` particulier~~ | Moyen — DB | ✅ Résolue (type `individual` vs `company` sur entité) |
-| 20 | Tarifs unitaires et structure des packs de tickets | Moyen | Ouverte (à figer avec Guillaume) |
+| 20 | ~~Tarifs unitaires et structure des packs de tickets~~ | Moyen | ✅ Résolue (cf. §6.3 : bureau 17,50 € / pack 2 31,50 € / pack 10 140 € ; salle 71 € / pack 10 568 € — HT) |
 | 21 | ~~Achat de tickets bureau par resident/additional/staff~~ | Faible | ✅ Résolue (non, external uniquement — admin manuel pour les cas exceptionnels) |
 | 22 | ~~Annulation de résa external avec ticket~~ | Faible | ✅ Résolue (annulation possible jusqu'à l'heure de début, restitution auto du ticket) |
 | 23 | ~~Statut technique stagiaire/alternant~~ | Moyen | ✅ Résolue (rôle `staff` XOR avec resident/additional/external, pas de gestion facturation) |
 | 24 | Bureau `assigned_staff` utilisable par d'autres en cas d'absence du staff | Faible | ✅ Résolue (strictement réservé sauf cas marginal admin) |
 | 25 | Notification automatique admin lors d'enregistrement d'une absence longue (> N jours) ? | Faible | Ouverte |
-| 26 | Facturation BtoC (`individual`) : règles spécifiques vs BtoB (notamment Factur-X 2027) | Moyen — facturation | Ouverte (à valider avec expert-comptable) |
+| 26 | Facturation BtoC (`individual`) : règles spécifiques vs BtoB (notamment Factur-X 2027) | Moyen — facturation | ⏳ Reportée (Guillaume verra avec son comptable ; relève surtout de la V2 Factur-X, pas bloquant MVP) |
 
 ### 7.2 UI/UX
 
 | # | Question | Impact | Statut |
 |---|---|---|---|
-| 1 | ~~Codes hexa exacts vert + violet Ecoworking~~ | Faible | ⏳ À fournir par Guillaume (issus du logo existant) |
+| 1 | ~~Codes hexa exacts vert + violet Ecoworking~~ | Faible | ✅ Résolue (violet `#481944`, vert `#6AB024`) |
 | 2 | ~~Identité graphique ad hoc vs réutilisation ecoworking.fr~~ | Faible | ✅ Résolue (réutilisation existant) |
 | 3 | ~~Police de caractère~~ | Faible | ✅ Résolue (Inter) |
-| 4 | Ordre exact des blocs accueil sur mobile vs desktop | Faible | Ouverte |
-| 5 | Wireframes à produire par qui (Guillaume + outil ? Figma ? itérations Claude ?) | Moyen | Ouverte |
+| 4 | ~~Ordre exact des blocs accueil sur mobile vs desktop~~ | Faible | ✅ Résolue (laissé à Claude selon best practices UI/UX — skill `ui-ux-pro-max`) |
+| 5 | ~~Wireframes à produire par qui~~ | Moyen | ✅ Résolue (pas de Figma : itérations Claude — skill `ui-ux-pro-max`) |
 
 ### 7.3 Workflows
 

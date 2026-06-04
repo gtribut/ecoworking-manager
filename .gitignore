@@ -35,3 +35,7 @@ auth.json
 
 # Foam — cache
 .foam/
+
+# Python — bytecode (scripts des skills .claude)
+__pycache__/
+*.py[cod]

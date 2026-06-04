@@ -224,7 +224,8 @@ $user->assignRole(['admin', 'resident']);
 | CRUD ressources | ✅ |
 | **Créer/modifier/supprimer une résa au nom de n'importe qui** | ✅ |
 | Voir toutes les résa | ✅ |
-| CRUD factures | ✅ |
+| Factures : créer / éditer (selon statut) / annuler+avoir | ✅ |
+| **Supprimer une facture émise** | ❌ *(interdit légalement — annulation + avoir uniquement, cf. §4.9.1)* ; seuls les brouillons sont supprimables |
 | Enregistrer paiements | ✅ |
 | **Consommer manuellement un ticket nomade pour un membre** | ✅ |
 | **Déclarer une présence nomade pour un membre** | ✅ |
@@ -1302,6 +1303,11 @@ Page de référence quotidienne pour l'admin, accessible en un clic depuis le da
 - Brouillon : édition libre
 - Émise : édition **restreinte** (interdiction de modifier les montants, le numéro, le billable — uniquement notes admin et statut paiement)
 - Annulation d'une facture émise : **génération automatique d'un avoir** (V2, conformité légale) + passage au statut `cancelled` + audit log (cf. Q7.3-3)
+
+**Suppression**
+- **Facture émise : suppression INTERDITE** (conformité fiscale — numérotation chronologique sans trou, CGI art. 289). On ne supprime **jamais** une facture émise : la seule voie de « correction » est l'**annulation + avoir** (cf. Édition / Q7.3-3).
+- **Brouillon** (jamais émis, aucun numéro consommé) : peut être **supprimé/abandonné** librement (il ne fait pas partie de la suite comptable).
+- Implémentation : `InvoicePolicy::delete()` renvoie **`false` dès que le statut ≠ `draft`** ; pas de hard delete en base sur les factures émises (le statut `cancelled` + l'avoir tracent l'annulation).
 
 **Visualisation**
 - Aperçu PDF dans Filament

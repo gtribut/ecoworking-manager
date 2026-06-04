@@ -113,6 +113,7 @@ ecoworking-manager/
 - Montants : `DECIMAL(10,2)`, **jamais** `FLOAT` ou `DOUBLE`
 - Calculs HT/TVA/TTC : toujours côté back, jamais faire confiance au front
 - Les montants d'une **facture émise** sont figés sur ses lignes (`invoice_lines`) à l'émission — jamais recalculés ensuite (conformité)
+- Une **facture émise ne se supprime JAMAIS** (interdit légalement) : seule voie de correction = **annulation + avoir** (passage `cancelled` + avoir auto). `InvoicePolicy::delete()` → `false` si statut ≠ `draft` (seuls les brouillons, sans numéro, sont supprimables)
 - `purchases` (tickets, ponctuels) : prix snapshoté au moment de l'achat
 - `subscriptions` (récurrents) : **pas** de prix figé à la souscription — le montant est recalculé à chaque facturation depuis le **catalogue courant** (mis à jour ~1×/an, applicable à tous dès validation) modulé par la **remise négociée de l'entité** si présente (cf. PRD §6.4)
 

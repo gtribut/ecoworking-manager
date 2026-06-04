@@ -180,9 +180,7 @@ $user->assignRole(['admin', 'resident']);
 > 🟡 **Conséquence sur le modèle de données** :
 > - `member_profile` (table) reste 1-1 optionnel avec `users`. Existe pour `resident`/`additional`/`external` (les 3 ont une entité juridique rattachée et des données profil). N'existe pas pour `billing_contact` pur ni pour `admin` sans cumul membre.
 > - Le lien `billing_contact ↔ entité juridique` se fait via la table `contacts` (un user contact factu a une ligne dans `contacts` avec `user_id` set et `role='billing'`)
-> - L'entité juridique d'un `external` particulier (personne physique) : soit on crée une `company` virtuelle avec `legal_form='particulier'`, soit on permet `member_profile.company_id` NULL — à trancher
-
-> ❓ **À trancher** : comment modéliser l'entité juridique d'un `external` particulier (sans SIRET) ?
+> - L'entité juridique d'un `external` particulier (personne physique) : on crée une entité `companies` de type `entity_type='individual'` (vs `company` avec SIRET) — ✅ tranché (Q19). `member_profile.company_id` pointe toujours vers une entité (jamais NULL).
 
 ### 2.5 Matrice des permissions portail
 
@@ -377,7 +375,7 @@ Page d'accueil après connexion. Vue récapitulative qui agrège les infos perti
 - Documents prévus : charte interne, conditions générales & Internet, droit à l'image
 - Chaque ligne : titre du document, bouton "Télécharger" (PDF), bouton "Valider"
 - Date de validation affichée si déjà validé : "Validé le DD/MM/YYYY"
-- 🟡 Si version du document mise à jour par l'admin, la validation précédente devient invalide → le doc redevient "à valider" (à confirmer)
+- ✅ Si une **nouvelle version** du document est publiée par l'admin, la validation précédente devient invalide → le doc redevient "à valider" pour le membre. **L'historique de chaque validation est conservé en DB** (qui / date de validation / version du document validée) via `member_document_validations` — on ne supprime jamais, on ajoute une nouvelle ligne.
 - Si zéro doc à valider : bloc masqué ou message "Tous vos documents sont à jour"
 
 **Bloc 3 prochaines réservations**
@@ -1021,7 +1019,7 @@ Le formulaire d'édition affiche dynamiquement les champs pertinents selon le ty
 
 **Création**
 - Wizard : choisir membre → choisir offre → définir billable (user ou company) → définir date début + billing day → snapshot prix
-- Validation : un membre ne peut avoir qu'un seul abonnement `subscription` actif à la fois (à confirmer)
+- Validation : ✅ un membre ne peut avoir qu'**un seul abonnement `subscription` actif à la fois**. (La **domiciliation juridique** éventuelle est un service distinct rattaché à l'**entité juridique** — pas un abonnement membre — cf. §4.5.3 « Service de domiciliation ».)
 
 **Édition**
 - Modifier statut (pause / reprise / résiliation)
@@ -1033,6 +1031,21 @@ Le formulaire d'édition affiche dynamiquement les champs pertinents selon le ty
 - Suspendre / réactiver
 - Résilier (avec date de fin + raison)
 - Voir factures liées
+
+#### 4.5.3 Service de domiciliation (MVP)
+
+Service complémentaire de **domiciliation juridique** (l'entité déclare son siège social à l'adresse Ecoworking), proposé **au niveau de l'entité juridique** — pas au niveau d'un membre.
+
+**Règles** :
+- **Rattachement** : la domiciliation est un `subscription` dont le **souscripteur est l'entité** (`company`) et le `billable` est l'entité. → impose que le souscripteur d'un `subscription` soit **polymorphe** (User pour les abos membres, **Company** pour la domiciliation), le billable l'étant déjà (cf. §6.4 + `data_model.md`).
+- **Unicité** : **une seule** domiciliation active par entité.
+- **Éligibilité** : proposée **uniquement aux entités ayant au moins 1 membre `resident` actif** — pas de domiciliation « pure » sans résident.
+- **Facturation** : **abonnement mensuel récurrent** facturé à l'entité, intégré au cycle mensuel (cron du 1er du mois, cf. §5.1) avec prorata au démarrage/à la résiliation en cours de mois.
+- **Indépendance de la règle membre** : la domiciliation **n'entre pas** dans « un seul abonnement actif par membre » (c'est un abonnement d'**entité**, compteur distinct). Une entité peut donc cumuler N abonnements membres (résidents/additionals) **et** sa domiciliation.
+- **Catalogue** : représentée par une **offre dédiée** de type `subscription` à portée entité. Prix : **35 € HT/mois** (✅ figé).
+- **Contrat** : le **contrat de domiciliation** (document administratif, cf. §4.10.2) reste rattaché à l'entité ; document et facturation vont de pair mais sont indépendants techniquement.
+
+**Actions admin** : activer / résilier la domiciliation d'une entité (depuis la fiche entité §4.3.4 ou le module abonnements), avec date de début + billing day + snapshot prix. Si l'entité n'a aucun `resident` actif, l'activation est bloquée (règle d'éligibilité).
 
 ### 4.6 Ressources
 
@@ -1550,7 +1563,7 @@ Où :
 **Créneaux pour `resident` et `additional`** :
 - Réservation libre : créneau de durée libre, plage horaire libre
 - Disponibilité : **24/24 7/7**
-- **Aucune limite ni fair use** (à confirmer en condition réelle, restera ajustable si abus)
+- **Aucune limite ni fair use** en MVP (✅ confirmé). À réévaluer plus tard uniquement si un abus apparaît à l'usage.
 - Gratuit (couvert par l'abonnement)
 
 **Créneaux pour `external`** :
@@ -1560,7 +1573,7 @@ Où :
 
 **Restrictions communes** :
 - Conflit serveur : pas de double-booking sur la même salle
-- 🟡 Annulation possible jusqu'à 1h avant le créneau (à figer)
+- Annulation possible **jusqu'à l'heure de début** du créneau (✅ harmonisé avec Q22 — cf. §3.5 et §6.3)
 - Audit log obligatoire en cas de suppression tardive
 
 #### Salle event (1 unité)
@@ -1655,6 +1668,11 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 **Unicité**
 - Un user ne peut avoir qu'un seul `subscription` `status=active` à la fois
 - Exception : un user peut être lié comme `additional` à un abonnement d'entreprise dont il n'est pas le souscripteur direct
+
+**Domiciliation (abonnement d'entité)**
+- La domiciliation est un `subscription` porté par l'**entité** (souscripteur = `company`, billable = `company`), **hors** de la règle d'unicité par membre ci-dessus.
+- **Une seule** domiciliation active par entité ; activable uniquement si l'entité a **≥ 1 `resident` actif**.
+- Même cycle de vie (active / paused / ended / cancelled) et même facturation mensuelle + prorata que les autres abonnements. Détail : §4.5.3.
 
 **Cycle de vie**
 - Création → active → (paused | ended | cancelled)

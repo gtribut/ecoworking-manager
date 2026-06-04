@@ -65,7 +65,7 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 ### Modules en MVP
 
 - **Gestion client** : membres, entités juridiques (entreprises), contacts
-- **Catalogue & abonnements** : offres mensuelles + ponctuelles (tickets nomades + packs)
+- **Catalogue & abonnements** : offres mensuelles + ponctuelles (tickets nomades + packs) + service de domiciliation juridique (abonnement d'entité)
 - **Facturation** : génération PDF, numérotation chronologique, statuts manuels (Factur-X en V2 avant sept 2027)
 - **Réservation de ressources** : salles de réunion + postes nomades, sync Google Calendar sortante
 - **Annonces & événements** : push admin, inscription optionnelle
@@ -445,7 +445,7 @@ Inventaire des tables prévues (vue technique pour l'infra et les migrations) :
 | `companies` | Entités juridiques avec **champ `entity_type`** : `company` (SIRET) ou `individual` (particulier sans SIRET) |
 | `contacts` | Personnes liées aux entreprises (facturation, etc.) |
 | `offers` | Catalogue (abos + tickets + packs) |
-| `subscriptions` | Abonnements actifs/historiques |
+| `subscriptions` | Abonnements actifs/historiques (membres + domiciliation d'entité ; souscripteur polymorphe User/Company) |
 | `purchases` | Achats ponctuels (tickets, packs) |
 | `resources` | Salles + bureaux (bookable). Type : `desk` (`assigned_resident` / `assigned_staff` / `unassigned`) / `meeting_room` (3 unités) / `event_room` (1 unité, admin only) |
 | `bookings` | Réservations de salles (meeting_room + event_room uniquement) |
@@ -469,7 +469,7 @@ Relations clés (vue d'ensemble) :
 - User 1-1 MemberProfile (optionnel selon rôle)
 - MemberProfile n-1 Company (optionnel)
 - MemberProfile n-1 Resource (`desk_id`, optionnel — bureau attribué pour plan étages)
-- Subscription n-1 User, polymorphique billable (User ou Company)
+- Subscription : **souscripteur polymorphe** (User pour les abos membres, Company pour la domiciliation d'entité) + billable polymorphe (User ou Company)
 - Booking n-1 Resource, n-1 User, polymorphique billable
 - Invoice 1-n InvoiceLine, 1-n Payment, polymorphique billable
 - InvoiceLine polymorphique related (Subscription, Purchase, Booking, null)

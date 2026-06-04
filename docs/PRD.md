@@ -952,6 +952,7 @@ Le formulaire d'édition affiche dynamiquement les champs pertinents selon le ty
 - Mode de paiement préféré (SEPA / virement / CB / chèque)
 - Section SEPA : 4 derniers chiffres IBAN, référence mandat, date signature
 - Upload mandat SEPA PDF (stocké sur Cellar)
+- **Remise négociée** (optionnelle) : taux de remise + portée (ex. bureaux résident), appliquée à la facturation de l'entité, **figée jusqu'à modification** par l'admin — unique mécanisme de remise (volume, tarif négocié, promo temporaire), cf. §6.4
 - Notes admin
 
 **Champs spécifiques `company`**
@@ -1010,6 +1011,19 @@ Le formulaire d'édition affiche dynamiquement les champs pertinents selon le ty
 **Désactivation**
 - Une offre désactivée n'est plus proposée à la souscription mais les abonnements existants continuent
 
+**Offres du catalogue (MVP)** — tous montants **HT**, **TVA FR 20 %** :
+
+| Code | Nom | Type | Prix HT | Notes |
+|---|---|---|---|---|
+| `resident_desk` | Bureau résident (temps plein) | subscription mensuel | **328,50 €/mois** | par bureau ; remises éventuelles via la remise négociée de l'entité (cf. §6.4) |
+| `additional_person` | Personne supplémentaire | subscription mensuel | **59,00 €/mois** | par personne ; **uniquement si ≥1 bureau résident actif** sur l'entité |
+| `domiciliation` | Domiciliation juridique | subscription mensuel (entité) | **35,00 €/mois** | 1/entité ; uniquement si ≥1 résident actif (cf. §4.5.3) |
+| `desk_half_day` | Ticket bureau ½ journée | one_shot / pack | **17,50 €** (unité) · 31,50 € (pack 2) · 140 € (pack 10) | external (cf. §6.3) |
+| `meeting_room_half_day` | Ticket salle réunion ½ journée | one_shot / pack | **71,00 €** (unité) · 568 € (pack 10) | external (cf. §6.3) |
+
+> Pas d'offre intermédiaire : les abonnements résident et additional sont « temps plein » uniquement.
+> Les **prix catalogue** sont mis à jour ~1×/an et **s'appliquent à tous les abonnements actifs** dès validation (pas de gel à la souscription). Les remises propres à une entité se gèrent via la **remise négociée** sur sa fiche (cf. §4.3.3 / §6.4).
+
 #### 4.5.2 Abonnements actifs
 
 **Listing**
@@ -1018,7 +1032,7 @@ Le formulaire d'édition affiche dynamiquement les champs pertinents selon le ty
 - Tri : date début
 
 **Création**
-- Wizard : choisir membre → choisir offre → définir billable (user ou company) → définir date début + billing day → snapshot prix
+- Wizard : choisir membre → choisir offre → définir billable (user ou company) → définir date début + billing day. Le montant facturé suit le **catalogue courant** + la remise éventuelle de l'entité (cf. §6.4) — pas de prix figé à la souscription
 - Validation : ✅ un membre ne peut avoir qu'**un seul abonnement `subscription` actif à la fois**. (La **domiciliation juridique** éventuelle est un service distinct rattaché à l'**entité juridique** — pas un abonnement membre — cf. §4.5.3 « Service de domiciliation ».)
 
 **Édition**
@@ -1045,7 +1059,7 @@ Service complémentaire de **domiciliation juridique** (l'entité déclare son s
 - **Catalogue** : représentée par une **offre dédiée** de type `subscription` à portée entité. Prix : **35 € HT/mois** (✅ figé).
 - **Contrat** : le **contrat de domiciliation** (document administratif, cf. §4.10.2) reste rattaché à l'entité ; document et facturation vont de pair mais sont indépendants techniquement.
 
-**Actions admin** : activer / résilier la domiciliation d'une entité (depuis la fiche entité §4.3.4 ou le module abonnements), avec date de début + billing day + snapshot prix. Si l'entité n'a aucun `resident` actif, l'activation est bloquée (règle d'éligibilité).
+**Actions admin** : activer / résilier la domiciliation d'une entité (depuis la fiche entité §4.3.4 ou le module abonnements), avec date de début + billing day ; le montant suit le catalogue courant (cf. §6.4). Si l'entité n'a aucun `resident` actif, l'activation est bloquée (règle d'éligibilité).
 
 ### 4.6 Ressources
 
@@ -1428,7 +1442,7 @@ Page de référence quotidienne pour l'admin, accessible en un clic depuis le da
 1. Pour chaque abonnement mensuel `status=active` (résident/additional) :
    - Vérifier qu'aucune facture n'a déjà été émise pour ce mois sur cet abonnement (idempotence)
    - Créer une facture brouillon
-   - Ajouter une ligne d'abonnement (snapshot prix de l'abonnement)
+   - Ajouter une ligne d'abonnement : montant = **catalogue courant × remises** (volume standard ou remise négociée de l'entité), figé sur la ligne de facture **à l'émission**
 2. Notification admin : "X factures brouillon générées, à valider"
 3. Admin valide en bulk depuis Filament (action "Émettre toutes")
 4. Émission → numérotation chronologique + PDF généré + statut "sent" + email au billing contact
@@ -1450,7 +1464,7 @@ Où :
 - `jours_total_du_mois` = nombre de jours calendaires du mois concerné (28, 29, 30 ou 31)
 - Arrondi : 2 décimales selon les règles standards (`ROUND_HALF_UP`)
 
-**Exemples** :
+**Exemples** (montant générique d'illustration, pas le tarif réel — cf. §4.5.1 pour les vrais prix) :
 - Abonnement à 300€/mois démarré le 15 d'un mois de 30 jours → facturé 300 × 16/30 = 160€ (16 jours = du 15 au 30 inclus)
 - Abonnement à 300€/mois résilié le 10 d'un mois de 31 jours → facturé 300 × 10/31 = 96,77€ (10 jours = du 1 au 10 inclus)
 
@@ -1633,7 +1647,7 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 | `desk_half_day` | 1 demi-journée de bureau libre | unité · pack 2 (= 1 journée) · pack 10 | **17,50 €** l'unité · **31,50 €** le pack 2 (−10 %) · **140 €** le pack 10 (−20 %) |
 | `meeting_room_half_day` | 1 demi-journée (matin ou après-midi) sur 1 salle de réunion | unité · pack 10 | **71 €** l'unité · **568 €** le pack 10 (−20 %) |
 
-> ✅ **Figé (Q20)** : prix unitaires et packs ci-dessus (montants HT). Dégressivité : achat groupé de 2 tickets bureau = −10 % (le « pack journée »), achat groupé de 10 tickets = −20 % (bureau comme salle). Le créneau matin/après-midi d'un ticket salle est choisi à la réservation, pas à l'achat (cf. §4.8.1). Les prix sont snapshotés sur le `purchase` au moment de l'achat (cf. BRIEF §3.6).
+> ✅ **Figé (Q20)** : prix unitaires et packs ci-dessus (montants HT). Dégressivité : achat groupé de 2 tickets bureau = −10 % (le « pack journée »), achat groupé de 10 tickets = −20 % (bureau comme salle). Le créneau matin/après-midi d'un ticket salle est choisi à la réservation, pas à l'achat (cf. §4.8.1). Les prix sont snapshotés sur le `purchase` au moment de l'achat (cf. CLAUDE.md §3.6).
 
 #### Éligibilité à l'achat
 
@@ -1668,6 +1682,14 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 **Unicité**
 - Un user ne peut avoir qu'un seul `subscription` `status=active` à la fois
 - Exception : un user peut être lié comme `additional` à un abonnement d'entreprise dont il n'est pas le souscripteur direct
+
+**Tarification résident & additional** (HT, TVA FR 20 %)
+- **Bureau résident** : **328,50 € HT/mois** par bureau (tarif unitaire unique, **pas de dégressivité automatique** — toute remise passe par la remise négociée de l'entité, cf. ci-dessous).
+- **Personne supplémentaire (`additional`)** : **59,00 € HT/mois** par personne, **uniquement si l'entité a ≥1 bureau résident actif**.
+- **Prix catalogue non figés à la souscription** : les tarifs catalogue (résident, additional, domiciliation…) sont mis à jour **~1×/an** par l'admin et **s'appliquent à tous les abonnements actifs** dès validation. Le montant d'un abonnement est donc **recalculé à chaque facturation** (catalogue courant × remise éventuelle), pas figé à la souscription. Seules les **factures émises** figent leurs montants (cf. CLAUDE.md §3.6).
+- **Remise négociée par entité** (unique mécanisme de remise) : l'admin peut poser une **remise spécifique au niveau de l'entité** (% ou tarif négocié) avec une **portée** (ex. « bureaux résident » seulement). **Figée dans le temps mais modifiable** par l'admin à tout moment. Couvre tous les cas : remise de volume au cas par cas, tarif négocié, etc.
+  - *Exemple* : entité à 10 bureaux → remise négociée **−50 % sur les bureaux résident**, domiciliation au tarif standard.
+  - **Promos temporaires** (ex. −40 % les 3 premiers mois) : gérées **manuellement** via cette remise entité (on la pose, puis on la retire/modifie au terme) — **pas** de moteur de promo automatique en MVP (on ne surcharge pas la facturation).
 
 **Domiciliation (abonnement d'entité)**
 - La domiciliation est un `subscription` porté par l'**entité** (souscripteur = `company`, billable = `company`), **hors** de la règle d'unicité par membre ci-dessus.

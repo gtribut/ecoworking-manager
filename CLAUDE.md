@@ -112,7 +112,9 @@ ecoworking-manager/
 - **Aucun** brouillon de facture ne consomme le compteur (numérotation uniquement à l'émission définitive)
 - Montants : `DECIMAL(10,2)`, **jamais** `FLOAT` ou `DOUBLE`
 - Calculs HT/TVA/TTC : toujours côté back, jamais faire confiance au front
-- Snapshots de prix sur `subscriptions` et `purchases` au moment de la souscription/achat (le prix du catalogue peut évoluer, pas celui contracté)
+- Les montants d'une **facture émise** sont figés sur ses lignes (`invoice_lines`) à l'émission — jamais recalculés ensuite (conformité)
+- `purchases` (tickets, ponctuels) : prix snapshoté au moment de l'achat
+- `subscriptions` (récurrents) : **pas** de prix figé à la souscription — le montant est recalculé à chaque facturation depuis le **catalogue courant** (mis à jour ~1×/an, applicable à tous dès validation) modulé par la **remise négociée de l'entité** si présente (cf. PRD §6.4)
 
 ### 3.7 Routing par sous-domaine
 

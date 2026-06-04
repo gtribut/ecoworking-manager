@@ -72,8 +72,9 @@ Les deux surfaces partagent la même base de données et la même logique métie
 - 1 manageuse de l'espace (bureau attitré) — rôle `admin` + `staff` (cumul typique)
 - Parfois 1 stagiaire / alternant (bureau attitré) — rôle `staff` seul
 
-**Back-office admin** :
-- 1-3 admins Ecoworking (typiquement la manageuse + back-up éventuel)
+**Back-office admin** (≥3 personnes) :
+- La manageuse : `admin` + `staff` (bureau attitré)
+- **≥2 gérants/associés Ecoworking** (SCOP) : rôle `admin` **sans bureau ni profil membre** (pas de `staff`, pas de `member_profile`) — accès back-office uniquement. Pourront éventuellement obtenir un bureau plus tard (deviendraient alors aussi `staff`, comme la manageuse).
 
 ### 1.3 Objectifs métier
 
@@ -117,7 +118,7 @@ Un compte peut aussi n'avoir **aucun** de ces 4 rôles (cas : `billing_contact` 
 
 **Règle 2 — Rôles additionnels cumulables** :
 - `billing_contact` : peut s'additionner aux 4 rôles précédents ou exister seul
-- `admin` : accès au back-office Ecoworking. Cumulable avec n'importe lequel des autres rôles. Exemple typique : la manageuse cumule `staff` + `admin`. Un stagiaire/alternant aura généralement `staff` seul.
+- `admin` : accès au back-office Ecoworking. Cumulable avec n'importe lequel des autres rôles. Exemple typique : la manageuse cumule `staff` + `admin`. Un stagiaire/alternant aura généralement `staff` seul. Un `admin` peut aussi exister **seul, sans bureau ni `member_profile`** (cas des gérants/associés Ecoworking : accès back-office, aucun bureau attitré).
 
 ### 2.2 Cas concrets possibles
 

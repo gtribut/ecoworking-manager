@@ -1276,6 +1276,16 @@ Dépannage utile :
 - **`ssh_askpass: ... No such file or directory`** lors d'un `ssh-add` manuel : le shell n'a pas de TTY et `DISPLAY` est défini → forcer la saisie au terminal avec `SSH_ASKPASS_REQUIRE=never DISPLAY= ssh-add ~/.ssh/id_ed25519`, ou lancer la commande dans un vrai terminal interactif.
 - **Plusieurs agents orphelins** accumulés (anciens `eval "$(ssh-agent -s)"`) : `pkill ssh-agent` puis rouvrir un terminal (le service en relance un seul, propre).
 
+#### Démarrage manuel ponctuel de l'agent (fallback)
+
+Si l'agent persistant systemd n'est pas actif (session/environnement sans `systemctl --user`, agent non encore démarré) et qu'un `git push` échoue avec `Permission denied (publickey)`, démarrer un agent à la volée dans un **terminal WSL interactif**, charger la clé, puis pousser :
+
+```bash
+eval "$(ssh-agent -s)" && ssh-add ~/.ssh/id_ed25519 && git push
+```
+
+> Solution temporaire (l'agent ainsi lancé ne survit pas à la fermeture du shell — d'où l'agent systemd persistant ci-dessus comme configuration cible). À lancer depuis un vrai terminal interactif : depuis un contexte non-TTY, `ssh-add` déclencherait l'erreur `ssh_askpass` (cf. dépannage ci-dessus).
+
 ### Convention de commits
 
 Format conventionnel (facilite changelog auto et revue) :

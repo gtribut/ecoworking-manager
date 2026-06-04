@@ -14,7 +14,7 @@ Avant de coder ou de demander à Claude Code de coder, lire dans l'ordre :
 1. [`CLAUDE.md`](./CLAUDE.md) — contexte permanent + conventions + commandes courantes (lu par Claude Code en début de session)
 2. [`docs/BRIEF.md`](./docs/BRIEF.md) — brief technique et fonctionnel complet (setup, infra, déploiement, stack)
 3. [`docs/PRD.md`](./docs/PRD.md) — spec fonctionnelle détaillée (portail client + back-office admin)
-4. [`docs/data_model.md`](./docs/data_model.md) — modèle de données *(à produire)*
+4. [`docs/data_model.md`](./docs/data_model.md) — modèle de données détaillé (schéma Postgres : tables, contraintes, RGPD)
 5. [`docs/adr/`](./docs/adr/) — décisions architecturales
 
 ---
@@ -109,6 +109,13 @@ S'assurer que le service Postgres est démarré dans le workflow. Voir `.github/
 
 ### Passphrase SSH redemandée à chaque shell
 Config d'un ssh-agent persistant (systemd user) : [BRIEF §15 — Persistance de la passphrase SSH](./docs/BRIEF.md#15-outils-git--flow).
+
+### `git push` échoue avec `Permission denied (publickey)` (agent SSH non démarré)
+Démarrer l'agent à la volée dans un terminal WSL interactif, charger la clé, puis pousser :
+```bash
+eval "$(ssh-agent -s)" && ssh-add ~/.ssh/id_ed25519 && git push
+```
+Solution temporaire (ne survit pas à la fermeture du shell). Setup pérenne : [BRIEF §15 — Démarrage manuel ponctuel / agent persistant](./docs/BRIEF.md#15-outils-git--flow).
 
 ---
 

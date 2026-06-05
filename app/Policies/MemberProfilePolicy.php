@@ -34,4 +34,16 @@ final class MemberProfilePolicy
     {
         return $user->isAdmin() || $user->id === $profile->user_id;
     }
+
+    /** Création d'un profil : acte de gestion admin (rattachement d'un compte). */
+    public function create(User $user): bool
+    {
+        return $user->isAdmin();
+    }
+
+    /** Suppression d'un profil : admin only (le membre ne supprime pas le sien). */
+    public function delete(User $user, MemberProfile $profile): bool
+    {
+        return $user->isAdmin();
+    }
 }

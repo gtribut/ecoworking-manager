@@ -11,6 +11,7 @@ use App\Models\Concerns\Auditable;
 use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -58,6 +59,20 @@ class Company extends Model
             'entity_type', 'status', 'legal_name', 'siret', 'vat_number', 'billing_email',
             'preferred_payment_method', 'discount_rate', 'discount_scope',
         ];
+    }
+
+    /**
+     * Libellé d'affichage de l'entité : raison sociale (`company`) ou
+     * prénom + nom (`individual`). Source unique pour Selects, tables admin
+     * et factures. Attribut non persisté.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::get(fn (): string => $this->entity_type === CompanyType::Company
+            ? (string) $this->legal_name
+            : trim("{$this->first_name} {$this->last_name}"));
     }
 
     /** @return HasMany<MemberProfile, $this> */

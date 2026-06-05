@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-06-05 (C2 complet ✅ ; C3.1 complet ✅ ; C3 en cours).**
+> **Dernière mise à jour : 2026-06-05 (C2 complet ✅ ; C3.1 + C3.2 complets ✅ ; C3 en cours).**
 
 ---
 
@@ -28,8 +28,9 @@
 
 > **C2 complet ✅** (C2.1→C2.5). Code Socialite livré (admin-only + domaine restreint + match email, ADR-0009) ;
 > reste un **test live** côté Guillaume (cf. [`todo_guillaume.md`](./todo_guillaume.md)). **C3.1 complet ✅** (panel
-> `admin.ecoworking.fr`, admin-only via `canAccessPanel`, 2FA TOTP natif Filament obligatoire). **En cours : C3 —
-> Back-office Filament**, prochaine étape **`C3.2`** (Resources User, MemberProfile, Company, Contact).
+> `admin.ecoworking.fr`, admin-only via `canAccessPanel`, 2FA TOTP natif Filament obligatoire). **C3.2 complet ✅**
+> (Resources User, MemberProfile, Company, Contact + RelationManagers contacts/profils ; enums `HasLabel`/`HasColor` FR ;
+> UserPolicy/ContactPolicy). **En cours : C3 — Back-office Filament**, prochaine étape **`C3.3`** (Offer, Subscription, Purchase).
 
 ---
 
@@ -73,7 +74,7 @@
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
 | C3.1 | Install Filament 5 + panel sur `admin.ecoworking.fr` | ✅ | Filament 5.6 ; panel domaine (racine) conditionnel via `config/domains` ; `canAccessPanel` admin-only (`FilamentUser`) ; 2FA TOTP **natif Filament** obligatoire (`AppAuthentication` recoverable, `isRequired`), colonnes `app_authentication_*` distinctes de Fortify (ADR-0002 auth séparée) ; `FilamentPanelTest` (10 cas). Audit login/logout + `last_login_at` → C8 |
-| C3.2 | Resources : User, MemberProfile, Company, Contact | ⬜ | |
+| C3.2 | Resources : User, MemberProfile, Company, Contact | ✅ | 4 Resources (form en sections + tables filtrables) ; RelationManagers contacts/profils sous Entité ; `User` (mdp conditionnel hashé, rôles Spatie), `Company` (entreprise/particulier conditionnel, SEPA last4 only §3.4, remise), accesseur `Company::name` ; enums `HasLabel`/`HasColor` FR ; `UserPolicy`+`ContactPolicy` (admin-only) + `MemberProfilePolicy` create/delete ; tests Livewire (rendu) + Policies (9 cas) |
 | C3.3 | Resources : Offer, Subscription, Purchase | ⬜ | |
 | C3.4 | Resources : Resource, Booking, DeskOccupation | ⬜ | |
 | C3.5 | Resources : Invoice (+ émission, avoir), Payment | ⬜ | Logique en Services, pas dans la Resource |

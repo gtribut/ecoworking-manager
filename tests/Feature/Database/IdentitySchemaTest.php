@@ -48,6 +48,22 @@ function identityCompanyRow(array $overrides = []): array
     ], $overrides);
 }
 
+/** Crée un bureau et renvoie son id (desk_id est désormais une FK vers resources). */
+function identityDeskId(): int
+{
+    return DB::table('resources')->insertGetId([
+        'type' => 'desk',
+        'name' => 'Bureau '.uniqid(),
+        'assignment' => 'assigned_resident',
+        'requires_admin' => false,
+        'is_active' => true,
+        'is_out_of_service' => false,
+        'display_order' => 0,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+}
+
 it('impose un email unique sur users', function () {
     DB::table('users')->insert(identityUserRow(['email' => 'dup@ecoworking.fr']));
 
@@ -78,10 +94,18 @@ it('impose une relation 1-1 user↔member_profile (user_id unique)', function ()
 it('impose un bureau unique par membre (desk_id unique, §6.10)', function () {
     $u1 = DB::table('users')->insertGetId(identityUserRow());
     $u2 = DB::table('users')->insertGetId(identityUserRow());
+    $deskId = identityDeskId();
 
-    DB::table('member_profiles')->insert(identityProfileRow(['user_id' => $u1, 'desk_id' => 42]));
+    DB::table('member_profiles')->insert(identityProfileRow(['user_id' => $u1, 'desk_id' => $deskId]));
 
-    expect(fn () => DB::table('member_profiles')->insert(identityProfileRow(['user_id' => $u2, 'desk_id' => 42])))
+    expect(fn () => DB::table('member_profiles')->insert(identityProfileRow(['user_id' => $u2, 'desk_id' => $deskId])))
+        ->toThrow(QueryException::class);
+});
+
+it('exige que desk_id référence un bureau existant (FK différée)', function () {
+    $userId = DB::table('users')->insertGetId(identityUserRow());
+
+    expect(fn () => DB::table('member_profiles')->insert(identityProfileRow(['user_id' => $userId, 'desk_id' => 999999])))
         ->toThrow(QueryException::class);
 });
 
@@ -118,7 +142,7 @@ it('accepte une chaîne identité valide complète (user → company → profile
     DB::table('member_profiles')->insert(identityProfileRow([
         'user_id' => $userId,
         'company_id' => $companyId,
-        'desk_id' => 7,
+        'desk_id' => identityDeskId(),
         'job_title' => 'Développeur',
         'show_in_directory' => true,
     ]));

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
         // Données de référence (rôles, catalogue, inventaire) — idempotentes.
         $this->call([
             RoleSeeder::class,
+            PermissionSeeder::class,
             OfferSeeder::class,
             ResourceSeeder::class,
         ]);

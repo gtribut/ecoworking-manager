@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\ContactRole;
+use App\Enums\Role;
 use App\Models\Concerns\Auditable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['first_name', 'last_name', 'email', 'password', 'calendar_token', 'notify_email', 'notify_in_app', 'theme'])]
@@ -57,6 +61,59 @@ class User extends Authenticatable
     public function fullName(): string
     {
         return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    /** Administrateur back-office (court-circuite l'isolation dans les Policies). */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole(Role::Admin->value);
+    }
+
+    /** Détient le rôle additionnel donnant accès au module facturation (PRD §3.6.1). */
+    public function isBillingContact(): bool
+    {
+        return $this->hasRole(Role::BillingContact->value);
+    }
+
+    /**
+     * Identifiants des entités juridiques (`companies`) rattachées à l'utilisateur :
+     * son entité de membre (`member_profiles.company_id`) et les entités dont il est
+     * contact facturation (`contacts.role = billing`). PRD §2.5 / §3.6.
+     *
+     * C'est le **périmètre** d'entités ; la visibilité facturation y ajoute le rôle
+     * `billing_contact` (combiné dans les Policies), mais la simple consultation de
+     * l'entité en lecture seule est ouverte à tout membre rattaché (PRD §2.5).
+     *
+     * @return Collection<int, int>
+     */
+    public function linkedCompanyIds(): Collection
+    {
+        return $this->contacts()
+            ->where('role', ContactRole::Billing->value)
+            ->whereNotNull('company_id')
+            ->pluck('company_id')
+            ->push($this->memberProfile?->company_id)
+            ->filter()
+            ->unique()
+            ->values();
+    }
+
+    /**
+     * L'utilisateur a-t-il le périmètre de cette entité billable (`User` en nom
+     * propre, ou `Company` rattachée) ? Ne vérifie PAS le rôle `billing_contact` :
+     * c'est à la Policy de combiner rôle + périmètre.
+     */
+    public function canBillFor(Model $billable): bool
+    {
+        if ($billable instanceof self) {
+            return $billable->is($this);
+        }
+
+        if ($billable instanceof Company) {
+            return $this->linkedCompanyIds()->contains($billable->getKey());
+        }
+
+        return false;
     }
 
     /** @return HasOne<MemberProfile, $this> */

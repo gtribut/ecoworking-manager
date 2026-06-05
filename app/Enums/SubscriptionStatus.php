@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Enums;
 
 use App\Enums\Concerns\HasValues;
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
 
 /** Statut d'un abonnement (data_model §3, `subscriptions.status`). */
-enum SubscriptionStatus: string
+enum SubscriptionStatus: string implements HasColor, HasLabel
 {
     use HasValues;
 
@@ -15,4 +17,24 @@ enum SubscriptionStatus: string
     case Paused = 'paused';
     case Ended = 'ended';
     case Cancelled = 'cancelled';
+
+    public function getLabel(): string
+    {
+        return match ($this) {
+            self::Active => 'Actif',
+            self::Paused => 'En pause',
+            self::Ended => 'Terminé',
+            self::Cancelled => 'Annulé',
+        };
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::Active => 'success',
+            self::Paused => 'warning',
+            self::Ended => 'gray',
+            self::Cancelled => 'danger',
+        };
+    }
 }

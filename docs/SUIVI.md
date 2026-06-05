@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-06-05 (C2 complet ✅ ; C3 en cours).**
+> **Dernière mise à jour : 2026-06-05 (C2 complet ✅ ; C3.1 complet ✅ ; C3 en cours).**
 
 ---
 
@@ -27,8 +27,9 @@
 ### 📍 Position actuelle
 
 > **C2 complet ✅** (C2.1→C2.5). Code Socialite livré (admin-only + domaine restreint + match email, ADR-0009) ;
-> reste un **test live** côté Guillaume (cf. [`todo_guillaume.md`](./todo_guillaume.md)). **En cours : C3 — Back-office
-> Filament**, en commençant par **`C3.1`** (install + panel `admin.ecoworking.fr` + enforcement 2FA admin + audit login/logout).
+> reste un **test live** côté Guillaume (cf. [`todo_guillaume.md`](./todo_guillaume.md)). **C3.1 complet ✅** (panel
+> `admin.ecoworking.fr`, admin-only via `canAccessPanel`, 2FA TOTP natif Filament obligatoire). **En cours : C3 —
+> Back-office Filament**, prochaine étape **`C3.2`** (Resources User, MemberProfile, Company, Contact).
 
 ---
 
@@ -61,7 +62,7 @@
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C2.1 | Auth admin : Fortify (sessions + 2FA TOTP) | ✅ | Fortify (login/logout/reset/2FA), `views=false` (JSON), inscription désactivée (PRD §3.2), rate-limit 5/min ; secret/recovery sur colonnes C1.1 ; `FortifyAuthTest`. **Reste** : enforcement 2FA obligatoire admin (→ C3.1), audit login/logout + `last_login_at` (→ C8) |
+| C2.1 | Auth admin : Fortify (sessions + 2FA TOTP) | ✅ | Fortify (login/logout/reset/2FA), `views=false` (JSON), inscription désactivée (PRD §3.2), rate-limit 5/min ; secret/recovery sur colonnes C1.1 ; `FortifyAuthTest`. Enforcement 2FA admin livré en C3.1 (MFA native Filament). **Reste** : audit login/logout + `last_login_at` (→ C8) |
 | C2.2 | Socialite Google OAuth (admin) | ✅ | `GoogleOAuthController` admin-only + domaine restreint + match email, **sans** auto-provisioning (ADR-0009) ; routes `auth/google/*` (domaine admin) ; `GoogleOAuthTest` (Socialite mocké). **Reste** : test live + creds côté Guillaume (`todo_guillaume.md`) |
 | C2.3 | Auth portail : Sanctum mode SPA (cookies + CSRF) | ✅ | `statefulApi()`, `routes/api.php` (domaine via `config/domains`), `GET /api/user` (rôles+permissions, sans données sensibles), `/sanctum/csrf-cookie` ; `SESSION_DOMAIN=null` ; `SpaAuthTest` |
 | C2.4 | Policies Eloquent (isolation données membre A/B) + tests `AuthorizationTest` | ✅ | 14 Policies (auto-discovery) ; helpers `User::isAdmin/isBillingContact/linkedCompanyIds/canBillFor` ; `AuthorizationTest` (14 cas A/B + billing + §3.6) |
@@ -71,7 +72,7 @@
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C3.1 | Install Filament 5 + panel sur `admin.ecoworking.fr` | ⬜ | ADR-0002/0004 |
+| C3.1 | Install Filament 5 + panel sur `admin.ecoworking.fr` | ✅ | Filament 5.6 ; panel domaine (racine) conditionnel via `config/domains` ; `canAccessPanel` admin-only (`FilamentUser`) ; 2FA TOTP **natif Filament** obligatoire (`AppAuthentication` recoverable, `isRequired`), colonnes `app_authentication_*` distinctes de Fortify (ADR-0002 auth séparée) ; `FilamentPanelTest` (10 cas). Audit login/logout + `last_login_at` → C8 |
 | C3.2 | Resources : User, MemberProfile, Company, Contact | ⬜ | |
 | C3.3 | Resources : Offer, Subscription, Purchase | ⬜ | |
 | C3.4 | Resources : Resource, Booking, DeskOccupation | ⬜ | |

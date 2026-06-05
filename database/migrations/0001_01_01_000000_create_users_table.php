@@ -23,11 +23,19 @@ return new class extends Migration
             $table->timestampTz('email_verified_at')->nullable();
             $table->string('password');
 
-            // 2FA Fortify (TOTP). Colonnes définies ici ; à l'installation de
-            // Fortify, ne PAS publier sa migration 2FA (éviter le doublon).
+            // 2FA Fortify (TOTP) — portail membre (optionnel). Colonnes définies
+            // ici ; à l'installation de Fortify, ne PAS publier sa migration 2FA
+            // (éviter le doublon).
             $table->text('two_factor_secret')->nullable();
             $table->text('two_factor_recovery_codes')->nullable();
             $table->timestampTz('two_factor_confirmed_at')->nullable();
+
+            // 2FA Filament (TOTP natif) — back-office admin, obligatoire (C3.1,
+            // ADR-0002 « auth séparée par contexte »). Mécanisme distinct de
+            // Fortify : stockage chiffré via casts, jamais en fillable. Le membre
+            // utilise Fortify ci-dessus ; l'admin Filament utilise ces colonnes.
+            $table->text('app_authentication_secret')->nullable();
+            $table->text('app_authentication_recovery_codes')->nullable();
 
             // Secret iCal révocable (flux perso + entité, PRD §3.5.8).
             $table->string('calendar_token', 64)->nullable()->unique();

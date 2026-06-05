@@ -30,6 +30,11 @@ Homestead.json
 .phpunit.result.cache
 
 /public/build
+# Assets Filament publiés (régénérés par `artisan filament:assets`,
+# via `filament:upgrade` au post-autoload-dump de composer) — non versionnés.
+/public/css/filament
+/public/js/filament
+/public/fonts/filament
 /storage/pail
 .env.backup
 .env.production

@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-06-05 (C2 complet ✅ ; C3.1→C3.3 complets ✅ ; C3 en cours).**
+> **Dernière mise à jour : 2026-06-06 (C2 complet ✅ ; C3 complet ✅ — back-office Filament livré ; prochaine étape C4 API portail).**
 
 ---
 
@@ -31,7 +31,9 @@
 > `admin.ecoworking.fr`, admin-only via `canAccessPanel`, 2FA TOTP natif Filament obligatoire). **C3.2 complet ✅**
 > (Resources User, MemberProfile, Company, Contact + RelationManagers contacts/profils ; enums `HasLabel`/`HasColor` FR ;
 > UserPolicy/ContactPolicy). **C3.3 complet ✅** (Offer, Subscription, Purchase — souscripteur/billable polymorphes,
-> prix snapshoté à l'achat §3.6). **En cours : C3 — Back-office Filament**, prochaine étape **`C3.4`** (Resource, Booking, DeskOccupation).
+> prix snapshoté à l'achat §3.6). **C3.4→C3.6 complets ✅** (espaces/réservations/occupations ; facturation Invoice+Payment
+> avec émission & avoir en Services — numérotation `lockForUpdate` sans trou §3.6 ; communication & documents). **C3 — Back-office
+> Filament complet ✅.** Prochaine étape **C4 — API portail (`/api/*`)**.
 
 ---
 
@@ -77,9 +79,9 @@
 | C3.1 | Install Filament 5 + panel sur `admin.ecoworking.fr` | ✅ | Filament 5.6 ; panel domaine (racine) conditionnel via `config/domains` ; `canAccessPanel` admin-only (`FilamentUser`) ; 2FA TOTP **natif Filament** obligatoire (`AppAuthentication` recoverable, `isRequired`), colonnes `app_authentication_*` distinctes de Fortify (ADR-0002 auth séparée) ; `FilamentPanelTest` (10 cas). Audit login/logout + `last_login_at` → C8 |
 | C3.2 | Resources : User, MemberProfile, Company, Contact | ✅ | 4 Resources (form en sections + tables filtrables) ; RelationManagers contacts/profils sous Entité ; `User` (mdp conditionnel hashé, rôles Spatie), `Company` (entreprise/particulier conditionnel, SEPA last4 only §3.4, remise), accesseur `Company::name` ; enums `HasLabel`/`HasColor` FR ; `UserPolicy`+`ContactPolicy` (admin-only) + `MemberProfilePolicy` create/delete ; tests Livewire (rendu) + Policies (9 cas) |
 | C3.3 | Resources : Offer, Subscription, Purchase | ✅ | Groupe « Catalogue & ventes » ; `Offer` (form conditionnel par type, prix non figé §6.7, `TagsInput` features), `Subscription` (souscripteur+billable `MorphToSelect` User/Company, aucun prix figé §3.6), `Purchase` (snapshot prix pré-rempli depuis l'offre mais éditable §3.6, `created_by`=admin) ; `OfferPolicy` admin-only ; enums catalogue `HasLabel`/`HasColor` ; tests Livewire + snapshot/`created_by` (6 cas) |
-| C3.4 | Resources : Resource, Booking, DeskOccupation | ⬜ | |
-| C3.5 | Resources : Invoice (+ émission, avoir), Payment | ⬜ | Logique en Services, pas dans la Resource |
-| C3.6 | Resources : Announcement, InternalDocument, AdministrativeDocument | ⬜ | |
+| C3.4 | Resources : Resource, Booking, DeskOccupation | ✅ | Groupe « Espaces & réservations » ; `Resource` (model aliasé pour éviter la collision avec `Filament\…\Resource`, form conditionnel par type desk/salle, `TagsInput` features, `KeyValue` opening_hours), `Booking` (salles only — filtre `meeting_room`/`event_room`, billable `MorphToSelect`, snapshot prix si payant, `created_by`=admin), `DeskOccupation` (bureaux only, `created_by`=admin) ; `ResourcePolicy` admin-only ; enums `HasLabel`/`HasColor` FR (ResourceType, ResourceAssignment, BookingStatus, Period, DeskOccupationSource/Status) ; `SpacesResourcesTest` (6 cas) |
+| C3.5 | Resources : Invoice (+ émission, avoir), Payment | ✅ | Logique en **Services** (hors Resource) : `InvoiceNumberingService` (compteur `lockForUpdate`, `EW-YYYY-NNNNN`, consommé qu'à l'émission §3.6), `IssueInvoiceService` (pose n°, fige totaux+lignes, snapshot adresse billable, due=+14j), `CancelInvoiceService` (cancelled + avoir miroir lié, montants négatifs), `InvoiceLineCalculator` (HT/TVA/TTC remise côté serveur). `Invoice` : Repeater lignes (calc via `mutateRelationshipData…`), action **Émettre** (page Edit, brouillon), action **Annuler+avoir** (page **View** car émise = édition interdite par Policy), totaux figés en lecture seule ; `Payment` (factures émises only, `created_by`). Enums `InvoiceStatus` `HasLabel`/`HasColor`. `InvoiceIssuanceTest` (7) + `BillingResourcesTest` (7) |
+| C3.6 | Resources : Announcement, InternalDocument, AdministrativeDocument | ✅ | Groupe « Communication & documents » ; `Announcement` (bloc événement conditionnel type=event, `FileUpload` cover, `created_by`), `InternalDocument` (versionné, `FileUpload` PDF, `created_by`), `AdministrativeDocument` (rattaché entité, `FileUpload` PDF, `uploaded_by`) ; `AnnouncementPolicy`+`InternalDocumentPolicy` admin-only (`AdministrativeDocumentPolicy` préexistante) ; enums `HasLabel`/`HasColor` (AnnouncementType/Status, Audience, InternalDocumentType, AdministrativeDocumentType) ; `CommunicationResourcesTest` (6 cas) |
 
 ### C4 — API portail (`/api/*`)
 

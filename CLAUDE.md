@@ -12,9 +12,10 @@ Avant de proposer du code, **toujours** :
 
 1. Lire `docs/BRIEF.md` — source de vérité technique et fonctionnelle
 2. Lire `docs/PRD.md` — spec fonctionnelle détaillée (portail client + back-office admin)
-3. Lire les `docs/adr/*.md` pertinents — décisions architecturales
-4. Si demande ambiguë : poser des questions de clarification **avant** de coder
-5. Si demande qui contredit le BRIEF : signaler la contradiction explicitement
+3. Consulter `docs/SUIVI.md` — **état d'avancement** (quelle phase/tâche est faite, en cours, à faire). Mettre à jour le statut après chaque tâche terminée.
+4. Lire les `docs/adr/*.md` pertinents — décisions architecturales
+5. Si demande ambiguë : poser des questions de clarification **avant** de coder
+6. Si demande qui contredit le BRIEF : signaler la contradiction explicitement
 
 > **Règle d'or** : aucun code écrit sans contexte lu. Si BRIEF.md indique une convention, l'appliquer sans la remettre en cause sauf si la demande de l'utilisateur le fait explicitement.
 
@@ -431,7 +432,8 @@ Si l'une de ces situations se présente, **arrêter et demander** :
 
 - `docs/BRIEF.md` — brief projet complet (référence principale)
 - `docs/PRD.md` — spec fonctionnelle détaillée (portail client + back-office admin)
-- `docs/data_model.md` — modèle de données détaillé (à produire)
+- `docs/SUIVI.md` — **suivi des phases & tâches** (état d'avancement, codes de tâches `C1.4`…)
+- `docs/data_model.md` — modèle de données détaillé (schéma Postgres)
 - `docs/adr/` — Architecture Decision Records
 - Doc Laravel : https://laravel.com/docs/13.x
 - Doc Filament 5 : https://filamentphp.com/docs/5.x

@@ -1424,6 +1424,9 @@ Exemples :
 
 ## 18. Découpage MVP / V1 / V2 / V3
 
+> 📊 **Avancement en temps réel** : ce découpage fige le **périmètre** ; l'**état d'avancement**
+> (tâches faites / en cours / à faire) est tracé dans [`SUIVI.md`](./SUIVI.md), mis à jour au fil des sessions.
+
 ### MVP — V1 (3-4 mois de dev)
 
 - Setup projet, CI, environnements

@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-06-06 (C2 complet ✅ ; C3 complet ✅ — back-office Filament livré ; prochaine étape C4 API portail).**
+> **Dernière mise à jour : 2026-06-06 (C2 ✅ ; C3 ✅ back-office Filament ; C4.1→C4.3 ✅ API portail profil+factures ; C4.4/C4.5 bloqués par C7 ; prochaine étape : C5 SPA ou C7 résa/tickets).**
 
 ---
 
@@ -33,7 +33,10 @@
 > UserPolicy/ContactPolicy). **C3.3 complet ✅** (Offer, Subscription, Purchase — souscripteur/billable polymorphes,
 > prix snapshoté à l'achat §3.6). **C3.4→C3.6 complets ✅** (espaces/réservations/occupations ; facturation Invoice+Payment
 > avec émission & avoir en Services — numérotation `lockForUpdate` sans trou §3.6 ; communication & documents). **C3 — Back-office
-> Filament complet ✅.** Prochaine étape **C4 — API portail (`/api/*`)**.
+> Filament complet ✅.** **C4.1→C4.3 complets ✅** (API portail `auth:sanctum` : profil membre auto-scopé lecture/édition,
+> factures liste+PDF avec périmètre miroir `InvoicePolicy`). **C4.4/C4.5 bloqués par C7** (résa salle, tickets/présence — la
+> logique anti-double-booking et la consommation de tickets n'existent pas encore). Prochaine étape : **C5 (SPA React)** ou **C7
+> (logique résa/tickets)** pour débloquer C4.4/C4.5.
 
 ---
 
@@ -87,10 +90,10 @@
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C4.1 | Controllers API + Form Requests + Resources JSON | ⬜ | `auth:sanctum` obligatoire |
-| C4.2 | Endpoints profil membre (lecture/édition) | ⬜ | |
-| C4.3 | Endpoints factures (liste, PDF) | ⬜ | |
-| C4.4 | Endpoints réservation salle | ⬜ | dépend C7 |
+| C4.1 | Controllers API + Form Requests + Resources JSON | ✅ | `auth:sanctum` obligatoire ; namespaces `App\Http\Controllers\Api`, `App\Http\Requests\Api`, `App\Http\Resources` ; JSON Resources `CompanyResource` (read-only, sans IBAN/mandat/remise), `MemberProfileResource`, `InvoiceResource` (`pdf_available`) ; `Gate::authorize` (Controller de base minimal, pas de trait) |
+| C4.2 | Endpoints profil membre (lecture/édition) | ✅ | `GET /api/profile` (user + profile + entité read-only PRD §3.4.3) & `PATCH /api/profile` (partiel) ; **auto-scopé** `$request->user()` (aucun id client) ; `UpdateProfileRequest` (champs perso only — nom read-only, email/mdp = flux dédiés §3.4.5 hors périmètre) ; 409 si pas de `member_profile` ; `ProfileApiTest` (6, dont isolation A/B) |
+| C4.3 | Endpoints factures (liste, PDF) | ✅ | `GET /api/invoices` (liste paginée, **émises only**, périmètre miroir `InvoicePolicy` C2.4 : rôle `billing_contact` + entités liées / nom propre — vide sinon) & `GET /api/invoices/{invoice}/pdf` (`Gate::authorize('download')`, stream disque, 404 si PDF pas encore généré) ; `InvoiceApiTest` (7, dont isolation entités + 403 cross-entité) |
+| C4.4 | Endpoints réservation salle | ⬜ | **dépend C7** (logique anti-double-booking + consommation tickets non implémentée) — à faire après C7 |
 | C4.5 | Endpoints tickets / présence nomade | ⬜ | dépend C7 |
 
 ### C5 — SPA portail (React 19 / Vite 8 / TS)

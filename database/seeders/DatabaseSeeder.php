@@ -18,7 +18,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(RoleSeeder::class);
+        // Données de référence (rôles, catalogue, inventaire) — idempotentes.
+        $this->call([
+            RoleSeeder::class,
+            OfferSeeder::class,
+            ResourceSeeder::class,
+        ]);
 
         User::factory()->create([
             'first_name' => 'Admin',

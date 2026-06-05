@@ -26,8 +26,8 @@
 
 ### 📍 Position actuelle
 
-> **Modèles + factories en place (C1.1→C1.5 ✅).** Prochaine tâche recommandée : **`C1.6` — Seeders de données**
-> (catalogue `offers` 8 SKU MVP, `resources` 48 bureaux + 3 salles + event), puis Policies d'isolation C2.4.
+> **Base de données complète (C1.1→C1.8 ✅).** Prochaine chantier recommandé : **C2 — Authentification & autorisation**,
+> en commençant par **`C2.4` — Policies d'isolation membre A/B** (critique, CLAUDE.md §3.1) et la config Sanctum/Fortify.
 
 ---
 
@@ -52,9 +52,9 @@
 | C1.3 | Tests de schéma Pest (contraintes, sur PostgreSQL) | ✅ | 40 tests verts |
 | C1.4 | **Modèles Eloquent** (relations, casts enum, `$fillable`, scopes) | ✅ | 21 modèles + `User` enrichi ; morphs via morph map ; test relations/casts |
 | C1.5 | Factories (toutes les entités + traits `->admin()`, `->resident()`…) | ✅ | 22 factories + traits rôles ; test « chaque factory produit une ligne valide » (69 verts) |
-| C1.6 | Seeders de données : catalogue `offers` (8 SKU MVP), `resources` (48 bureaux + 3 salles + event) | ⬜ | `RoleSeeder` (6 rôles) ✅ |
-| C1.7 | Morph map + enums PHP centralisés | ✅ | `app/Enums/`, `AppServiceProvider` |
-| C1.8 | Audit log (`spatie/activitylog`) sur entités sensibles | ⬜ | Paquet installé ; trait `LogsActivity` à poser |
+| C1.6 | Seeders de données : catalogue `offers` (8 SKU MVP), `resources` (48 bureaux + 3 salles + event) | ✅ | `OfferSeeder`/`ResourceSeeder` idempotents (updateOrCreate) ; test prix figés + inventaire |
+| C1.7 | Morph map + enums PHP centralisés | ✅ | `app/Enums/`, `AppServiceProvider` (+ alias `invoice`/`payment` pour l'audit log) |
+| C1.8 | Audit log (`spatie/activitylog`) sur entités sensibles | ✅ | Trait `Auditable` (liste blanche, sans secrets/PII) sur User/Company/Invoice/Subscription/Booking/Payment ; test RGPD |
 
 ### C2 — Authentification & autorisation
 

@@ -720,7 +720,13 @@ Morph map (alias → modèle) à déclarer dans `AppServiceProvider::boot()` via
 'subscription' => App\Models\Subscription::class,
 'purchase'     => App\Models\Purchase::class,
 'booking'      => App\Models\Booking::class,
+'invoice'      => App\Models\Invoice::class,   // subject audit log (C1.8)
+'payment'      => App\Models\Payment::class,   // subject audit log (C1.8)
 ```
+
+> `invoice`/`payment` ne sont pas des cibles polymorphes du schéma métier mais
+> apparaissent comme `subject` polymorphe de l'`activity_log` (entités sensibles,
+> CLAUDE.md §3.4). `enforceMorphMap` étant strict, leur alias doit être déclaré.
 
 | Relation polymorphe | Colonnes | Cibles | Sens |
 |---|---|---|---|

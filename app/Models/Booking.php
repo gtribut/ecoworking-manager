@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\BookingStatus;
+use App\Models\Concerns\Auditable;
 use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Booking extends Model
 {
     /** @use HasFactory<BookingFactory> */
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * @return array<string, string>
@@ -48,6 +49,14 @@ class Booking extends Model
     public function resource(): BelongsTo
     {
         return $this->belongsTo(Resource::class);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function auditLogAttributes(): array
+    {
+        return ['status', 'resource_id', 'starts_at', 'ends_at', 'price_ht', 'cancelled_at', 'cancel_reason'];
     }
 
     /** @return BelongsTo<User, $this> */

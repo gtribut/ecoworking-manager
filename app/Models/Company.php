@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\CompanyStatus;
 use App\Enums\CompanyType;
 use App\Enums\PaymentMethod;
+use App\Models\Concerns\Auditable;
 use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,7 +32,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Company extends Model
 {
     /** @use HasFactory<CompanyFactory> */
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -45,6 +46,17 @@ class Company extends Model
             'birth_date' => 'date',
             'sepa_mandate_signed_at' => 'date',
             'discount_rate' => 'decimal:2',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function auditLogAttributes(): array
+    {
+        return [
+            'entity_type', 'status', 'legal_name', 'siret', 'vat_number', 'billing_email',
+            'preferred_payment_method', 'discount_rate', 'discount_scope',
         ];
     }
 

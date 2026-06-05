@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\InvoiceStatus;
+use App\Models\Concerns\Auditable;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,7 +32,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Invoice extends Model
 {
     /** @use HasFactory<InvoiceFactory> */
-    use HasFactory, SoftDeletes;
+    use Auditable, HasFactory, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -49,6 +50,17 @@ class Invoice extends Model
             'amount_paid' => 'decimal:2',
             'is_credit_note' => 'boolean',
             'cancelled_at' => 'datetime',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function auditLogAttributes(): array
+    {
+        return [
+            'status', 'number', 'issued_at', 'due_at', 'subtotal_ht', 'total_vat',
+            'total_ttc', 'amount_paid', 'cancelled_at',
         ];
     }
 

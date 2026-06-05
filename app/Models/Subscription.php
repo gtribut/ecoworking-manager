@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\SubscriptionStatus;
+use App\Models\Concerns\Auditable;
 use Database\Factories\SubscriptionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Subscription extends Model
 {
     /** @use HasFactory<SubscriptionFactory> */
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * @return array<string, string>
@@ -38,6 +39,14 @@ class Subscription extends Model
             'billing_day' => 'integer',
             'paused_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function auditLogAttributes(): array
+    {
+        return ['status', 'offer_id', 'starts_at', 'ends_at', 'billing_day', 'paused_at', 'cancel_reason'];
     }
 
     /** @return BelongsTo<Offer, $this> */

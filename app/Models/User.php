@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Concerns\Auditable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -22,7 +23,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, Notifiable, SoftDeletes;
+    use Auditable, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     /**
      * Get the attributes that should be cast.
@@ -40,6 +41,16 @@ class User extends Authenticatable
             'notify_in_app' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Liste blanche d'audit : jamais de secrets/2FA/token (CLAUDE.md §3.4).
+     *
+     * @return list<string>
+     */
+    protected function auditLogAttributes(): array
+    {
+        return ['first_name', 'last_name', 'email', 'theme', 'anonymized_at'];
     }
 
     /** Nom complet (annuaire, factures). */

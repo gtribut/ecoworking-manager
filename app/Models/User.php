@@ -9,6 +9,9 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -37,5 +40,91 @@ class User extends Authenticatable
             'notify_in_app' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    /** Nom complet (annuaire, factures). */
+    public function fullName(): string
+    {
+        return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    /** @return HasOne<MemberProfile, $this> */
+    public function memberProfile(): HasOne
+    {
+        return $this->hasOne(MemberProfile::class);
+    }
+
+    /** @return HasMany<Contact, $this> */
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class);
+    }
+
+    /** @return HasMany<Consent, $this> */
+    public function consents(): HasMany
+    {
+        return $this->hasMany(Consent::class);
+    }
+
+    /** @return HasMany<Purchase, $this> */
+    public function purchases(): HasMany
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    /** @return HasMany<Ticket, $this> */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    /** @return HasMany<Booking, $this> */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    /** @return HasMany<DeskOccupation, $this> */
+    public function deskOccupations(): HasMany
+    {
+        return $this->hasMany(DeskOccupation::class);
+    }
+
+    /** @return HasMany<DeskAbsence, $this> */
+    public function deskAbsences(): HasMany
+    {
+        return $this->hasMany(DeskAbsence::class);
+    }
+
+    /** @return HasMany<AnnouncementRegistration, $this> */
+    public function announcementRegistrations(): HasMany
+    {
+        return $this->hasMany(AnnouncementRegistration::class);
+    }
+
+    /** @return HasMany<MemberDocumentValidation, $this> */
+    public function documentValidations(): HasMany
+    {
+        return $this->hasMany(MemberDocumentValidation::class);
+    }
+
+    /**
+     * Abonnements dont l'utilisateur est le souscripteur (abo membre).
+     *
+     * @return MorphMany<Subscription, $this>
+     */
+    public function subscriptions(): MorphMany
+    {
+        return $this->morphMany(Subscription::class, 'subscriber');
+    }
+
+    /**
+     * Factures adressées à l'utilisateur (billable particulier).
+     *
+     * @return MorphMany<Invoice, $this>
+     */
+    public function invoices(): MorphMany
+    {
+        return $this->morphMany(Invoice::class, 'billable');
     }
 }

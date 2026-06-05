@@ -26,8 +26,8 @@
 
 ### 📍 Position actuelle
 
-> **Schéma de données complet (C1.1→C1.3 ✅).** Prochaine tâche recommandée : **`C1.4` — Modèles Eloquent**
-> (débloque factories, seeders de données, puis la logique métier et les Policies d'isolation).
+> **Modèles Eloquent en place (C1.1→C1.4 ✅).** Prochaine tâche recommandée : **`C1.5` — Factories**
+> (débloque les seeders de données C1.6, puis la logique métier et les Policies d'isolation C2.4).
 
 ---
 
@@ -50,7 +50,7 @@
 | C1.1 | Migrations des 25 tables métier + tables système | ✅ | 5 phases, data_model §4 |
 | C1.2 | Contraintes DB critiques (GiST anti-double-booking, index partiel domiciliation, CHECK enums, FK différées) | ✅ | data_model §6 |
 | C1.3 | Tests de schéma Pest (contraintes, sur PostgreSQL) | ✅ | 40 tests verts |
-| C1.4 | **Modèles Eloquent** (relations, casts enum, `$fillable`, scopes) | ⬜ | Seul `User` enrichi au minimum |
+| C1.4 | **Modèles Eloquent** (relations, casts enum, `$fillable`, scopes) | ✅ | 21 modèles + `User` enrichi ; morphs via morph map ; test relations/casts |
 | C1.5 | Factories (toutes les entités + traits `->admin()`, `->resident()`…) | ⬜ | Seul `UserFactory` à jour |
 | C1.6 | Seeders de données : catalogue `offers` (8 SKU MVP), `resources` (48 bureaux + 3 salles + event) | ⬜ | `RoleSeeder` (6 rôles) ✅ |
 | C1.7 | Morph map + enums PHP centralisés | ✅ | `app/Enums/`, `AppServiceProvider` |

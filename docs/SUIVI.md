@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-06-05 (C2.4/C2.5 ✅).**
+> **Dernière mise à jour : 2026-06-05 (C2.1/C2.3/C2.4/C2.5 ✅).**
 
 ---
 
@@ -26,9 +26,10 @@
 
 ### 📍 Position actuelle
 
-> **Base de données complète (C1.1→C1.8 ✅).** Cœur autorisation posé : **C2.4 (Policies isolation A/B) ✅** et
-> **C2.5 (permissions Spatie + XOR) ✅**. Reste sur C2 : **`C2.1`** (Fortify/2FA), **`C2.3`** (Sanctum SPA),
-> et **`C2.2`** (Socialite Google — ⚠️ checkpoint CLAUDE.md §10 « nouveau service tiers / DPA RGPD »).
+> **C2 quasi complet** : Fortify+2FA (`C2.1`) ✅, Sanctum SPA (`C2.3`) ✅, Policies isolation A/B (`C2.4`) ✅,
+> permissions Spatie+XOR (`C2.5`) ✅. **Seul reste `C2.2`** (Socialite Google — ⚠️ checkpoint CLAUDE.md §10
+> « nouveau service tiers / DPA RGPD » : en attente du feu vert + des identifiants OAuth). Ensuite : **C3 — Filament**
+> (dont enforcement 2FA obligatoire admin, branché au panel).
 
 ---
 
@@ -61,9 +62,9 @@
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C2.1 | Auth admin : Fortify (sessions + 2FA TOTP) | ⬜ | Colonnes 2FA déjà en base (C1.1) |
-| C2.2 | Socialite Google OAuth (admin) | ⬜ | BRIEF §8 |
-| C2.3 | Auth portail : Sanctum mode SPA (cookies + CSRF) | ⬜ | Paquet Sanctum installé |
+| C2.1 | Auth admin : Fortify (sessions + 2FA TOTP) | ✅ | Fortify (login/logout/reset/2FA), `views=false` (JSON), inscription désactivée (PRD §3.2), rate-limit 5/min ; secret/recovery sur colonnes C1.1 ; `FortifyAuthTest`. **Reste** : enforcement 2FA obligatoire admin (→ C3.1), audit login/logout + `last_login_at` (→ C8) |
+| C2.2 | Socialite Google OAuth (admin) | ⬜ | BRIEF §8 — ⚠️ **checkpoint §10** (service tiers/DPA) : à câbler après feu vert + creds Google |
+| C2.3 | Auth portail : Sanctum mode SPA (cookies + CSRF) | ✅ | `statefulApi()`, `routes/api.php` (domaine via `config/domains`), `GET /api/user` (rôles+permissions, sans données sensibles), `/sanctum/csrf-cookie` ; `SESSION_DOMAIN=null` ; `SpaAuthTest` |
 | C2.4 | Policies Eloquent (isolation données membre A/B) + tests `AuthorizationTest` | ✅ | 14 Policies (auto-discovery) ; helpers `User::isAdmin/isBillingContact/linkedCompanyIds/canBillFor` ; `AuthorizationTest` (14 cas A/B + billing + §3.6) |
 | C2.5 | Rôles & permissions Spatie (gates, middleware rôle) | ✅ | `Permission` enum (§2.8) + `PermissionSeeder` (compo §2.5/§2.6) ; alias middlewares `role`/`permission` ; `ExclusiveUsageRole` (XOR §2.4) ; `RolePermissionTest` |
 

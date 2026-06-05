@@ -22,13 +22,13 @@ Avant de proposer du code, **toujours** :
 
 ## 1. Projet en une ligne
 
-Outil de gestion sur-mesure pour Ecoworking (coworking lyonnais, SCOP, ~50 membres, ~75 entreprises). Remplace Cosoft. Mono-tenant. Laravel 13 + Filament 5 (admin) + Vite/React/TS (portail SPA) + PostgreSQL 16, hébergé sur Clever Cloud.
+Outil de gestion sur-mesure pour Ecoworking (coworking lyonnais, SCOP, ~50 membres, ~75 entreprises). Remplace Cosoft. Mono-tenant. Laravel 13 + Filament 5 (admin) + Vite/React/TS (portail SPA) + PostgreSQL 18, hébergé sur Clever Cloud.
 
 ---
 
 ## 2. Stack & arborescence rapide
 
-- **Backend** : PHP 8.5+, Laravel 13, PostgreSQL 16 (cache, sessions et queues sur Postgres — pas de Redis en MVP, cf. ADR-0007)
+- **Backend** : PHP 8.5+, Laravel 13, PostgreSQL 18 (cache, sessions et queues sur Postgres — pas de Redis en MVP, cf. ADR-0007)
 - **Admin** : Filament 5, servi sur `admin.ecoworking.fr` exclusivement
 - **Portail membre** : SPA **React 19.2+** + **TypeScript 6.0+** strict + **Vite 8** (Rolldown) + **React Router v7.14+** + **TanStack Query 5.100+** + **Tailwind v4.3+** + shadcn/ui, servi sur `portail.ecoworking.fr` exclusivement
 - **Auth admin** : Fortify (sessions + 2FA TOTP) + Socialite Google

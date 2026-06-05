@@ -131,7 +131,7 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 | Portail membre | **SPA React + TS + Vite + Sanctum SPA mode** | Vraie expérience React moderne + auth propre cookies |
 | URLs | **`admin.ecoworking.fr` + `portail.ecoworking.fr`** sur un seul déploiement | Isolation cookies (sécurité++), DNS clair, routing Laravel par sous-domaine |
 | Repo | Monorepo Laravel unique (SPA dans `/portal-spa`) | Un seul déploiement, complexité ops minimale |
-| Base de données | **PostgreSQL 16** | Standard moderne, riche en features (JSONB, full-text, etc.) |
+| Base de données | **PostgreSQL 18** | Standard moderne, riche en features (JSONB, full-text, etc.) |
 | ORM | **Eloquent** (Laravel) | Natif Laravel, productivité maximale |
 | Hébergement | **Clever Cloud** (FR) | PaaS français RGPD, déploiement git push, Postgres managé |
 | Email | **Brevo** (transactionnel) | FR, RGPD, API simple, free tier ~300 mails/jour |
@@ -254,7 +254,7 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 
 ### 5.4 Base de données
 
-- PostgreSQL 16
+- PostgreSQL 18
 - Extensions à activer : `citext` (email case-insensitive), `pg_trgm` (recherche fuzzy si besoin), `unaccent` (recherche FR)
 - Connexion pooling : laravel sait gérer, sinon `pgbouncer` côté Clever Cloud (managé)
 
@@ -649,7 +649,7 @@ Pour une démo intermédiaire avant prod, alternatives gratuites :
 
 > Runbook complet pour la **mise en ligne initiale**. À faire **plus tard**, quand une première version tourne en local. Pour démarrer le dev, le setup local (§14) suffit.
 >
-> Ce qu'on provisionne : 1 application PHP/Laravel (sert `admin.` ET `portail.ecoworking.fr` via routing sous-domaine), 1 add-on **PostgreSQL 16**, 1 add-on **Cellar** (S3 : mandats SEPA, photos profil, PDF factures), 1 add-on **FS Bucket** (volume disque pour les écritures `storage/`). Coût estimé **~30 €/mois** (cf. §21).
+> Ce qu'on provisionne : 1 application PHP/Laravel (sert `admin.` ET `portail.ecoworking.fr` via routing sous-domaine), 1 add-on **PostgreSQL 18**, 1 add-on **Cellar** (S3 : mandats SEPA, photos profil, PDF factures), 1 add-on **FS Bucket** (volume disque pour les écritures `storage/`). Coût estimé **~30 €/mois** (cf. §21).
 
 #### 11.1 Créer le compte
 
@@ -668,7 +668,7 @@ clever login          # ouvre un navigateur, valide → token sauvegardé locale
 #### 11.3 Créer les add-ons (avant l'app, qui aura besoin de leurs credentials)
 
 ```bash
-# PostgreSQL 16 — plan XS (~7€/mois, 512 MB RAM, 10 Go)
+# PostgreSQL 18 — plan XS (~7€/mois, 512 MB RAM, 10 Go)
 clever addon create postgresql-addon ecoworking-pg \
     --plan xs_sml --region par --version 16
 
@@ -967,7 +967,7 @@ Windows 11 (host)
     └── Docker Desktop (WSL2 backend)
         └── Laravel Sail containers
             ├── PHP 8.5 + Composer
-            ├── PostgreSQL 16
+            ├── PostgreSQL 18
             └── Mailpit
 ```
 

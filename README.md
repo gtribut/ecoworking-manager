@@ -40,7 +40,7 @@ Référence complète (Sail, tests, lint, génération de code, queues, cache) :
 
 ## 🏗 Architecture & stack
 
-Une app Laravel **déployée une seule fois** sur Clever Cloud (FR), répondant à deux sous-domaines via routing Laravel : `admin.ecoworking.fr` (Filament 5) et `portail.ecoworking.fr` (SPA React + `/api/*`). Cache, sessions et queues sur PostgreSQL 16 (pas de Redis en MVP, cf. [ADR-0007](./docs/adr/0007-pas-de-redis-en-mvp.md)). Storage S3 sur Cellar.
+Une app Laravel **déployée une seule fois** sur Clever Cloud (FR), répondant à deux sous-domaines via routing Laravel : `admin.ecoworking.fr` (Filament 5) et `portail.ecoworking.fr` (SPA React + `/api/*`). Cache, sessions et queues sur PostgreSQL 18 (pas de Redis en MVP, cf. [ADR-0007](./docs/adr/0007-pas-de-redis-en-mvp.md)). Storage S3 sur Cellar.
 
 Services externes : Brevo (email), Sentry (errors), Better Stack (uptime), Healthchecks.io (cron), Google Calendar API (sync salles).
 

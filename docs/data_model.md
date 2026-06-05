@@ -1,6 +1,6 @@
 # data_model.md — Modèle de données Ecoworking
 
-> Schéma détaillé de la base PostgreSQL 16. Source de vérité **technique** du schéma.
+> Schéma détaillé de la base PostgreSQL 18. Source de vérité **technique** du schéma.
 > Document dérivé de [`BRIEF.md`](./BRIEF.md) §7 et de [`PRD.md`](./PRD.md). En cas de divergence
 > fonctionnelle, le PRD prime ; en cas de divergence d'infra, le BRIEF prime. Ce fichier traduit
 > ces décisions en tables/colonnes/contraintes.
@@ -36,7 +36,7 @@
 
 | Sujet | Convention |
 |---|---|
-| **SGBD** | PostgreSQL 16 (cache, sessions, queues incluses — cf. ADR-0007) |
+| **SGBD** | PostgreSQL 18 (cache, sessions, queues incluses — cf. ADR-0007) |
 | **Clés primaires** | `id` `bigIncrements` (bigint auto-incrément) sauf tables système (uuid pour `notifications`) |
 | **Nommage tables** | pluriel, `snake_case` (`member_profiles`) |
 | **Nommage colonnes** | `snake_case` ; FK suffixées `_id` ; booléens préfixés `is_`/`has_`/`requires_` ou verbe d'opt-in (`show_in_directory`) |

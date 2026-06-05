@@ -41,6 +41,7 @@ Adopter les **versions les plus modernes** stable disponibles en mai 2026 :
 - **Laravel 13** (sortie mars 2026, supporte PHP 8.3-8.5, support corrigé jusqu'au cycle de version suivant)
 - **Filament 5** (sortie mars 2026, alignée Laravel 13)
 - **Node 26** (Current depuis 5 mai 2026, devient LTS en oct 2026)
+- **PostgreSQL 18** (current, sortie sept 2025) — *corrige un oubli* : la base n'avait pas été réévaluée lors de cette modernisation et restait sur le **16** hérité du BRIEF initial (été 2025). Disponible sur Clever Cloud (**18.4** depuis mai 2026), donc parité dev/prod assurée. Aucune feature du `data_model` n'exige une version précise (index uniques partiels, CHECK, exclusion GiST `btree_gist` : identiques de 16 à 18)
 
 ### Versions stack frontend (mai 2026)
 

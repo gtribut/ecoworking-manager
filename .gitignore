@@ -7,6 +7,13 @@ yarn-error.log
 bootstrap/compiled.php
 app/storage/
 
+# Caches générés (package discovery) — jamais commités
+/bootstrap/cache/*.php
+
+# SQLite (projet sur PostgreSQL — pas de base SQLite versionnée)
+/database/*.sqlite
+/database/*.sqlite-journal
+
 # Laravel 5 & Lumen specific
 public/storage
 public/hot
@@ -39,3 +46,18 @@ auth.json
 # Python — bytecode (scripts des skills .claude)
 __pycache__/
 *.py[cod]
+
+# Laravel 13 / outillage moderne (complément scaffold)
+*.log
+.DS_Store
+Thumbs.db
+_ide_helper.php
+/.phpunit.cache
+/public/fonts-manifest.dev.json
+
+# IDE/éditeurs tiers (on conserve .vscode partagé, cf. plus haut)
+/.idea
+/.nova
+/.zed
+/.cursor/
+/.codex

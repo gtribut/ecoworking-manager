@@ -1,6 +1,7 @@
 import { LogOut } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '@/features/auth/useAuth'
+import { usePermissions } from '@/features/auth/usePermissions'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/Button'
 
@@ -14,6 +15,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function Layout() {
   const { user, logout } = useAuth()
+  const { isResident, isExternal } = usePermissions()
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -29,6 +31,19 @@ export function Layout() {
             <NavLink to="/" end className={navLinkClass}>
               Accueil
             </NavLink>
+            <NavLink to="/bookings" className={navLinkClass}>
+              Réservations
+            </NavLink>
+            {isExternal && (
+              <NavLink to="/tickets" className={navLinkClass}>
+                Tickets
+              </NavLink>
+            )}
+            {isResident && (
+              <NavLink to="/presence" className={navLinkClass}>
+                Présence
+              </NavLink>
+            )}
             <NavLink to="/profile" className={navLinkClass}>
               Profil
             </NavLink>

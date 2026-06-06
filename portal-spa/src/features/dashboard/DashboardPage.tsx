@@ -1,6 +1,15 @@
-import { FileText, UserCircle } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { Armchair, CalendarDays, CalendarOff, FileText, UserCircle } from 'lucide-react'
 import { Link } from 'react-router'
 import { useAuth } from '@/features/auth/useAuth'
+import { usePermissions } from '@/features/auth/usePermissions'
+
+interface Tile {
+  to: string
+  label: string
+  icon: LucideIcon
+  description: string
+}
 
 /**
  * Accueil minimal du portail (MVP). Le tableau de bord riche (PRD §3.3 :
@@ -9,8 +18,35 @@ import { useAuth } from '@/features/auth/useAuth'
  */
 export function DashboardPage() {
   const { user } = useAuth()
+  const { isResident, isExternal } = usePermissions()
 
-  const tiles = [
+  const tiles: Tile[] = [
+    {
+      to: '/bookings',
+      label: 'Réserver une salle',
+      icon: CalendarDays,
+      description: 'Voir les créneaux et réserver',
+    },
+    ...(isExternal
+      ? [
+          {
+            to: '/tickets',
+            label: 'Bureaux nomades',
+            icon: Armchair,
+            description: 'Soldes de tickets et réservation',
+          } satisfies Tile,
+        ]
+      : []),
+    ...(isResident
+      ? [
+          {
+            to: '/presence',
+            label: 'Ma présence',
+            icon: CalendarOff,
+            description: 'Déclarer mes absences',
+          } satisfies Tile,
+        ]
+      : []),
     {
       to: '/profile',
       label: 'Mon profil',

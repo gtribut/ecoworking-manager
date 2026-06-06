@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-06-06 (C2 ✅ ; C3 ✅ back-office Filament ; C4.1→C4.3 ✅ API portail profil+factures ; C4.4/C4.5 bloqués par C7 ; prochaine étape : C5 SPA ou C7 résa/tickets).**
+> **Dernière mise à jour : 2026-06-06 (C2 ✅ ; C3 ✅ ; C4 ✅ API portail complète ; C5 ✅ SPA portail complète ; C6 ✅ facturation (PDF, idempotence, paiements) ; C7 ✅ logique résa/tickets/présence. Prochaines étapes : C8 notifications, C9 Google Calendar, C0.4 CI, C10 observabilité.).**
 
 ---
 
@@ -26,17 +26,15 @@
 
 ### 📍 Position actuelle
 
-> **C2 complet ✅** (C2.1→C2.5). Code Socialite livré (admin-only + domaine restreint + match email, ADR-0009) ;
-> reste un **test live** côté Guillaume (cf. [`todo_guillaume.md`](./todo_guillaume.md)). **C3.1 complet ✅** (panel
-> `admin.ecoworking.fr`, admin-only via `canAccessPanel`, 2FA TOTP natif Filament obligatoire). **C3.2 complet ✅**
-> (Resources User, MemberProfile, Company, Contact + RelationManagers contacts/profils ; enums `HasLabel`/`HasColor` FR ;
-> UserPolicy/ContactPolicy). **C3.3 complet ✅** (Offer, Subscription, Purchase — souscripteur/billable polymorphes,
-> prix snapshoté à l'achat §3.6). **C3.4→C3.6 complets ✅** (espaces/réservations/occupations ; facturation Invoice+Payment
-> avec émission & avoir en Services — numérotation `lockForUpdate` sans trou §3.6 ; communication & documents). **C3 — Back-office
-> Filament complet ✅.** **C4.1→C4.3 complets ✅** (API portail `auth:sanctum` : profil membre auto-scopé lecture/édition,
-> factures liste+PDF avec périmètre miroir `InvoicePolicy`). **C4.4/C4.5 bloqués par C7** (résa salle, tickets/présence — la
-> logique anti-double-booking et la consommation de tickets n'existent pas encore). Prochaine étape : **C5 (SPA React)** ou **C7
-> (logique résa/tickets)** pour débloquer C4.4/C4.5.
+> **C2/C3 complets ✅** (auth + back-office Filament). **C7 complet ✅** (Services résa/occupation : `BookingService`
+> anti-double-booking `lockForUpdate`+backstop GiST, `RoomAvailabilityService`/`DeskAvailabilityService`, `TicketService`/`PurchaseService`,
+> `PresenceService` ; 14 tests). **C4 complet ✅** : C4.1→C4.3 (profil, factures) **+ C4.4/C4.5 débloqués** (API résa salle,
+> tickets, bureaux nomades, présence — `auth:sanctum`, auto-scope, 409/422 métier ; 9 tests). **C5 complet ✅** (SPA portail :
+> auth/profil/factures + réservation salle (agenda a11y), tickets/bureaux, présence ; a11y RGAA AA ; 26 tests Vitest). **C6
+> complet ✅** : cœur (numérotation/émission/avoir/calcul) via C3.5, **+ C6.2 PDF dompdf**, **C6.5 facturation récurrente
+> idempotente** (prorata, catalogue courant, remise entité), **C6.6 paiements** (recalcul `amount_paid`/statut, overdue) ; 8 tests.
+> Suite complète **205 tests verts**. Prochaines étapes : **C8** (notifications/emails), **C9** (Google Calendar), **C0.4** (CI),
+> **C10** (observabilité).
 
 ---
 
@@ -93,42 +91,42 @@
 | C4.1 | Controllers API + Form Requests + Resources JSON | ✅ | `auth:sanctum` obligatoire ; namespaces `App\Http\Controllers\Api`, `App\Http\Requests\Api`, `App\Http\Resources` ; JSON Resources `CompanyResource` (read-only, sans IBAN/mandat/remise), `MemberProfileResource`, `InvoiceResource` (`pdf_available`) ; `Gate::authorize` (Controller de base minimal, pas de trait) |
 | C4.2 | Endpoints profil membre (lecture/édition) | ✅ | `GET /api/profile` (user + profile + entité read-only PRD §3.4.3) & `PATCH /api/profile` (partiel) ; **auto-scopé** `$request->user()` (aucun id client) ; `UpdateProfileRequest` (champs perso only — nom read-only, email/mdp = flux dédiés §3.4.5 hors périmètre) ; 409 si pas de `member_profile` ; `ProfileApiTest` (6, dont isolation A/B) |
 | C4.3 | Endpoints factures (liste, PDF) | ✅ | `GET /api/invoices` (liste paginée, **émises only**, périmètre miroir `InvoicePolicy` C2.4 : rôle `billing_contact` + entités liées / nom propre — vide sinon) & `GET /api/invoices/{invoice}/pdf` (`Gate::authorize('download')`, stream disque, 404 si PDF pas encore généré) ; `InvoiceApiTest` (7, dont isolation entités + 403 cross-entité) |
-| C4.4 | Endpoints réservation salle | ⬜ | **dépend C7** (logique anti-double-booking + consommation tickets non implémentée) — à faire après C7 |
-| C4.5 | Endpoints tickets / présence nomade | ⬜ | dépend C7 |
+| C4.4 | Endpoints réservation salle | ✅ | `RoomController` (catalogue + dispo), `BookingController` (mes résas, création resident/external, annulation) ; 409 conflit, 422 métier ; auto-scope membre |
+| C4.5 | Endpoints tickets / présence nomade | ✅ | `TicketController` (soldes+liste), `DeskController` (dispo bureaux external + occupation/ticket), `PresenceController` (présence dérivée + absences) ; `ReservationApiTest` (9, isolation A/B) |
 
 ### C5 — SPA portail (React 19 / Vite 8 / TS)
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C5.1 | Init projet `portal-spa/` (Vite, TS strict, Tailwind v4, shadcn, Router v7, TanStack Query) | ⬜ | ADR-0006 |
-| C5.2 | Auth (login, CSRF Sanctum, garde de routes) | ⬜ | dépend C2.3 |
-| C5.3 | Profil membre (annuaire, photo, prefs) | ⬜ | |
-| C5.4 | Mes factures (liste + téléchargement PDF) | ⬜ | |
-| C5.5 | Réserver une salle (calendrier + alternative liste a11y) | ⬜ | |
-| C5.6 | Acheter / consommer un ticket | ⬜ | |
-| C5.7 | Déclarer présence/absence nomade | ⬜ | |
-| C5.8 | a11y RGAA AA (axe-core, navigation clavier) | ⬜ | CLAUDE.md §3.5 |
+| C5.1 | Init projet `portal-spa/` (Vite, TS strict, Tailwind v4, shadcn, Router v7, TanStack Query) | ✅ | Vite 8/React 19/TS strict ; biome (Tailwind directives + a11y stricte) |
+| C5.2 | Auth (login, CSRF Sanctum, garde de routes) | ✅ | AuthContext + RequireAuth + 2FA ; gestion erreurs Laravel |
+| C5.3 | Profil membre (annuaire, photo, prefs) | ✅ | lecture/édition (entité read-only) |
+| C5.4 | Mes factures (liste + téléchargement PDF) | ✅ | liste paginée + PDF |
+| C5.5 | Réserver une salle (calendrier + alternative liste a11y) | ✅ | agenda accessible (liste créneaux), resident (libre) vs external (demi-journée/ticket), 409/422 |
+| C5.6 | Acheter / consommer un ticket | ✅ | soldes + réservation bureau nomade external (consommation ticket) ; achat = crédit admin (MVP) |
+| C5.7 | Déclarer présence/absence nomade | ✅ | déclaration absence (ponctuelle/plage/récurrence) + liste/suppression |
+| C5.8 | a11y RGAA AA (axe-core, navigation clavier) | ✅ | HTML sémantique, labels, aria-live, nav clavier ; axe-core Playwright → C11.4 |
 
 ### C6 — Facturation
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C6.1 | `InvoiceNumberingService` (compteur `lockForUpdate`, EW-YYYY-NNNNN) | ⬜ | data_model §6.5, table prête |
-| C6.2 | Génération PDF (`barryvdh/laravel-dompdf`) | ⬜ | |
-| C6.3 | Calcul HT/TVA/TTC + prorata (bornes incluses, ROUND_HALF_UP) | ⬜ | §6.12 |
-| C6.4 | Émission (fige lignes), annulation + avoir auto | ⬜ | §6.6 + `InvoicePolicy::delete()` |
-| C6.5 | Idempotence facturation (cron/instant/manuel) | ⬜ | §6.13 |
-| C6.6 | Statuts paiement manuels + recalcul `amount_paid` | ⬜ | |
+| C6.1 | `InvoiceNumberingService` (compteur `lockForUpdate`, EW-YYYY-NNNNN) | ✅ | livré en C3.5 |
+| C6.2 | Génération PDF (`barryvdh/laravel-dompdf`) | ✅ | `InvoicePdfService` + template facture/avoir (mentions CGI art. 289) + `GenerateInvoicePdfJob` dispatché à l'émission ; `config/company.php` (env) |
+| C6.3 | Calcul HT/TVA/TTC + prorata (bornes incluses, ROUND_HALF_UP) | ✅ | `InvoiceLineCalculator` (C3.5) + prorata jours dans `MonthlyBillingService` |
+| C6.4 | Émission (fige lignes), annulation + avoir auto | ✅ | livré en C3.5 (`IssueInvoiceService`/`CancelInvoiceService`, `InvoicePolicy::delete()`) |
+| C6.5 | Idempotence facturation (cron/instant/manuel) | ✅ | `MonthlyBillingService` (anti-doublon par (abo, période), catalogue courant + remise entité) + commande `invoices:generate-monthly` (scheduler) |
+| C6.6 | Statuts paiement manuels + recalcul `amount_paid` | ✅ | `InvoicePaymentService` + `PaymentObserver` (recalcul + statut) + commande `invoices:update-overdue` (scheduler) ; `C6BillingTest` (8) |
 
 ### C7 — Réservations & occupation
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C7.1 | `BookingService` anti-double-booking (`lockForUpdate` + 409, backstop GiST) | ⬜ | §6.8, contrainte DB prête |
-| C7.2 | Calcul de disponibilité salles (horaires resident/external) | ⬜ | |
-| C7.3 | Présence nomade : dérivation présence résident (assignment − absences) | ⬜ | §4.3 |
-| C7.4 | Dispo bureaux external (compteur unassigned − occupations) | ⬜ | §6.1 PRD |
-| C7.5 | Crédit/consommation/restitution de tickets | ⬜ | |
+| C7.1 | `BookingService` anti-double-booking (`lockForUpdate` + 409, backstop GiST) | ✅ | bornes semi-ouvertes ; annulation + restitution ticket ; `BookingConflictException`→409 |
+| C7.2 | Calcul de disponibilité salles (horaires resident/external) | ✅ | `RoomAvailabilityService` (resident 24/7, external demi-journées jours ouvrés via `FrenchHolidays`) |
+| C7.3 | Présence nomade : dérivation présence résident (assignment − absences) | ✅ | `PresenceService` (récurrence hebdo expansée à la lecture) + `AbsenceService` intégré |
+| C7.4 | Dispo bureaux external (compteur unassigned − occupations) | ✅ | `DeskAvailabilityService` (chevauchement matin/après-midi/journée) + réservation/annulation |
+| C7.5 | Crédit/consommation/restitution de tickets | ✅ | `TicketService` (cohérence type/cible) + `PurchaseService` (génération tickets, prix figé) ; `C7ReservationTest` (14) |
 
 ### C8 — Notifications & emails
 
@@ -158,7 +156,7 @@
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
 | C11.1 | Tests de schéma DB (Pest) | ✅ | 40 verts |
-| C11.2 | Tests Feature métier (facturation, isolation, résa) | ⬜ | au fil des chantiers |
+| C11.2 | Tests Feature métier (facturation, isolation, résa) | 🚧 | C7 résa/tickets (14), API résa (9), facturation C6 (8), isolation A/B (AuthorizationTest) + Vitest SPA (26) ; à compléter au fil des chantiers |
 | C11.3 | Tests e2e Playwright (SPA) + Pest 4 browser (Filament) | ⬜ | ADR-0008 |
 | C11.4 | a11y axe-core sur écrans critiques | ⬜ | |
 | C11.5 | Pint + Biome propres en CI | 🚧 | Pint OK localement ; CI à brancher (C0.4) |

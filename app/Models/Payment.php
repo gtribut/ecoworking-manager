@@ -6,8 +6,10 @@ namespace App\Models;
 
 use App\Enums\PaymentMethod;
 use App\Models\Concerns\Auditable;
+use App\Observers\PaymentObserver;
 use Database\Factories\PaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable([
     'invoice_id', 'amount', 'paid_at', 'method', 'reference', 'notes', 'created_by',
 ])]
+#[ObservedBy(PaymentObserver::class)]
 class Payment extends Model
 {
     /** @use HasFactory<PaymentFactory> */

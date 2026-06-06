@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\InvoiceStatus;
+use App\Jobs\GenerateInvoicePdfJob;
 use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\User;
@@ -33,7 +34,7 @@ final class IssueInvoiceService
             throw new RuntimeException('Seul un brouillon peut être émis.');
         }
 
-        return $this->db->transaction(function () use ($invoice, $emittedBy): Invoice {
+        $invoice = $this->db->transaction(function () use ($invoice, $emittedBy): Invoice {
             $invoice->loadMissing(['lines', 'billable']);
 
             // Recalcul défensif des totaux depuis les lignes (jamais le front, §3.6).
@@ -68,6 +69,11 @@ final class IssueInvoiceService
 
             return $invoice;
         });
+
+        // Génération du PDF hors transaction (PRD §5.7), une fois le numéro figé.
+        GenerateInvoicePdfJob::dispatch($invoice->id)->afterCommit();
+
+        return $invoice;
     }
 
     /**

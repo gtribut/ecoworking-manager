@@ -116,7 +116,7 @@
 | C6.2 | Génération PDF (`barryvdh/laravel-dompdf`) | ✅ | `InvoicePdfService` + template facture/avoir (mentions CGI art. 289) + `GenerateInvoicePdfJob` dispatché à l'émission ; `config/company.php` (env) |
 | C6.3 | Calcul HT/TVA/TTC + prorata (bornes incluses, ROUND_HALF_UP) | ✅ | `InvoiceLineCalculator` (C3.5) + prorata jours dans `MonthlyBillingService` |
 | C6.4 | Émission (fige lignes), annulation + avoir auto | ✅ | livré en C3.5 (`IssueInvoiceService`/`CancelInvoiceService`, `InvoicePolicy::delete()`) |
-| C6.5 | Idempotence facturation (cron/instant/manuel) | 🚧 | `MonthlyBillingService` livré MAIS **par abonnement** ; **à refondre → 1 facture PAR ENTITÉ, lignes regroupées par prestation (× qté)** + idempotence (entité, période) + impact `invoice_lines.related` mono-cible. Spec figée PRD §5.1 « Regroupement par entité » (2026-06-07). Reprise dev prochaine session |
+| C6.5 | Idempotence facturation (cron/instant/manuel) | 🚧 | `MonthlyBillingService` livré MAIS **par abonnement** ; **à refondre → 1 facture PAR ENTITÉ, lignes regroupées par prestation (× qté)**, idempotence (entité, période). ✅ traçabilité via **table de liaison `invoice_line_subscriptions`** (ligne ↔ abos, période + quote-part ; UNIQUE `(subscription_id, period_start, period_end)`) — schéma figé `data_model.md §4.4` + PRD §5.1 (2026-06-07). Inclut **nouvelle migration**. Reprise dev prochaine session |
 | C6.6 | Statuts paiement manuels + recalcul `amount_paid` | ✅ | `InvoicePaymentService` + `PaymentObserver` (recalcul + statut) + commande `invoices:update-overdue` (scheduler) ; `C6BillingTest` (8) |
 
 ### C7 — Réservations & occupation

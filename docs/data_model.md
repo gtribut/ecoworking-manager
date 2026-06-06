@@ -21,7 +21,7 @@
    - 4.1 [Identité & accès](#41-identité--accès) (`users`, `member_profiles`, `companies`, `contacts`, `consents`)
    - 4.2 [Catalogue & contrats](#42-catalogue--contrats) (`offers`, `subscriptions`, `purchases`, `tickets`)
    - 4.3 [Ressources & occupation](#43-ressources--occupation) (`resources`, `bookings`, `desk_occupations`, `desk_absences`)
-   - 4.4 [Facturation](#44-facturation) (`invoices`, `invoice_lines`, `payments`, `invoice_counters`)
+   - 4.4 [Facturation](#44-facturation) (`invoices`, `invoice_lines`, `invoice_line_subscriptions`, `payments`, `invoice_counters`)
    - 4.5 [Communication & documents](#45-communication--documents) (`announcements`, `announcement_registrations`, `internal_documents`, `member_document_validations`, `administrative_documents`)
    - 4.6 [Système](#46-système-laravel--paquets) (Laravel natif, Spatie, notifications)
 5. [Relations polymorphes](#5-relations-polymorphes)
@@ -86,7 +86,9 @@ erDiagram
     invoices ||--o{ invoice_lines : "1-n"
     invoices ||--o{ payments : "1-n"
     invoices }o--|| users_or_companies : "«poly» billable"
-    invoice_lines }o--o| subscriptions_purchases_bookings : "«poly» related"
+    invoice_lines }o--o| subscriptions_purchases_bookings : "«poly» related (ligne mono-origine)"
+    invoice_lines ||--o{ invoice_line_subscriptions : "couvre (ligne regroupée)"
+    subscriptions ||--o{ invoice_line_subscriptions : "facturé sur"
     invoices ||--o{ purchases : "crédite tickets"
 
     internal_documents ||--o{ member_document_validations : "validée par"
@@ -538,7 +540,9 @@ passage `cancelled` + **avoir** auto (V2). Montants figés sur les lignes à l'�
 Index : `number` (unique), `(billable_type, billable_id)`, `status`, `issued_at`, `due_at`, `deleted_at`.
 
 #### `invoice_lines`
-Lignes figées à l'émission. `related` polymorphe (origine de la ligne).
+Lignes figées à l'émission. Deux natures de ligne :
+- **Ligne mono-origine** (achat de tickets `purchase`, réservation `booking`, ou saisie manuelle) → origine portée par le morph `related` (`related_type/related_id`).
+- **Ligne d'abonnements regroupée** (facturation récurrente, C6.5) → couvre **N abonnements du même type** ; `related` reste **NULL** et le détail des abonnements couverts est tracé dans **`invoice_line_subscriptions`** (traçabilité complète : quel abo, quelle période, quelle quote-part). `quantity` = nombre d'abonnements regroupés.
 
 | Colonne | Type | NULL | Défaut | Note |
 |---|---|---|---|---|
@@ -559,6 +563,22 @@ Lignes figées à l'émission. `related` polymorphe (origine de la ligne).
 | `created_at` / `updated_at` | timestamptz | | | |
 
 Index : `invoice_id`, `(related_type, related_id)`.
+
+#### `invoice_line_subscriptions`
+Liaison **ligne de facture regroupée ↔ abonnements couverts** (C6.5, PRD §5.1 « Regroupement par entité »). Une facture récurrente est émise **par entité** ; chaque ligne regroupe les abonnements d'un même type (× quantité), et cette table en garde la **traçabilité fine** (quel abonnement, quelle période facturée, quelle quote-part HT). Elle porte aussi le **backstop d'idempotence** au niveau abonnement.
+
+| Colonne | Type | NULL | Défaut | Note |
+|---|---|---|---|---|
+| `id` | bigint PK | | | |
+| `invoice_line_id` | bigint FK→invoice_lines | | | `onDelete cascade` (liaison ⊂ ligne ; un brouillon supprimé nettoie ses liaisons) |
+| `subscription_id` | bigint FK→subscriptions | | | `onDelete restrict` (un abo référencé par une facture ne se supprime pas) |
+| `period_start` | date | | | Début de la période facturée pour cet abo (prorata = sa date de début effective dans le mois) |
+| `period_end` | date | | | Fin de la période facturée |
+| `amount_ht` | decimal(10,2) | | | Quote-part HT de cet abo dans la ligne (après remise entité, prorata inclus) — figée à l'émission |
+| `created_at` / `updated_at` | timestamptz | | | |
+
+Index : `invoice_line_id`, `subscription_id`.
+Contrainte : **UNIQUE `(subscription_id, period_start, period_end)`** — un abonnement n'est facturé **qu'une fois** par période (backstop DB de l'idempotence (entité, période), au grain abonnement). Cf. §6.
 
 #### `payments`
 Encaissements (statuts **manuels** — pas de paiement en ligne MVP).
@@ -735,7 +755,7 @@ Morph map (alias → modèle) à déclarer dans `AppServiceProvider::boot()` via
 | `purchases.billable` | `billable_type/id` | `user` \| `company` | Entité/user facturé |
 | `bookings.billable` | `billable_type/id` | `user` \| `company` | NULL si interne/gratuit |
 | `invoices.billable` | `billable_type/id` | `user` \| `company` | Cible de la facture |
-| `invoice_lines.related` | `related_type/id` | `subscription` \| `purchase` \| `booking` \| NULL | Origine de la ligne |
+| `invoice_lines.related` | `related_type/id` | `subscription` \| `purchase` \| `booking` \| NULL | Origine d'une ligne **mono-origine** ; **NULL** pour une ligne d'abonnements regroupée (→ `invoice_line_subscriptions`) |
 
 > **Toujours** scoper les accès polymorphes par Policy (CLAUDE.md §3.1). Un `billable` doit être résolu via
 > la relation Eloquent, jamais par requête brute sur `auth()->id()`.
@@ -759,7 +779,7 @@ Morph map (alias → modèle) à déclarer dans `AppServiceProvider::boot()` via
 10. **Bureau ↔ membre 1-1** — `member_profiles.desk_id` **UNIQUE** ; cohérent avec `resources.assignment`. (D) unique + (A).
 11. **`member_document_validations` append-only** — insertion uniquement, jamais update/delete. (A).
 12. **Prorata** — `montant × (jours_consommés / jours_du_mois)`, **bornes incluses** (début **et** fin), `ROUND_HALF_UP` 2 décimales, TVA 20 % sur le proratisé (PRD §5.1). (A) Service.
-13. **Idempotence facturation** — toute génération (cron/instant T/manuelle) vérifie l'absence de facture pour (cible, période) avant création. (A).
+13. **Idempotence facturation** — la récurrente mensuelle émet **une facture par entité** (`billable`) ; toute génération (cron/instant T/manuelle) vérifie l'absence de facture pour **(entité, période)** avant création. **(A) + (D)** : check applicatif **et** backstop DB `invoice_line_subscriptions` UNIQUE `(subscription_id, period_start, period_end)` — un abo n'est facturé qu'une fois par période. (PRD §5.1 « Regroupement par entité », figé 2026-06-07).
 14. **Échéance** — `due_at = issued_at + 14 jours`, uniforme. (A).
 15. **`calendar_token` unique & révocable** — régénération invalide l'ancien lien iCal. (D) UNIQUE + (A).
 16. **Argent** — toutes les colonnes monétaires en `DECIMAL`, calculs HT/TVA/TTC **côté back** exclusivement. (A).

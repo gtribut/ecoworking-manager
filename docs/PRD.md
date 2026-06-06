@@ -1458,16 +1458,33 @@ Page de référence quotidienne pour l'admin, accessible en un clic depuis le da
 - **À l'instant T** : pour les abonnements mensuels qui **démarrent en cours de mois** (facture au prorata, cf. « Règle de prorata » ci-dessous, émise au démarrage) et pour les **commandes external** (tickets bureau/salle ou commande spécifique) — **créées par l'admin**, la facture créditant automatiquement les tickets → facture générée au moment de la commande.
 - **Fallback manuel** : l'admin peut déclencher la génération mensuelle à la main (incident cron, ou anticipation).
 
-> **Idempotence obligatoire** : toute génération (cron, instant T ou manuelle) **vérifie d'abord qu'aucune facture n'existe déjà** pour la même cible + période avant de créer — jamais de doublon.
+> **Idempotence obligatoire** : toute génération (cron, instant T ou manuelle) **vérifie d'abord qu'aucune facture n'existe déjà** pour la même **entité (`billable`) + période** avant de créer — une entité n'a donc **qu'une seule** facture récurrente par mois, jamais de doublon.
 
-**Étapes (cron mensuel)** :
-1. Pour chaque abonnement mensuel `status=active` (résident/additional) :
-   - Vérifier qu'aucune facture n'a déjà été émise pour ce mois sur cet abonnement (idempotence)
-   - Créer une facture brouillon
-   - Ajouter une ligne d'abonnement : montant = **catalogue courant × remises** (volume standard ou remise négociée de l'entité), figé sur la ligne de facture **à l'émission**
-2. Notification admin : "X factures brouillon générées, à valider"
-3. Admin valide en bulk depuis Filament (action "Émettre toutes")
-4. Émission → numérotation chronologique + PDF généré + statut "sent" + email au billing contact
+**Étapes (cron mensuel)** — ✅ **une facture PAR ENTITÉ, lignes regroupées par prestation** (décidé 2026-06-07 ; cf. « Regroupement par entité » ci-dessous) :
+1. Déterminer les **entités à facturer** : toute entité facturée (`billable` = `company`, ou `user` facturé en nom propre) ayant **≥ 1 abonnement/service `status=active`** facturable sur la période.
+2. Pour chaque **entité** :
+   - **Idempotence** : vérifier qu'aucune facture (hors avoir) ne couvre déjà cette **entité + période** — sinon passer (cf. encadré idempotence).
+   - Créer **une seule** facture brouillon adressée à l'entité (`billable` = l'entité).
+   - Collecter **tous** les abonnements/services actifs facturables de l'entité sur la période (bureaux résident, personnes `additional`, domiciliation, autres prestations récurrentes).
+   - **Regrouper les lignes par prestation** (cf. règle ci-dessous) : **1 ligne par type d'abonnement/service × quantité**, montant = **catalogue courant × remise entité**, figé sur la ligne **à l'émission**.
+3. Notification admin : "X factures brouillon générées (1 par entité), à valider"
+4. Admin valide en bulk depuis Filament (action "Émettre toutes")
+5. Émission → numérotation chronologique + PDF généré + statut "sent" + email au billing contact
+
+#### Regroupement par entité (✅ figé 2026-06-07)
+
+> **Règle d'or** : la facturation récurrente mensuelle produit **une facture par entité**, jamais une facture par abonnement. Tous les abonnements/services actifs d'une même entité sur la période sont **consolidés sur une seule facture**.
+
+- **Cible de facturation** = l'**entité** (`billable`), pas l'abonnement individuel. Une entité de 75 personnes reçoit **une** facture mensuelle, pas N.
+- **Lignes regroupées par prestation** : on émet **une ligne par couple (type de prestation × conditions identiques)** — même offre du catalogue, même prix unitaire courant, même taux de remise, même période de facturation. La ligne porte `quantity` = **nombre d'abonnements** correspondants ; `unit_price_ht` = tarif unitaire courant ; la remise entité s'applique sur la ligne.
+- **Prorata = ligne distincte** : un abonnement démarré ou résilié **en cours de mois** a une période et un montant spécifiques → il fait l'objet d'une **ligne séparée** (par condition de prorata), il ne se fond pas dans la ligne « plein mois » du même type.
+- **Exemple** — entité avec 10 bureaux résident (plein mois) + 3 personnes `additional` (plein mois) + 1 bureau résident démarré le 15 (mois de 30 j) → **1 facture, 3 lignes** :
+  1. « Bureau résident — Avril 2026 » — `qté 10 × 328,50 € HT`
+  2. « Personne supplémentaire — Avril 2026 » — `qté 3 × 59,00 € HT`
+  3. « Bureau résident (prorata 16/30 j) — Avril 2026 » — `qté 1 × 175,20 € HT`
+- **Portée** : ce regroupement concerne la **facturation récurrente mensuelle**. Les **commandes external** (tickets bureau/salle créés par l'admin à l'instant T, cf. déclencheurs ci-dessus) restent facturées **par commande** (facture dédiée au moment de la commande), hors de ce cycle de consolidation.
+
+> 🔧 **Impact implémentation (à traiter au dev)** : la clé d'idempotence devient **(entité, période)** et non (abonnement, période). Une ligne regroupée couvre **plusieurs abonnements** du même type → le lien `invoice_lines.related_id` (morph mono-cible vers UN abonnement) ne suffit plus : prévoir soit un rattachement de la ligne à l'**offre/prestation** (type), soit une table de liaison ligne ↔ abonnements couverts. À arbitrer dans `data_model.md` lors de la reprise du dev (le `MonthlyBillingService` actuel, par-abonnement, est à refondre).
 
 **Edge cases** :
 - Abonnement commencé en milieu de mois : **prorata calculé** (Q9 résolue — règle ci-dessous)
@@ -1659,6 +1676,11 @@ dispo_external = nb_bureaux_libres_jour_J - nb_externals_jour_J
 - `partially_paid` : partiellement payée
 - `overdue` : en retard (passe l'échéance, automatique via cron)
 - `cancelled` : annulée (génération **automatique** d'un avoir pour conformité — V2)
+
+**Cible & regroupement** (✅ figé 2026-06-07, cf. §5.1 « Regroupement par entité »)
+- La facturation **récurrente mensuelle** émet **une facture par entité** (`billable`), consolidant **tous** ses abonnements/services actifs de la période.
+- Lignes **regroupées par prestation** : 1 ligne par (type d'offre × conditions identiques), `quantity` = nombre d'abonnements ; les abonnements proratisés (démarrage/résiliation en cours de mois) font l'objet de lignes distinctes.
+- Les **commandes external** (tickets) restent facturées par commande, hors du cycle de consolidation.
 
 ### 6.3 Tickets
 

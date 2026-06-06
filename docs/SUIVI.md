@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-06-06 (C2 ✅ ; C3 ✅ ; C4 ✅ API portail complète ; C5 ✅ SPA portail complète ; C6 ✅ facturation (PDF, idempotence, paiements) ; C7 ✅ logique résa/tickets/présence. Prochaines étapes : C8 notifications, C9 Google Calendar, C0.4 CI, C10 observabilité.).**
+> **Dernière mise à jour : 2026-06-06 (C2 ✅ ; C3 ✅ ; C4 ✅ API portail complète ; C5 ✅ SPA portail complète ; C6 ✅ facturation (PDF, paiements) — **C6.5 à refondre : regroupement par entité, PRD §5.1 maj 2026-06-07** ; C7 ✅ logique résa/tickets/présence. Prochaines étapes : reprise C6.5 (facture/entité), C8 notifications, C9 Google Calendar, C0.4 CI.).**
 
 ---
 
@@ -31,8 +31,9 @@
 > `PresenceService` ; 14 tests). **C4 complet ✅** : C4.1→C4.3 (profil, factures) **+ C4.4/C4.5 débloqués** (API résa salle,
 > tickets, bureaux nomades, présence — `auth:sanctum`, auto-scope, 409/422 métier ; 9 tests). **C5 complet ✅** (SPA portail :
 > auth/profil/factures + réservation salle (agenda a11y), tickets/bureaux, présence ; a11y RGAA AA ; 26 tests Vitest). **C6
-> complet ✅** : cœur (numérotation/émission/avoir/calcul) via C3.5, **+ C6.2 PDF dompdf**, **C6.5 facturation récurrente
-> idempotente** (prorata, catalogue courant, remise entité), **C6.6 paiements** (recalcul `amount_paid`/statut, overdue) ; 8 tests.
+> ✅** : cœur (numérotation/émission/avoir/calcul) via C3.5, **+ C6.2 PDF dompdf**, **C6.6 paiements** (recalcul
+> `amount_paid`/statut, overdue) ; 8 tests. **C6.5 🚧 à refondre** : la facturation récurrente doit produire **1 facture par
+> entité** (lignes regroupées par prestation × qté), pas 1 par abonnement (spec figée PRD §5.1, 2026-06-07).
 > Suite complète **205 tests verts**. Prochaines étapes : **C8** (notifications/emails), **C9** (Google Calendar), **C0.4** (CI),
 > **C10** (observabilité).
 
@@ -115,7 +116,7 @@
 | C6.2 | Génération PDF (`barryvdh/laravel-dompdf`) | ✅ | `InvoicePdfService` + template facture/avoir (mentions CGI art. 289) + `GenerateInvoicePdfJob` dispatché à l'émission ; `config/company.php` (env) |
 | C6.3 | Calcul HT/TVA/TTC + prorata (bornes incluses, ROUND_HALF_UP) | ✅ | `InvoiceLineCalculator` (C3.5) + prorata jours dans `MonthlyBillingService` |
 | C6.4 | Émission (fige lignes), annulation + avoir auto | ✅ | livré en C3.5 (`IssueInvoiceService`/`CancelInvoiceService`, `InvoicePolicy::delete()`) |
-| C6.5 | Idempotence facturation (cron/instant/manuel) | ✅ | `MonthlyBillingService` (anti-doublon par (abo, période), catalogue courant + remise entité) + commande `invoices:generate-monthly` (scheduler) |
+| C6.5 | Idempotence facturation (cron/instant/manuel) | 🚧 | `MonthlyBillingService` livré MAIS **par abonnement** ; **à refondre → 1 facture PAR ENTITÉ, lignes regroupées par prestation (× qté)** + idempotence (entité, période) + impact `invoice_lines.related` mono-cible. Spec figée PRD §5.1 « Regroupement par entité » (2026-06-07). Reprise dev prochaine session |
 | C6.6 | Statuts paiement manuels + recalcul `amount_paid` | ✅ | `InvoicePaymentService` + `PaymentObserver` (recalcul + statut) + commande `invoices:update-overdue` (scheduler) ; `C6BillingTest` (8) |
 
 ### C7 — Réservations & occupation

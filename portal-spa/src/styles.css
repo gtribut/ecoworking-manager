@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/*
+ * Thème portail Ecoworking. Tailwind v4 CSS-first (pas de tailwind.config.js).
+ * Contrastes visés WCAG AA (CLAUDE.md §3.5). Dark mode piloté par la classe
+ * `dark` sur <html> (préférence utilisateur persistée via /api/profile).
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-brand-50: oklch(0.97 0.02 150);
+  --color-brand-500: oklch(0.62 0.13 155);
+  --color-brand-600: oklch(0.54 0.13 155);
+  --color-brand-700: oklch(0.45 0.12 155);
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100;
+  }
+
+  /* Focus visible obligatoire (RGAA — jamais d'outline:none sans alternative). */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+
+  /* Respect de prefers-reduced-motion (CLAUDE.md §3.5). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Lien d'évitement (skip link) — visible au focus clavier uniquement. */
+.skip-link {
+  @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-white;
+}

@@ -2,9 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\CurrentUserController;
+use App\Http\Controllers\Api\DeskController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\RoomController;
+use App\Http\Controllers\Api\TicketController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,6 +38,22 @@ $register = function (): void {
         // C4.3 — Factures (liste scopée + téléchargement PDF).
         Route::get('/invoices', [InvoiceController::class, 'index'])->name('api.invoices.index');
         Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('api.invoices.pdf');
+
+        // C4.4 — Réservation de salle (catalogue, dispo, mes résas, annulation).
+        Route::get('/rooms', [RoomController::class, 'index'])->name('api.rooms.index');
+        Route::get('/rooms/{room}/availability', [RoomController::class, 'availability'])->name('api.rooms.availability');
+        Route::get('/bookings', [BookingController::class, 'index'])->name('api.bookings.index');
+        Route::post('/bookings', [BookingController::class, 'store'])->name('api.bookings.store');
+        Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('api.bookings.destroy');
+
+        // C4.5 — Tickets nomades, bureaux external & présence résident.
+        Route::get('/tickets', [TicketController::class, 'index'])->name('api.tickets.index');
+        Route::get('/desks/availability', [DeskController::class, 'availability'])->name('api.desks.availability');
+        Route::post('/desk-occupations', [DeskController::class, 'store'])->name('api.desk-occupations.store');
+        Route::delete('/desk-occupations/{deskOccupation}', [DeskController::class, 'destroy'])->name('api.desk-occupations.destroy');
+        Route::get('/presence', [PresenceController::class, 'index'])->name('api.presence.index');
+        Route::post('/absences', [PresenceController::class, 'store'])->name('api.absences.store');
+        Route::delete('/absences/{absence}', [PresenceController::class, 'destroy'])->name('api.absences.destroy');
     });
 };
 

@@ -70,6 +70,24 @@ final class RoomAvailabilityService
         return $slots;
     }
 
+    /**
+     * Bornes horaires d'une demi-journée external (matin/après-midi) pour une date.
+     *
+     * @return array{starts_at: CarbonImmutable, ends_at: CarbonImmutable}
+     */
+    public function halfDayBounds(CarbonInterface $date, Period $period): array
+    {
+        [$startHour, $endHour] = self::HALF_DAYS[$period->value]
+            ?? throw new \InvalidArgumentException('Demi-journée invalide : '.$period->value);
+
+        $day = CarbonImmutable::parse($date->format('Y-m-d'));
+
+        return [
+            'starts_at' => $day->setTime($startHour, 0),
+            'ends_at' => $day->setTime($endHour, 0),
+        ];
+    }
+
     /** Un créneau external (date + demi-journée) est-il réservable ? */
     public function isExternalSlotBookable(Resource $room, CarbonInterface $date, Period $period): bool
     {

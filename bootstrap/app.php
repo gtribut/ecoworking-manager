@@ -1,8 +1,11 @@
 <?php
 
+use App\Exceptions\BookingConflictException;
+use App\Exceptions\DomainActionException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
@@ -39,4 +42,21 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Issues métier attendues (conflit de créneau, action portail invalide) :
+        // ce sont des résultats de contrôle de flux, pas des erreurs à logguer.
+        $exceptions->dontReport([
+            BookingConflictException::class,
+            DomainActionException::class,
+        ]);
+
+        // Conflit de créneau (anti-double-booking §5.4) → 409 Conflict.
+        $exceptions->render(fn (BookingConflictException $e) => new JsonResponse(
+            ['message' => $e->getMessage()], 409,
+        ));
+
+        // Erreur métier d'action portail (ticket indisponible, bureau occupé…) → 422.
+        $exceptions->render(fn (DomainActionException $e) => new JsonResponse(
+            ['message' => $e->getMessage()], 422,
+        ));
     })->create();

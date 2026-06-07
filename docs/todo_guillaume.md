@@ -17,6 +17,33 @@
 
 ---
 
+## Synchronisation `.env` (à appliquer à chaque évolution de `.env.example`)
+
+> **Convention** : Claude **prévient systématiquement** de toute modification de
+> `.env.example` (ajout/renommage/suppression de clé, valeur changée) et détaille
+> ici les variables à répercuter. Toi : tu appliques dans ton **`.env` local** +
+> dans **LastPass** (valeurs prod, en attendant Clever Cloud). Claude ne touche
+> qu'au `.env.example` (placeholders), jamais à tes valeurs réelles.
+
+### Modifs du 07/06/26 (routing par sous-domaine + APP_KEY)
+
+| Variable | Dev local (`.env`) | Prod (LastPass → Clever Cloud) |
+|---|---|---|
+| `APP_URL` | `http://admin.ecoworking.test` | `https://admin.ecoworking.fr` |
+| `ADMIN_DOMAIN` | `admin.ecoworking.test` | `admin.ecoworking.fr` |
+| `PORTAL_DOMAIN` | `portail.ecoworking.test` | `portail.ecoworking.fr` |
+| `APP_KEY` | généré localement (`key:generate`) | défini en prod (Clever Cloud / LastPass) |
+
+- [x] ✅ **`.env` local** déjà à jour (vérifié 07/06/26) + `APP_KEY` régénéré.
+- [x] ✅ **LastPass** : valeurs **prod** consignées (07/06/26 ; à pousser dans Clever Cloud au déploiement).
+- [x] ✅ **`/etc/hosts` Windows** : `127.0.0.1 admin.ecoworking.test` + `127.0.0.1 portail.ecoworking.test` configuré (07/06/26).
+
+> Note tests : en environnement **test** (Pest), `ADMIN_DOMAIN`/`PORTAL_DOMAIN` sont
+> forcés vides par `phpunit.xml` — ne pas s'en étonner, c'est voulu (routes sans
+> contrainte de domaine sur `localhost`).
+
+---
+
 ## C2.2 — Google OAuth (login admin via Socialite)
 
 > Contexte : login Google **additionnel** réservé aux admins (BRIEF §8). Politique retenue :
@@ -101,7 +128,6 @@
 
 ## Plus tard / hors MVP (pour mémoire)
 
-- [ ] 🟡 Dev local sous-domaines : ajouter `admin.ecoworking.test` / `portail.ecoworking.test` dans le `hosts` Windows **le jour où** on testera le routing par sous-domaine en local (en dev courant, les domaines restent nuls → tout sur `localhost`)
 - [ ] 🟡 (V1.5) Provisioning **Clever Cloud** : app, Postgres 18, Cellar, FS Bucket, DNS, env vars prod (cf. BRIEF §11, SUIVI D1-D2)
 
 ---

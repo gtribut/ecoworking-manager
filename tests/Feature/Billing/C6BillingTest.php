@@ -88,26 +88,95 @@ it('passe en retard les factures émises échues et non soldées', function () {
         ->and($current->fresh()->status)->toBe(InvoiceStatus::Sent);
 });
 
-// --- C6.5 Facturation récurrente idempotente -----------------------------
+// --- C6.5 Facturation récurrente par entité, regroupée & idempotente ------
 
-it('génère un brouillon mensuel et reste idempotent (pas de doublon)', function () {
+it('produit UNE facture par entité, lignes regroupées par prestation (× qté)', function () {
+    $company = Company::factory()->create();
+    $deskOffer = Offer::factory()->subscription()->create(['unit_price_ht' => 328.50, 'vat_rate' => 20]);
+    $personOffer = Offer::factory()->subscription()->create(['unit_price_ht' => 59.00, 'vat_rate' => 20]);
+
+    // 10 bureaux résident + 3 personnes additionnelles, tous plein mois.
+    Subscription::factory()->count(10)->create([
+        'offer_id' => $deskOffer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'starts_at' => '2026-04-01',
+    ]);
+    Subscription::factory()->count(3)->create([
+        'offer_id' => $personOffer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'starts_at' => '2026-04-01',
+    ]);
+
+    $invoice = app(MonthlyBillingService::class)->generateForEntity(
+        'company', $company->id,
+        CarbonImmutable::parse('2026-04-01'), CarbonImmutable::parse('2026-04-30'),
+    );
+
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->billable_type)->toBe('company')
+        ->and($invoice->lines)->toHaveCount(2); // 1 ligne / prestation, pas 13
+
+    $deskLine = $invoice->lines->firstWhere('unit_price_ht', '328.50');
+    expect($deskLine->quantity)->toBe('10.00')
+        ->and($deskLine->related_type)->toBeNull()         // ligne regroupée
+        ->and($deskLine->line_total_ht)->toBe('3285.00')
+        ->and($deskLine->subscriptionLinks()->count())->toBe(10) // traçabilité
+        ->and($invoice->subtotal_ht)->toBe('3462.00');     // 3285 + 177
+});
+
+it('met un prorata sur une ligne séparée (pas fondu dans le plein mois)', function () {
+    $company = Company::factory()->create();
+    $offer = Offer::factory()->subscription()->create(['unit_price_ht' => 328.50, 'vat_rate' => 20]);
+
+    Subscription::factory()->count(10)->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'starts_at' => '2026-04-01',
+    ]);
+    Subscription::factory()->create([ // démarré le 15 → prorata 16/30 j
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'starts_at' => '2026-04-15',
+    ]);
+
+    $invoice = app(MonthlyBillingService::class)->generateForEntity(
+        'company', $company->id,
+        CarbonImmutable::parse('2026-04-01'), CarbonImmutable::parse('2026-04-30'),
+    );
+
+    expect($invoice->lines)->toHaveCount(2);
+    $prorata = $invoice->lines->firstWhere('quantity', '1.00');
+    expect($prorata->unit_price_ht)->toBe('175.20')      // 328.50 × 16/30
+        ->and($prorata->description)->toContain('prorata 16/30 j');
+});
+
+it('reste idempotent au grain entité (pas de doublon de facture)', function () {
+    $company = Company::factory()->create();
     $offer = Offer::factory()->subscription()->create(['unit_price_ht' => 200, 'vat_rate' => 20]);
-    $subscription = Subscription::factory()->create([
-        'offer_id' => $offer->id,
+    Subscription::factory()->count(2)->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
         'starts_at' => '2026-04-01',
     ]);
     $svc = app(MonthlyBillingService::class);
     $start = CarbonImmutable::parse('2026-04-01');
     $end = CarbonImmutable::parse('2026-04-30');
 
-    $invoice = $svc->generateForSubscription($subscription, $start, $end);
-    expect($invoice)->not->toBeNull()
-        ->and($invoice->subtotal_ht)->toBe('200.00');
+    expect($svc->generateForEntity('company', $company->id, $start, $end))->not->toBeNull();
+    // Second passage : aucune nouvelle facture.
+    expect($svc->generateForEntity('company', $company->id, $start, $end))->toBeNull()
+        ->and(Invoice::where('billable_id', $company->id)->where('billable_type', 'company')->count())->toBe(1);
+});
 
-    // Second appel : aucune nouvelle facture (idempotent).
-    expect($svc->generateForSubscription($subscription, $start, $end))->toBeNull()
-        ->and(InvoiceLine::where('related_id', $subscription->id)
-            ->where('related_type', $subscription->getMorphClass())->count())->toBe(1);
+it('génère une facture par entité distincte via generateMonth', function () {
+    $offer = Offer::factory()->subscription()->create(['unit_price_ht' => 100, 'vat_rate' => 20]);
+    Subscription::factory()->count(2)->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company',
+        'billable_id' => Company::factory()->create()->id, 'starts_at' => '2026-04-01',
+    ]);
+    Subscription::factory()->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company',
+        'billable_id' => Company::factory()->create()->id, 'starts_at' => '2026-04-01',
+    ]);
+
+    $created = app(MonthlyBillingService::class)->generateMonth(CarbonImmutable::parse('2026-04-15'));
+
+    expect($created)->toHaveCount(2); // 2 entités → 2 factures
 });
 
 it('proratise au nombre de jours consommés (bornes incluses)', function () {

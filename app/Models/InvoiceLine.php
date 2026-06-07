@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -54,5 +55,16 @@ class InvoiceLine extends Model
     public function related(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Abonnements couverts par une ligne regroupée (facturation récurrente, C6.5).
+     * Vide pour une ligne mono-origine (le détail vit alors dans `related`).
+     *
+     * @return HasMany<InvoiceLineSubscription, $this>
+     */
+    public function subscriptionLinks(): HasMany
+    {
+        return $this->hasMany(InvoiceLineSubscription::class);
     }
 }

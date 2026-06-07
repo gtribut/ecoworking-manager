@@ -79,6 +79,13 @@ return [
             'transport' => 'array',
         ],
 
+        // Brevo API (C8) : scheme `brevo` enregistré via Mail::extend dans
+        // AppServiceProvider. Clé lue depuis services.brevo.key. Prod uniquement
+        // (MAIL_MAILER=brevo) ; dev = smtp/Mailpit, test = array.
+        'brevo' => [
+            'transport' => 'brevo',
+        ],
+
         'failover' => [
             'transport' => 'failover',
             'mailers' => [

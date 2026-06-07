@@ -53,4 +53,11 @@ return [
         'overdue_invoices' => env('HEALTHCHECK_OVERDUE_INVOICES_URL'),
     ],
 
+    // Brevo (ex-Sendinblue) — email transactionnel en prod via driver API (C8).
+    // Transport enregistré dans AppServiceProvider::boot() (Mail::extend), car
+    // Laravel ne connaît pas nativement le scheme `brevo`. Vide en dev (Mailpit).
+    'brevo' => [
+        'key' => env('BREVO_API_KEY'),
+    ],
+
 ];

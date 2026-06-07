@@ -13,7 +13,9 @@ use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoApiTransport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -48,5 +50,14 @@ class AppServiceProvider extends ServiceProvider
         // Dashboard Laravel Pulse (/pulse) réservé aux admins (C10.3, BRIEF §16).
         // Sans ce gate, Pulse refuse l'accès hors environnement local.
         Gate::define('viewPulse', fn (User $user): bool => $user->isAdmin());
+
+        // Transport Brevo API (C8) : Laravel ne connaît pas le scheme `brevo`,
+        // on enregistre le transport du bridge Symfony. Utilisé en prod
+        // (MAIL_MAILER=brevo) ; en dev/test le mailer reste smtp/array, donc
+        // ce transport n'est jamais instancié hors prod. Client HTTP/dispatcher
+        // laissés par défaut (le bridge crée un HttpClient si null).
+        Mail::extend('brevo', fn (): BrevoApiTransport => new BrevoApiTransport(
+            (string) config('services.brevo.key'),
+        ));
     }
 }

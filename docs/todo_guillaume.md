@@ -78,10 +78,11 @@
 > via **Brevo** (BRIEF §13). Le code (notifications en queue) est prêt et agnostique
 > du transport ; il suffit de configurer le mailer.
 
-- [ ] 🟡 Créer un compte **Brevo** (ex-Sendinblue) + valider le **domaine expéditeur** `ecoworking.fr` (SPF/DKIM)
-- [ ] 🟡 Générer une **clé API Brevo** → la placer dans `.env` prod : `BREVO_API_KEY=…`
-- [ ] 🟡 Décider du transport : SMTP Brevo (`MAIL_MAILER=smtp` + creds Brevo) **ou** driver API — me dire lequel pour que je finalise `config/mail.php` / `services.php`
-- [ ] 🟡 S'assurer qu'un **worker de queue** tourne en prod (`queue:work`, queues sur Postgres ADR-0007) — sinon les emails ne partent pas
+- [x] ✅ Compte **Brevo** créé + **domaine expéditeur** `ecoworking.fr` validé (SPF/DKIM) (07/06/26)
+- [x] ✅ **Clé API Brevo** générée → dans **LastPass** (`BREVO_API_KEY`), à pousser en prod (07/06/26)
+- [x] ✅ Transport choisi : **driver API Brevo** (07/06/26). Câblage finalisé côté code : `symfony/brevo-mailer` + `symfony/http-client`, mailer `brevo` (config/mail.php), `services.brevo.key`, transport enregistré dans `AppServiceProvider` (`Mail::extend`). Test `BrevoTransportTest`.
+- [ ] 🔴 **En prod (Clever Cloud), positionner `MAIL_MAILER=brevo`** (en plus de `BREVO_API_KEY`) — sinon les emails partent via le mailer par défaut, pas Brevo.
+- [ ] 🟡 S'assurer qu'un **worker de queue** tourne en prod (`queue:work`, queues sur Postgres ADR-0007) — sinon les emails (en queue) ne partent pas. Lié au provisioning Clever Cloud (V1.5).
 
 ---
 

@@ -136,6 +136,26 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     }
 
     /**
+     * Token secret des flux iCal d'abonnement (PRD §3.5.8, C9.2). URL de
+     * capacité : les clients agenda ne peuvent pas s'authentifier par session,
+     * donc le token porte l'autorisation. Révocable (régénération) → invalide
+     * immédiatement les anciens abonnements.
+     */
+    public function regenerateCalendarToken(): string
+    {
+        $this->calendar_token = bin2hex(random_bytes(24));
+        $this->save();
+
+        return $this->calendar_token;
+    }
+
+    /** Garantit la présence d'un token (le crée à la volée si absent). */
+    public function ensureCalendarToken(): string
+    {
+        return $this->calendar_token ?? $this->regenerateCalendarToken();
+    }
+
+    /**
      * Identifiants des entités juridiques (`companies`) rattachées à l'utilisateur :
      * son entité de membre (`member_profiles.company_id`) et les entités dont il est
      * contact facturation (`contacts.role = billing`). PRD §2.5 / §3.6.

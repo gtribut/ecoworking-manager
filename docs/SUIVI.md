@@ -142,8 +142,8 @@
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C9.1 | Push résa salles → Google Calendar (Job) | ⬜ | BRIEF §10, push only MVP |
-| C9.2 | Flux iCal perso + entité (`calendar_token`) | ⬜ | PRD §3.5.8, colonne prête |
+| C9.1 | Push résa salles → Google Calendar (Job) | 🔮 | **Différé V1.5** (décision 2026-06-07) : nécessite `google/apiclient` + service account Google (creds Guillaume) → branché avec le provisioning Clever Cloud. `bookings.google_calendar_event_id` déjà prêt |
+| C9.2 | Flux iCal perso + entité (`calendar_token`) | ✅ | `IcsCalendarService` (RFC 5545, salles only, CRLF + repli 75o, échappement) ; flux `forUser`/`forEntity` (scopé entités liées) ; `CalendarFeedController` (web, **token en URL** = capacité, 404 token inconnu) ; `CalendarSubscriptionController` (API : show/regenerate/revoke, auto-scopé) ; helpers `User::ensureCalendarToken/regenerateCalendarToken` ; SPA `CalendarSubscription` (URLs copiables, régénération/désactivation) sur la page Réservations. `C9CalendarTest` (10) + Vitest (3) |
 
 ### C10 — Observabilité
 

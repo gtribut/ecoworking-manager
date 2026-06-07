@@ -3,11 +3,38 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\GoogleOAuthController;
+use App\Http\Controllers\CalendarFeedController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Flux iCal d'abonnement (C9.2, PRD §3.5.8)
+|--------------------------------------------------------------------------
+|
+| Routes publiques authentifiées par un token secret en URL (les clients
+| agenda ne portent pas de session). Servies sur le domaine portail en prod
+| via config('domains.portal') ; sans contrainte en dev/test.
+|
+*/
+$calendarFeeds = function (): void {
+    Route::controller(CalendarFeedController::class)
+        ->prefix('calendar/{token}')
+        ->name('calendar.')
+        ->group(function (): void {
+            Route::get('mine.ics', 'mine')->name('mine');
+            Route::get('entity.ics', 'entity')->name('entity');
+        });
+};
+
+if ($portalDomain = config('domains.portal')) {
+    Route::domain($portalDomain)->group($calendarFeeds);
+} else {
+    $calendarFeeds();
+}
 
 /*
 |--------------------------------------------------------------------------

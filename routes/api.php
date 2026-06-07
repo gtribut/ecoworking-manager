@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\CalendarSubscriptionController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DeskController;
 use App\Http\Controllers\Api\InvoiceController;
@@ -60,6 +61,11 @@ $register = function (): void {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
         Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('api.notifications.read-all');
         Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('api.notifications.read');
+
+        // C9.2 — Abonnement iCal (URLs de flux, régénération/révocation du token).
+        Route::get('/calendar', [CalendarSubscriptionController::class, 'show'])->name('api.calendar.show');
+        Route::post('/calendar/token', [CalendarSubscriptionController::class, 'regenerate'])->name('api.calendar.regenerate');
+        Route::delete('/calendar/token', [CalendarSubscriptionController::class, 'destroy'])->name('api.calendar.destroy');
     });
 };
 

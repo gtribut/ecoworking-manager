@@ -44,7 +44,19 @@ function bookingsPage(data: unknown[]) {
  * `['auth','me']` via le handler /api/user (chargé par AuthProvider).
  */
 function withCurrentUser(permissions: string[]) {
-  server.use(http.get('/api/user', () => HttpResponse.json(mockUser(permissions))))
+  server.use(
+    http.get('/api/user', () => HttpResponse.json(mockUser(permissions))),
+    // La page monte la section d'abonnement iCal (C9.2) → handler par défaut.
+    http.get('/api/calendar', () =>
+      HttpResponse.json({
+        enabled: true,
+        urls: {
+          mine: 'http://localhost/calendar/tok/mine.ics',
+          entity: 'http://localhost/calendar/tok/entity.ics',
+        },
+      }),
+    ),
+  )
 }
 
 describe('BookingsPage', () => {

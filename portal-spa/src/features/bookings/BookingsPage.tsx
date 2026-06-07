@@ -3,6 +3,7 @@ import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePermissions } from '@/features/auth/usePermissions'
+import { CalendarSubscription } from '@/features/calendar/CalendarSubscription'
 import { getApiErrorMessage } from '@/lib/errors'
 import { BookingForm } from './BookingForm'
 import type { Booking, BookingStatus } from './types'
@@ -158,6 +159,8 @@ export function BookingsPage() {
           </>
         )}
       </section>
+
+      <CalendarSubscription />
     </div>
   )
 }

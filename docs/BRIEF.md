@@ -43,7 +43,7 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 - Autonomie et souveraineté technique
 - Maîtrise des coûts long terme (vs SaaS récurrent)
 - Apprentissage stratégique pour le porteur du projet
-- Cohérence avec l'ethos Ecoworking (SCOP, soutien à l'écosystème indépendant français)
+- Cohérence avec l'ethos Ecoworking (soutien à l'écosystème indépendant français)
 
 ### Profil porteur du projet
 - 1 dev (Guillaume), en marge de son activité principale chez DOWiNO

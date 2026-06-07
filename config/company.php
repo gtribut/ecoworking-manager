@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 return [
     'legal_name' => env('COMPANY_LEGAL_NAME', 'Ecoworking'),
-    'legal_form' => env('COMPANY_LEGAL_FORM', 'SCOP SARL'),
+    'legal_form' => env('COMPANY_LEGAL_FORM', 'SARL'),
     'capital' => env('COMPANY_CAPITAL'),
     'siret' => env('COMPANY_SIRET'),
     'rcs' => env('COMPANY_RCS'),

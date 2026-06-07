@@ -23,7 +23,7 @@ Avant de proposer du code, **toujours** :
 
 ## 1. Projet en une ligne
 
-Outil de gestion sur-mesure pour Ecoworking (coworking lyonnais, SCOP, ~50 membres, ~75 entreprises). Remplace Cosoft. Mono-tenant. Laravel 13 + Filament 5 (admin) + Vite/React/TS (portail SPA) + PostgreSQL 18, hébergé sur Clever Cloud.
+Outil de gestion sur-mesure pour Ecoworking (coworking lyonnais, SARL, ~50 membres, ~75 entreprises). Remplace Cosoft. Mono-tenant. Laravel 13 + Filament 5 (admin) + Vite/React/TS (portail SPA) + PostgreSQL 18, hébergé sur Clever Cloud.
 
 ---
 

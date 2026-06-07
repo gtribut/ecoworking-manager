@@ -74,7 +74,7 @@ Les deux surfaces partagent la même base de données et la même logique métie
 
 **Back-office admin** (≥3 personnes) :
 - La manageuse : `admin` + `staff` (bureau attitré)
-- **≥2 gérants/associés Ecoworking** (SCOP) : rôle `admin` **sans bureau ni profil membre** (pas de `staff`, pas de `member_profile`) — accès back-office uniquement. Pourront éventuellement obtenir un bureau plus tard (deviendraient alors aussi `staff`, comme la manageuse).
+- **≥2 gérants/associés Ecoworking** (SARL) : rôle `admin` **sans bureau ni profil membre** (pas de `staff`, pas de `member_profile`) — accès back-office uniquement. Pourront éventuellement obtenir un bureau plus tard (deviendraient alors aussi `staff`, comme la manageuse).
 
 ### 1.3 Objectifs métier
 

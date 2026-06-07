@@ -36,7 +36,7 @@ return [
     ],
 
     // Google OAuth (Socialite) — login admin additionnel (C2.2, BRIEF §8).
-    // `hosted_domain` restreint l'accès au Workspace de la SCOP (vérifié côté
+    // `hosted_domain` restreint l'accès au Workspace d'Ecoworking (vérifié côté
     // callback, le paramètre `hd` envoyé à Google n'étant qu'indicatif).
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),

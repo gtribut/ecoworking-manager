@@ -81,7 +81,7 @@
 - [x] ✅ Compte **Brevo** créé + **domaine expéditeur** `ecoworking.fr` validé (SPF/DKIM) (07/06/26)
 - [x] ✅ **Clé API Brevo** générée → dans **LastPass** (`BREVO_API_KEY`), à pousser en prod (07/06/26)
 - [x] ✅ Transport choisi : **driver API Brevo** (07/06/26). Câblage finalisé côté code : `symfony/brevo-mailer` + `symfony/http-client`, mailer `brevo` (config/mail.php), `services.brevo.key`, transport enregistré dans `AppServiceProvider` (`Mail::extend`). Test `BrevoTransportTest`.
-- [ ] 🔴 **En prod (Clever Cloud), positionner `MAIL_MAILER=brevo`** (en plus de `BREVO_API_KEY`) — sinon les emails partent via le mailer par défaut, pas Brevo.
+- [x] ✅ **`MAIL_MAILER=brevo`** enregistré dans l'env prod (LastPass, 07/06/26) — à pousser dans Clever Cloud au déploiement.
 - [ ] 🟡 S'assurer qu'un **worker de queue** tourne en prod (`queue:work`, queues sur Postgres ADR-0007) — sinon les emails (en queue) ne partent pas. Lié au provisioning Clever Cloud (V1.5).
 
 ---
@@ -94,9 +94,9 @@
 > renseigner les clés. Placeholders déjà dans `.env.example`.
 
 ### Sentry (erreurs + perf)
-- [ ] 🟡 Créer un compte **Sentry** (free tier 5k events/mois) + **2 projets** : `ecoworking-laravel` et `ecoworking-portal-react`
-- [ ] 🟡 Renseigner en prod : `SENTRY_LARAVEL_DSN=…` (back) et `VITE_SENTRY_DSN=…` (front, injecté au build Vite). Ajuster `SENTRY_TRACES_SAMPLE_RATE` (0.2 par défaut)
-- [ ] 🟡 (CI) Créer un **`SENTRY_AUTH_TOKEN`** pour l'upload des source maps + tag release (à brancher dans le pipeline le jour du déploiement)
+- [x] ✅ Compte **Sentry** + **2 projets** (`ecoworking-laravel`, `ecoworking-portal-react`) créés (07/06/26)
+- [x] ✅ DSN prod enregistrés dans **LastPass** : `SENTRY_LARAVEL_DSN` (back) + `VITE_SENTRY_DSN` (front, injecté au build Vite) + `SENTRY_TRACES_SAMPLE_RATE` — à pousser dans Clever Cloud au déploiement (07/06/26)
+- [ ] 🟡 (CI, jour du déploiement) Créer un **`SENTRY_AUTH_TOKEN`** pour l'upload des source maps + tag release, à brancher dans le pipeline
 
 ### Laravel Pulse (perf interne)
 - [ ] 🟡 Aucune action de compte. Vérifier en prod que `/pulse` n'est accessible **qu'aux admins** (gate `viewPulse` posé sur `User::isAdmin`) et que `PULSE_ENABLED=true`

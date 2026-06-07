@@ -9,7 +9,17 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Facturation récurrente (C6.5) : brouillons générés le 1er du mois (idempotent).
-Schedule::command('invoices:generate-monthly')->monthlyOn(1, '06:00');
+$monthlyBilling = Schedule::command('invoices:generate-monthly')->monthlyOn(1, '06:00');
 
 // Bascule en retard des factures échues non soldées (C6.6) : tous les jours.
-Schedule::command('invoices:update-overdue')->dailyAt('07:00');
+$overdueInvoices = Schedule::command('invoices:update-overdue')->dailyAt('07:00');
+
+// Surveillance des crons via Healthchecks.io (C10.2) : ping en succès + /fail
+// en échec. Activé seulement si l'URL de check est configurée (vide en dev).
+if ($url = config('services.healthchecks.monthly_billing')) {
+    $monthlyBilling->pingOnSuccess($url)->pingOnFailure($url.'/fail');
+}
+
+if ($url = config('services.healthchecks.overdue_invoices')) {
+    $overdueInvoices->pingOnSuccess($url)->pingOnFailure($url.'/fail');
+}

@@ -45,4 +45,12 @@ return [
         'hosted_domain' => env('GOOGLE_HOSTED_DOMAIN'),
     ],
 
+    // Healthchecks.io (C10.2, BRIEF §16) : surveillance des crons. Une URL de
+    // check par job planifié ; le scheduler ping en succès et /fail en échec.
+    // Vide en dev → aucun ping (les helpers `pingOnSuccess` ignorent null).
+    'healthchecks' => [
+        'monthly_billing' => env('HEALTHCHECK_MONTHLY_BILLING_URL'),
+        'overdue_invoices' => env('HEALTHCHECK_OVERDUE_INVOICES_URL'),
+    ],
+
 ];

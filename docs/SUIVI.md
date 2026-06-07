@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-06-07 (C2 ✅ ; C3 ✅ ; C4 ✅ API portail complète ; C5 ✅ SPA portail complète ; C6 ✅ facturation complète (PDF, paiements, **C6.5 récurrente par entité refondue 2026-06-07**) ; C7 ✅ logique résa/tickets/présence ; C0.4 ✅ CI GitHub Actions. Prochaines étapes : C8 notifications, C9 Google Calendar.).**
+> **Dernière mise à jour : 2026-06-07 (C2 ✅ ; C3 ✅ ; C4 ✅ ; C5 ✅ ; C6 ✅ ; C7 ✅ ; C0.4 ✅ CI ; **C8 ✅ notifications/emails** ; **C9.2 ✅ flux iCal** (C9.1 push Google → V1.5) ; **C10 ✅ observabilité** (Sentry/Pulse/Healthchecks câblés, comptes = TODO Guillaume). 232 tests Pest + 32 Vitest verts. Prochaines étapes : C11 tests e2e/a11y, puis V1.5 déploiement.).**
 
 ---
 
@@ -35,8 +35,12 @@
 > `amount_paid`/statut, overdue). **C6.5 ✅ refondue (2026-06-07)** : facturation récurrente **par entité** (lignes
 > regroupées par prestation × qté, prorata sur ligne séparée), idempotence (entité, période) + backstop DB, traçabilité
 > `invoice_line_subscriptions` ; 11 tests C6.
-> Suite complète **208 tests Pest verts** (+ 26 Vitest SPA). **C0.4 ✅ CI GitHub Actions** (Pint/Biome/Pest/Vitest/build).
-> Prochaines étapes : **C8** (notifications/emails), **C9** (Google Calendar), **C10** (observabilité).
+> **C8 ✅** notifications/emails (base `PortalNotification` routant les canaux selon préférences ; facture émise/retard +
+> absence déclarée câblées ; centre in-app + cloche SPA). **C9.2 ✅** flux iCal d'abonnement (perso + entité, token-capacité ;
+> C9.1 push Google → V1.5). **C10 ✅** observabilité (Sentry back+front, Pulse `/pulse` admin-only, ping Healthchecks sur les
+> crons, `/up` ; comptes/DSN = `todo_guillaume.md`).
+> Suite complète **232 tests Pest verts** (+ 32 Vitest SPA). **C0.4 ✅ CI GitHub Actions** (Pint/Biome/Pest/Vitest/build).
+> Prochaines étapes : **C11** (tests e2e Playwright, a11y axe-core), puis **V1.5** (déploiement Clever Cloud, import Cosoft).
 
 ---
 
@@ -149,9 +153,9 @@
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C10.1 | Sentry (erreurs + releases) | ⬜ | |
-| C10.2 | Better Stack (uptime) + Healthchecks.io (cron) | ⬜ | |
-| C10.3 | Laravel Pulse | ⬜ | |
+| C10.1 | Sentry (erreurs + releases) | ✅ | `sentry/sentry-laravel` + `Integration::handles()` dans `bootstrap/app.php` ; `@sentry/react` init dans `main.tsx` (gardé par `VITE_SENTRY_DSN`, `sendDefaultPii:false`). No-op si DSN vide → **comptes/DSN + source maps CI = TODO Guillaume** (C10 dans `todo_guillaume.md`) |
+| C10.2 | Better Stack (uptime) + Healthchecks.io (cron) | ✅ | Endpoint santé `/up` déjà exposé (cible Better Stack) ; ping Healthchecks (`pingOnSuccess`/`pingOnFailure`) sur les 2 crons (facturation mensuelle, overdue), activé si URL configurée (`config/services.php`). **Comptes + monitors/checks = TODO Guillaume** |
+| C10.3 | Laravel Pulse | ✅ | `laravel/pulse` installé + migrations ; gate `viewPulse` = admin-only (`AppServiceProvider`) ; `/pulse` protégé ; `PULSE_ENABLED`. `C10ObservabilityTest` (2) |
 
 ### C11 — Tests & qualité
 

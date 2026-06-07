@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Sentry\Laravel\Integration;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
@@ -59,4 +60,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(fn (DomainActionException $e) => new JsonResponse(
             ['message' => $e->getMessage()], 422,
         ));
+
+        // Remontée des exceptions non gérées vers Sentry (C10.1). No-op si
+        // SENTRY_LARAVEL_DSN est vide (dev/test) : rien n'est transmis.
+        Integration::handles($exceptions);
     })->create();

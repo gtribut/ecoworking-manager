@@ -12,6 +12,7 @@ use App\Models\Purchase;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -43,5 +44,9 @@ class AppServiceProvider extends ServiceProvider
             'invoice' => Invoice::class,
             'payment' => Payment::class,
         ]);
+
+        // Dashboard Laravel Pulse (/pulse) réservé aux admins (C10.3, BRIEF §16).
+        // Sans ce gate, Pulse refuse l'accès hors environnement local.
+        Gate::define('viewPulse', fn (User $user): bool => $user->isAdmin());
     }
 }

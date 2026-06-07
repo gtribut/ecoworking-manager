@@ -6,7 +6,10 @@ import { BrowserRouter } from 'react-router'
 import { App } from './App'
 import { AuthProvider } from './features/auth/AuthContext'
 import { queryClient } from './lib/queryClient'
+import { initSentry } from './lib/sentry'
 import './styles.css'
+
+initSentry()
 
 const rootElement = document.getElementById('root')
 if (!rootElement) {

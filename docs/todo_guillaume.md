@@ -44,6 +44,61 @@
 
 ---
 
+## C8 — Emails transactionnels (prod Brevo)
+
+> Contexte : en dev les emails partent dans **Mailpit** (rien à faire). En prod,
+> les notifications critiques (facture émise / en retard) doivent partir par email
+> via **Brevo** (BRIEF §13). Le code (notifications en queue) est prêt et agnostique
+> du transport ; il suffit de configurer le mailer.
+
+- [ ] 🟡 Créer un compte **Brevo** (ex-Sendinblue) + valider le **domaine expéditeur** `ecoworking.fr` (SPF/DKIM)
+- [ ] 🟡 Générer une **clé API Brevo** → la placer dans `.env` prod : `BREVO_API_KEY=…`
+- [ ] 🟡 Décider du transport : SMTP Brevo (`MAIL_MAILER=smtp` + creds Brevo) **ou** driver API — me dire lequel pour que je finalise `config/mail.php` / `services.php`
+- [ ] 🟡 S'assurer qu'un **worker de queue** tourne en prod (`queue:work`, queues sur Postgres ADR-0007) — sinon les emails ne partent pas
+
+---
+
+## C10 — Observabilité (Sentry, Pulse, Better Stack, Healthchecks)
+
+> Contexte : packages **installés et câblés** côté code (Sentry back+front, Pulse,
+> ping Healthchecks sur les crons, endpoint `/up` pour l'uptime). Tout est **no-op
+> tant que les variables d'env sont vides** → il reste à créer les comptes et à
+> renseigner les clés. Placeholders déjà dans `.env.example`.
+
+### Sentry (erreurs + perf)
+- [ ] 🟡 Créer un compte **Sentry** (free tier 5k events/mois) + **2 projets** : `ecoworking-laravel` et `ecoworking-portal-react`
+- [ ] 🟡 Renseigner en prod : `SENTRY_LARAVEL_DSN=…` (back) et `VITE_SENTRY_DSN=…` (front, injecté au build Vite). Ajuster `SENTRY_TRACES_SAMPLE_RATE` (0.2 par défaut)
+- [ ] 🟡 (CI) Créer un **`SENTRY_AUTH_TOKEN`** pour l'upload des source maps + tag release (à brancher dans le pipeline le jour du déploiement)
+
+### Laravel Pulse (perf interne)
+- [ ] 🟡 Aucune action de compte. Vérifier en prod que `/pulse` n'est accessible **qu'aux admins** (gate `viewPulse` posé sur `User::isAdmin`) et que `PULSE_ENABLED=true`
+- [ ] 🟡 Prévoir le **trim** des données Pulse (commande `pulse:check`/scheduler par défaut) si volume
+
+### Better Stack (uptime externe)
+- [ ] 🟡 Créer un compte **Better Stack** (free : 3 monitors) → monitorer `https://portail.ecoworking.fr/up` (endpoint santé Laravel déjà exposé)
+- [ ] 🟡 Configurer les **alertes** (email / Slack)
+
+### Healthchecks.io (surveillance des crons)
+- [ ] 🟡 Créer un compte **Healthchecks.io** (free : 20 checks) + **1 check par cron** :
+  - facturation mensuelle → `HEALTHCHECK_MONTHLY_BILLING_URL=…`
+  - bascule factures en retard → `HEALTHCHECK_OVERDUE_INVOICES_URL=…`
+  - (le scheduler ping l'URL en succès et `…/fail` en échec — déjà câblé)
+- [ ] 🟡 Régler la **période/grâce** de chaque check sur la fréquence réelle (mensuel / quotidien)
+
+---
+
+## C9.1 — Push Google Calendar (différé V1.5)
+
+> Décision 2026-06-07 : le **push sortant** des résas salles vers un calendrier
+> Google dédié est **reporté en V1.5** (avec le provisioning Clever Cloud). Les flux
+> **iCal d'abonnement** côté membre (C9.2) sont, eux, **livrés** et ne dépendent
+> d'aucun service Google.
+
+- [ ] 🟡 (V1.5) Créer un **service account Google** + calendrier dédié « Ecoworking — Salles », partager en lecture publique
+- [ ] 🟡 (V1.5) Me le signaler pour que j'ajoute `google/apiclient` + le `SyncBookingToGoogleCalendarJob` (la colonne `bookings.google_calendar_event_id` est déjà prête)
+
+---
+
 ## Plus tard / hors MVP (pour mémoire)
 
 - [ ] 🟡 Dev local sous-domaines : ajouter `admin.ecoworking.test` / `portail.ecoworking.test` dans le `hosts` Windows **le jour où** on testera le routing par sous-domaine en local (en dev courant, les domaines restent nuls → tout sur `localhost`)

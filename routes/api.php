@@ -24,8 +24,8 @@ use Illuminate\Support\Facades\Route;
 | les requêtes /api/* portent le cookie de session. `auth:sanctum` valide.
 |
 | CLAUDE.md §3.1 : TOUTES les routes portail passent par `auth:sanctum`.
-| Le domaine est contraint en prod via config('domains.portal') ; nul en
-| dev/test → routes enregistrées sans contrainte de domaine (servies sur localhost).
+| Le domaine est contraint via config('domains.portal') (prod `.fr` + dev local
+| `.test`) ; nul en test → routes enregistrées sans contrainte (servies sur localhost).
 |
 */
 

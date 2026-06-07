@@ -26,9 +26,10 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        // ADR-0004 : en prod le panel est contraint au sous-domaine admin
-        // (chemin racine `/`). En dev/test `ADMIN_DOMAIN` est nul → panel servi
-        // sur `/admin` sans contrainte de domaine (pas de setup /etc/hosts).
+        // ADR-0004 : en prod (`.fr`) et en dev local (`.test`) le panel est
+        // contraint au sous-domaine admin (chemin racine `/`). En test
+        // `ADMIN_DOMAIN` est forcé nul (phpunit.xml) → panel servi sur `/admin`
+        // sans contrainte de domaine (pas de setup /etc/hosts pour les tests).
         $adminDomain = config('domains.admin');
 
         return $panel

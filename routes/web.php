@@ -16,8 +16,8 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 |
 | Routes publiques authentifiées par un token secret en URL (les clients
-| agenda ne portent pas de session). Servies sur le domaine portail en prod
-| via config('domains.portal') ; sans contrainte en dev/test.
+| agenda ne portent pas de session). Servies sur le domaine portail (prod `.fr`
+| + dev local `.test`) via config('domains.portal') ; sans contrainte en test.
 |
 */
 $calendarFeeds = function (): void {
@@ -42,8 +42,8 @@ if ($portalDomain = config('domains.portal')) {
 |--------------------------------------------------------------------------
 |
 | Login Google additionnel réservé aux admins (match par email, domaine
-| restreint, pas d'auto-provisioning). Contraint au sous-domaine admin en
-| prod via config('domains.admin') ; sans contrainte en dev/test (localhost).
+| restreint, pas d'auto-provisioning). Contraint au sous-domaine admin (prod
+| `.fr` + dev local `.test`) via config('domains.admin') ; sans contrainte en test.
 |
 */
 $adminAuthRoutes = function (): void {

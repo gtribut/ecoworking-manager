@@ -4,6 +4,8 @@ export interface ProfileUser {
   last_name: string
   email: string
   theme: 'light' | 'dark' | null
+  notify_email: boolean
+  notify_in_app: boolean
 }
 
 export interface MemberProfileData {
@@ -49,6 +51,8 @@ export interface ProfilePayload {
 /** Champs éditables par le membre (PATCH partiel, PRD §3.4.2). */
 export interface ProfileUpdate {
   theme?: 'light' | 'dark' | null
+  notify_email?: boolean
+  notify_in_app?: boolean
   job_title?: string | null
   bio?: string | null
   interests?: string | null

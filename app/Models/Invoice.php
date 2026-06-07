@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\ContactRole;
 use App\Enums\InvoiceStatus;
 use App\Models\Concerns\Auditable;
 use Database\Factories\InvoiceFactory;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 /**
  * Facture. Émise = JAMAIS supprimée (CGI art. 289) : seuls les `draft` sont
@@ -68,6 +70,34 @@ class Invoice extends Model
     public function billable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Destinataires à notifier pour cette facture (C8) : si le billable est un
+     * `User`, lui-même ; si c'est une `Company`, ses contacts facturation
+     * rattachés à un compte utilisateur. Miroir du périmètre de visibilité
+     * facturation (InvoicePolicy / InvoiceController), mais côté push.
+     *
+     * @return Collection<int, User>
+     */
+    public function recipients(): Collection
+    {
+        $billable = $this->billable;
+
+        if ($billable instanceof User) {
+            return collect([$billable]);
+        }
+
+        if ($billable instanceof Company) {
+            return User::query()
+                ->whereHas('contacts', function (Builder $q) use ($billable): void {
+                    $q->where('company_id', $billable->getKey())
+                        ->where('role', ContactRole::Billing->value);
+                })
+                ->get();
+        }
+
+        return collect();
     }
 
     /** @return HasMany<InvoiceLine, $this> */

@@ -8,7 +8,15 @@ import { ProfilePage } from './ProfilePage'
 import type { ProfilePayload } from './types'
 
 const payload: ProfilePayload = {
-  user: { id: 1, first_name: 'Alex', last_name: 'Martin', email: 'alex@ex.fr', theme: null },
+  user: {
+    id: 1,
+    first_name: 'Alex',
+    last_name: 'Martin',
+    email: 'alex@ex.fr',
+    theme: null,
+    notify_email: true,
+    notify_in_app: true,
+  },
   profile: {
     id: 10,
     status: 'active',

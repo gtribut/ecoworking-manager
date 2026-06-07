@@ -2,6 +2,7 @@ import { LogOut } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '@/features/auth/useAuth'
 import { usePermissions } from '@/features/auth/usePermissions'
+import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/Button'
 
@@ -53,6 +54,7 @@ export function Layout() {
           </nav>
 
           <div className="flex items-center gap-3">
+            <NotificationBell />
             {user && (
               <span className="hidden text-sm text-neutral-600 sm:inline dark:text-neutral-300">
                 {user.first_name} {user.last_name}

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DeskController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RoomController;
@@ -54,6 +55,11 @@ $register = function (): void {
         Route::get('/presence', [PresenceController::class, 'index'])->name('api.presence.index');
         Route::post('/absences', [PresenceController::class, 'store'])->name('api.absences.store');
         Route::delete('/absences/{absence}', [PresenceController::class, 'destroy'])->name('api.absences.destroy');
+
+        // C8.2 — Centre de notifications in-app (driver database, auto-scopé).
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('api.notifications.read-all');
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('api.notifications.read');
     });
 };
 

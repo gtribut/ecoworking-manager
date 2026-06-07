@@ -9,7 +9,9 @@ use App\Jobs\GenerateInvoicePdfJob;
 use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Notifications\InvoiceIssuedNotification;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 
 /**
@@ -72,6 +74,12 @@ final class IssueInvoiceService
 
         // Génération du PDF hors transaction (PRD §5.7), une fois le numéro figé.
         GenerateInvoicePdfJob::dispatch($invoice->id)->afterCommit();
+
+        // Notification facture émise (C8) — in-app + email selon préférences, en
+        // queue (jamais bloquant). Les avoirs ne déclenchent pas cette notif.
+        if (! $invoice->is_credit_note) {
+            Notification::send($invoice->recipients(), new InvoiceIssuedNotification($invoice));
+        }
 
         return $invoice;
     }

@@ -32,6 +32,10 @@ final class UpdateProfileRequest extends FormRequest
             'theme' => ['sometimes', 'nullable', 'string', 'in:light,dark'],
             'job_title' => ['sometimes', 'nullable', 'string', 'max:150'],
             'bio' => ['sometimes', 'nullable', 'string', 'max:500'],
+            // Préférences de notification (PRD §3.8.4) — toggles indépendants,
+            // portés par `users`, activés par défaut.
+            'notify_email' => ['sometimes', 'boolean'],
+            'notify_in_app' => ['sometimes', 'boolean'],
             'interests' => ['sometimes', 'nullable', 'string', 'max:200'],
             'linkedin_url' => ['sometimes', 'nullable', 'url', 'max:255'],
             'website_url' => ['sometimes', 'nullable', 'url', 'max:255'],

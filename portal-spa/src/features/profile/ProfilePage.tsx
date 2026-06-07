@@ -25,6 +25,8 @@ const schema = z.object({
   birth_date: z.string().optional(),
   show_in_directory: z.boolean(),
   newsletter_opt_in: z.boolean(),
+  notify_email: z.boolean(),
+  notify_in_app: z.boolean(),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -51,6 +53,8 @@ export function ProfilePage() {
       birth_date: '',
       show_in_directory: false,
       newsletter_opt_in: false,
+      notify_email: true,
+      notify_in_app: true,
     },
   })
 
@@ -68,6 +72,8 @@ export function ProfilePage() {
       birth_date: data.profile?.birth_date ?? '',
       show_in_directory: data.profile?.show_in_directory ?? false,
       newsletter_opt_in: data.profile?.newsletter_opt_in ?? false,
+      notify_email: data.user.notify_email,
+      notify_in_app: data.user.notify_in_app,
     })
   }, [data, reset])
 
@@ -85,6 +91,8 @@ export function ProfilePage() {
     try {
       await updateProfile.mutateAsync({
         theme: values.theme === '' ? null : values.theme,
+        notify_email: values.notify_email,
+        notify_in_app: values.notify_in_app,
         ...(hasProfile
           ? {
               job_title: nullable(values.job_title),
@@ -140,6 +148,21 @@ export function ProfilePage() {
               <option value="dark">Sombre</option>
             </Select>
           </div>
+        </fieldset>
+
+        <fieldset className="space-y-3">
+          <legend className="text-lg font-medium">Notifications</legend>
+          <p className="text-sm text-neutral-500">
+            Choisissez comment être prévenu (facture émise, document à valider, réservation…).
+          </p>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" className="size-4" {...form.register('notify_in_app')} />
+            Notifications dans le portail (cloche)
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" className="size-4" {...form.register('notify_email')} />
+            Notifications par email
+          </label>
         </fieldset>
 
         {hasProfile && (

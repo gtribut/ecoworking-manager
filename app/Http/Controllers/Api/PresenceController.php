@@ -6,15 +6,19 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\DeskAbsenceRecurrence;
 use App\Enums\Period;
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreAbsenceRequest;
 use App\Http\Resources\DeskAbsenceResource;
 use App\Models\DeskAbsence;
+use App\Models\User;
+use App\Notifications\AbsenceDeclaredNotification;
 use App\Services\PresenceService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * Présence nomade des résidents (PRD §3.4.6) : calendrier de présence dérivé
@@ -57,6 +61,13 @@ final class PresenceController extends Controller
             'recurrence_day_of_week' => $data['recurrence_day_of_week'] ?? null,
             'created_by' => $user->id,
         ]);
+
+        // Notification admin systématique (PRD Q25) : visibilité sur les bureaux
+        // libérés. In-app uniquement (non critique), en queue.
+        Notification::send(
+            User::role(Role::Admin->value)->get(),
+            new AbsenceDeclaredNotification($absence, $user),
+        );
 
         return (new DeskAbsenceResource($absence))->response()->setStatusCode(201);
     }

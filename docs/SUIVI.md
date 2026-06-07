@@ -134,9 +134,9 @@
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C8.1 | Emails transactionnels (confirmation résa, facture émise) via Jobs | ⬜ | dev Mailpit, prod Brevo |
-| C8.2 | Centre de notifications in-app (driver `database`) | ⬜ | table `notifications` |
-| C8.3 | Préférences notif (toggles `notify_email`/`notify_in_app`) | ⬜ | colonnes prêtes |
+| C8.1 | Emails transactionnels (confirmation résa, facture émise) via Jobs | ✅ | Base `PortalNotification` (routage canaux selon préférences, `ShouldQueue` → email jamais bloquant) ; notifs `InvoiceIssued`/`InvoiceOverdue` (mail+db, doublage critique) câblées dans `IssueInvoiceService`/`UpdateOverdueInvoicesCommand` ; `AbsenceDeclared` (in-app only) → admins (Q25). `Invoice::recipients()`. dev Mailpit, prod Brevo (C10/V1.5) |
+| C8.2 | Centre de notifications in-app (driver `database`) | ✅ | Migration `notifications` ; `NotificationController` (liste paginée auto-scopée + `unread_count`, mark read / read-all) ; SPA `NotificationBell` (cloche+badge, panneau a11y Escape/clic-extérieur, poll 60s) dans le Layout |
+| C8.3 | Préférences notif (toggles `notify_email`/`notify_in_app`) | ✅ | Exposées dans `/api/profile` (GET+PATCH) ; honorées par `PortalNotification::via()` ; fieldset « Notifications » sur la page profil SPA. `C8NotificationTest` (12) + Vitest `NotificationBell` (3) |
 
 ### C9 — Sync Google Calendar
 

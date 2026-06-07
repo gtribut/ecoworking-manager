@@ -29,10 +29,11 @@ final class ProfileController extends Controller
         $user = $request->user();
         $data = $request->validated();
 
-        // Préférence d'affichage portée par `users` (le reste va sur le profil).
-        if (array_key_exists('theme', $data)) {
-            $user->theme = $data['theme'];
-            $user->save();
+        // Préférences portées par `users` (thème + toggles notif) ; le reste va
+        // sur le profil membre.
+        $userPrefs = array_intersect_key($data, array_flip(['theme', 'notify_email', 'notify_in_app']));
+        if ($userPrefs !== []) {
+            $user->fill($userPrefs)->save();
         }
 
         $profileData = array_intersect_key($data, array_flip([
@@ -71,6 +72,8 @@ final class ProfileController extends Controller
                 'last_name' => $user->last_name,
                 'email' => $user->email,
                 'theme' => $user->theme,
+                'notify_email' => $user->notify_email,
+                'notify_in_app' => $user->notify_in_app,
             ],
             'profile' => $profile === null ? null : (new MemberProfileResource($profile))->resolve(),
             'company' => $profile?->company === null

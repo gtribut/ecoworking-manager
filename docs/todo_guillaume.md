@@ -24,23 +24,23 @@
 > Le code (controller, routes, tests mockés) est livré sans tes creds ; tu n'en as besoin que
 > pour un **test live** contre Google.
 
-- [ ] 🟡 Créer (ou réutiliser) un **projet Google Cloud** pour Ecoworking → *APIs & Services*
-- [ ] 🟡 Configurer l'**OAuth consent screen**
+- [x] ✅ Créer (ou réutiliser) un **projet Google Cloud** pour Ecoworking → *APIs & Services*
+- [x] ✅ Configurer l'**OAuth consent screen**
   - Type **Internal** si vous avez un Google Workspace `ecoworking.fr` (limite d'office aux comptes maison) ; sinon **External**
   - Scopes strictement : `openid`, `email`, `profile`
-- [ ] 🟡 Créer des **identifiants OAuth** → *Create Credentials → OAuth client ID → Web application*
-  - **Authorized redirect URIs** :
-    - Prod : `https://admin.ecoworking.fr/auth/google/callback`
-    - Dev : `http://localhost/auth/google/callback` (ajuster si tu utilises un host type `admin.ecoworking.test`)
-- [ ] 🟡 Décider du **domaine autorisé** (paramètre `hd`) — proposé : `ecoworking.fr`. Me le confirmer pour que je le mette en config.
-- [ ] 🟡 Placer les valeurs dans **ton `.env` local** (et plus tard dans les env vars Clever Cloud) :
+- [x] ✅ Créer des **identifiants OAuth** → *Create Credentials → OAuth client ID → Web application*
+  - **Authorized redirect URIs** : `https://admin.ecoworking.fr/auth/google/callback` (**prod uniquement** — test manuel Google en prod seulement)
+  - **Origines JavaScript autorisées** : laissées **vides** (flow Socialite server-side, pas de login JS)
+  - Creds stockées dans **LastPass** (pas de fichier `.env.prod` local)
+- [x] ✅ **Domaine autorisé** (paramètre `hd`) = `ecoworking.fr` (confirmé 07/06/26) — déjà en config (`GOOGLE_HOSTED_DOMAIN`, re-vérifié par suffixe email au callback).
+- [ ] 🟡 **Au déploiement** : placer les valeurs dans les **env vars Clever Cloud** (pas dans le `.env` local, qui reste avec les clés vides) :
   - `GOOGLE_CLIENT_ID=…`
   - `GOOGLE_CLIENT_SECRET=…`
-  - `GOOGLE_REDIRECT_URI=…`
+  - `GOOGLE_REDIRECT_URI=https://admin.ecoworking.fr/auth/google/callback`
   - `GOOGLE_HOSTED_DOMAIN=ecoworking.fr` (ou ce que tu décides)
   - *(les clés vides correspondantes sont déjà dans `.env.example`)*
 - [ ] 🟡 Vérifier qu'au moins **un compte admin** en base a une **adresse email = celle de ton compte Google** (le match se fait par email)
-- [ ] 🟡 Faire un **test live** du flow `admin.ecoworking.fr` → « Se connecter avec Google » et me remonter tout souci
+- [ ] 🔴 **À TESTER MANUELLEMENT EN PROD** : flow `admin.ecoworking.fr` → « Se connecter avec Google » pour confirmer le bon fonctionnement, et me remonter tout souci
 
 ---
 

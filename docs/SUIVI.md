@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-06-07 (C2 ✅ ; C3 ✅ ; C4 ✅ API portail complète ; C5 ✅ SPA portail complète ; C6 ✅ facturation complète (PDF, paiements, **C6.5 récurrente par entité refondue 2026-06-07**) ; C7 ✅ logique résa/tickets/présence. Prochaines étapes : C8 notifications, C9 Google Calendar, C0.4 CI.).**
+> **Dernière mise à jour : 2026-06-07 (C2 ✅ ; C3 ✅ ; C4 ✅ API portail complète ; C5 ✅ SPA portail complète ; C6 ✅ facturation complète (PDF, paiements, **C6.5 récurrente par entité refondue 2026-06-07**) ; C7 ✅ logique résa/tickets/présence ; C0.4 ✅ CI GitHub Actions. Prochaines étapes : C8 notifications, C9 Google Calendar.).**
 
 ---
 
@@ -35,8 +35,8 @@
 > `amount_paid`/statut, overdue). **C6.5 ✅ refondue (2026-06-07)** : facturation récurrente **par entité** (lignes
 > regroupées par prestation × qté, prorata sur ligne séparée), idempotence (entité, période) + backstop DB, traçabilité
 > `invoice_line_subscriptions` ; 11 tests C6.
-> Suite complète **205 tests verts**. Prochaines étapes : **C8** (notifications/emails), **C9** (Google Calendar), **C0.4** (CI),
-> **C10** (observabilité).
+> Suite complète **208 tests Pest verts** (+ 26 Vitest SPA). **C0.4 ✅ CI GitHub Actions** (Pint/Biome/Pest/Vitest/build).
+> Prochaines étapes : **C8** (notifications/emails), **C9** (Google Calendar), **C10** (observabilité).
 
 ---
 
@@ -49,7 +49,7 @@
 | C0.1 | Docs de cadrage (BRIEF, PRD, data_model, ADR 0001-0008) | ✅ | Stabilisés 2026-06-04 |
 | C0.2 | Scaffold Laravel 13 + Sail (PHP 8.5, Postgres 18, Mailpit) | ✅ | `compose.yaml`, vérifié HTTP 200 |
 | C0.3 | Setup dev local (WSL2, Docker, SSH) | ✅ | Cf. BRIEF §14-15 |
-| C0.4 | CI GitHub Actions (lint Pint/Biome + tests Pest + build) | ⬜ | `.github/workflows/ci.yml` (BRIEF §12) |
+| C0.4 | CI GitHub Actions (lint Pint/Biome + tests Pest + build) | ✅ | `.github/workflows/ci.yml` — job **php** (Pint `--test` + Pest sur service Postgres 18) + job **spa** (Biome + `tsc` typecheck + Vitest + build) ; cache composer/pnpm. Fix au passage : `baseUrl` déprécié retiré de `tsconfig.app.json` (TS 6), `*.tsbuildinfo` ignoré |
 | C0.5 | Config environnements `.env.example` (Postgres, Mailpit, locale fr) | ✅ | Aligné Sail ; reste secrets prod (V1.5) |
 
 ### C1 — Base de données
@@ -161,7 +161,7 @@
 | C11.2 | Tests Feature métier (facturation, isolation, résa) | 🚧 | C7 résa/tickets (14), API résa (9), facturation C6 (8), isolation A/B (AuthorizationTest) + Vitest SPA (26) ; à compléter au fil des chantiers |
 | C11.3 | Tests e2e Playwright (SPA) + Pest 4 browser (Filament) | ⬜ | ADR-0008 |
 | C11.4 | a11y axe-core sur écrans critiques | ⬜ | |
-| C11.5 | Pint + Biome propres en CI | 🚧 | Pint OK localement ; CI à brancher (C0.4) |
+| C11.5 | Pint + Biome propres en CI | ✅ | Pint `--test` + Biome `check` branchés dans `.github/workflows/ci.yml` (C0.4) ; verts |
 
 ---
 

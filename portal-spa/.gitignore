@@ -11,3 +11,6 @@ dist-ssr
 *.log
 coverage
 .vite
+
+# TypeScript incremental build cache
+*.tsbuildinfo

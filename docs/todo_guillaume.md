@@ -103,8 +103,8 @@
 - [ ] 🟡 Prévoir le **trim** des données Pulse (commande `pulse:check`/scheduler par défaut) si volume
 
 ### Better Stack (uptime externe)
-- [ ] 🟡 Créer un compte **Better Stack** (free : 3 monitors) → monitorer `https://portail.ecoworking.fr/up` (endpoint santé Laravel déjà exposé)
-- [ ] 🟡 Configurer les **alertes** (email / Slack)
+- [x] ✅ Compte **Better Stack** créé → monitor sur `https://portail.ecoworking.fr/up` (endpoint santé Laravel déjà exposé) (08/06/26)
+- [x] ✅ **Alertes** configurées (email / Slack) (08/06/26)
 
 ### Healthchecks.io (surveillance des crons)
 - [ ] 🟡 Créer un compte **Healthchecks.io** (free : 20 checks) + **1 check par cron** :

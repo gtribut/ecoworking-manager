@@ -107,11 +107,13 @@
 - [x] ✅ **Alertes** configurées (email / Slack) (08/06/26)
 
 ### Healthchecks.io (surveillance des crons)
-- [ ] 🟡 Créer un compte **Healthchecks.io** (free : 20 checks) + **1 check par cron** :
-  - facturation mensuelle → `HEALTHCHECK_MONTHLY_BILLING_URL=…`
-  - bascule factures en retard → `HEALTHCHECK_OVERDUE_INVOICES_URL=…`
+- [x] ✅ Compte **Healthchecks.io** créé + **1 check par cron** (08/06/26) :
+  - facturation mensuelle → `HEALTHCHECK_MONTHLY_BILLING_URL` (cron `0 6 1 * *` UTC, grâce 2 h)
+  - bascule factures en retard → `HEALTHCHECK_OVERDUE_INVOICES_URL` (période 1 j, grâce 1 h)
   - (le scheduler ping l'URL en succès et `…/fail` en échec — déjà câblé)
-- [ ] 🟡 Régler la **période/grâce** de chaque check sur la fréquence réelle (mensuel / quotidien)
+- [x] ✅ **Période/grâce** réglées sur la fréquence réelle (mensuel / quotidien) (08/06/26)
+- [x] ✅ URLs de ping enregistrées dans **LastPass** (08/06/26)
+- [ ] 🟡 (jour du déploiement) Pousser les 2 URLs dans **Clever Cloud** + tester un ping réel
 
 ---
 

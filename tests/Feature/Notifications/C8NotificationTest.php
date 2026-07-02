@@ -9,6 +9,7 @@ use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
 use App\Models\MemberProfile;
+use App\Models\Payment;
 use App\Models\Resource;
 use App\Models\User;
 use App\Notifications\AbsenceDeclaredNotification;
@@ -140,6 +141,34 @@ it('notifie le retard de paiement et bascule le statut', function () {
 
     expect($invoice->fresh()->status)->toBe(InvoiceStatus::Overdue);
     Notification::assertSentTo($recipient, InvoiceOverdueNotification::class);
+});
+
+it('ne renotifie pas le retard après un paiement partiel (review F7)', function () {
+    Notification::fake();
+
+    $company = Company::factory()->create();
+    $recipient = billingRecipientFor($company);
+
+    $invoice = Invoice::factory()->issued()->create([
+        'billable_type' => 'company',
+        'billable_id' => $company->id,
+        'due_at' => now()->subDays(3)->toDateString(),
+        'total_ttc' => 240.00,
+        'amount_paid' => 0,
+    ]);
+
+    $this->artisan('invoices:update-overdue')->assertSuccessful();
+    expect($invoice->fresh()->status)->toBe(InvoiceStatus::Overdue);
+
+    // Paiement partiel : la facture reste échue et non soldée → toujours en retard…
+    Payment::factory()->create(['invoice_id' => $invoice->id, 'amount' => 40]);
+    expect($invoice->fresh()->status)->toBe(InvoiceStatus::Overdue);
+
+    // … et les passages suivants du cron ne redéclenchent PAS de notification.
+    $this->artisan('invoices:update-overdue')->assertSuccessful();
+    $this->artisan('invoices:update-overdue')->assertSuccessful();
+
+    Notification::assertSentToTimes($recipient, InvoiceOverdueNotification::class, 1);
 });
 
 it('notifie les admins (in-app uniquement) quand un résident déclare une absence', function () {

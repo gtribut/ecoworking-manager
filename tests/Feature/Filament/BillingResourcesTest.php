@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
 use App\Filament\Resources\Invoices\Pages\CreateInvoice;
 use App\Filament\Resources\Invoices\Pages\EditInvoice;
 use App\Filament\Resources\Invoices\Pages\ListInvoices;
@@ -110,6 +111,22 @@ it('annule une facture émise via l\'action de la page de consultation', functio
     $invoice->refresh();
     expect($invoice->status)->toBe(InvoiceStatus::Cancelled)
         ->and($invoice->cancellation_credit_note_id)->not->toBeNull();
+});
+
+it('refuse un montant de paiement nul ou négatif (review F11)', function () {
+    $invoice = Invoice::factory()->issued()->create(['total_ttc' => 100]);
+
+    Livewire::test(CreatePayment::class)
+        ->fillForm([
+            'invoice_id' => $invoice->id,
+            'method' => PaymentMethod::Transfer->value,
+            'amount' => -50,
+            'paid_at' => now()->toDateString(),
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['amount']);
+
+    expect(Payment::query()->count())->toBe(0);
 });
 
 it('réserve les paiements à l\'admin (PaymentPolicy)', function () {

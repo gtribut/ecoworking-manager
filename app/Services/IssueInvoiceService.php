@@ -45,6 +45,10 @@ final class IssueInvoiceService
 
             $invoice->loadMissing(['lines', 'billable']);
 
+            if ($invoice->lines->isEmpty()) {
+                throw new RuntimeException('Impossible d\'émettre une facture sans ligne.');
+            }
+
             // Recalcul défensif des totaux depuis les lignes (jamais le front, §3.6).
             $subtotalHt = 0.0;
             $totalVat = 0.0;

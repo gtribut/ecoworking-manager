@@ -7,7 +7,6 @@ namespace App\Services;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Observers\PaymentObserver;
-use Illuminate\Support\Carbon;
 
 /**
  * Recalcul du montant réglé et du statut de paiement d'une facture (C6.6).
@@ -23,7 +22,9 @@ final class InvoicePaymentService
 
         $invoice->amount_paid = number_format($paid, 2, '.', '');
         $invoice->status = $this->resolveStatus($invoice, $paid);
-        $invoice->saveQuietly();
+        // save() (pas saveQuietly) : les transitions sent → partially_paid →
+        // paid doivent apparaître dans l'audit log (§3.4).
+        $invoice->save();
     }
 
     private function resolveStatus(Invoice $invoice, float $paid): InvoiceStatus
@@ -40,17 +41,18 @@ final class InvoicePaymentService
             return InvoiceStatus::Paid;
         }
 
-        if ($paid > 0) {
-            return InvoiceStatus::PartiallyPaid;
+        // Échue et non soldée : EN RETARD, même partiellement payée — sinon le
+        // cron la rebasculerait `overdue` et renotifierait à chaque paiement
+        // partiel. La notification est tracée à part (`overdue_notified_at`).
+        if ($this->isOverdue($invoice)) {
+            return InvoiceStatus::Overdue;
         }
 
-        return $this->isOverdue($invoice) ? InvoiceStatus::Overdue : InvoiceStatus::Sent;
+        return $paid > 0 ? InvoiceStatus::PartiallyPaid : InvoiceStatus::Sent;
     }
 
     private function isOverdue(Invoice $invoice): bool
     {
-        return $invoice->due_at !== null
-            && $invoice->due_at->endOfDay()->isPast()
-            && Carbon::now()->greaterThan($invoice->due_at->endOfDay());
+        return $invoice->due_at !== null && $invoice->due_at->endOfDay()->isPast();
     }
 }

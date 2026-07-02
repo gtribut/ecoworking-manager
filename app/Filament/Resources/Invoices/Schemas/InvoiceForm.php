@@ -85,6 +85,9 @@ class InvoiceForm
                                 TextInput::make('unit_price_ht')
                                     ->label('PU HT')
                                     ->numeric()
+                                    // Pas de ligne négative : une « facture négative »
+                                    // contournerait le flux avoir (§3.6).
+                                    ->minValue(0)
                                     ->default(0)
                                     ->required()
                                     ->prefix('€')

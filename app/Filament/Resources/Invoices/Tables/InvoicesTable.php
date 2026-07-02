@@ -7,8 +7,6 @@ namespace App\Filament\Resources\Invoices\Tables;
 use App\Enums\InvoiceStatus;
 use App\Models\Company;
 use App\Models\User;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
@@ -70,12 +68,10 @@ class InvoicesTable
                 ViewAction::make(),
                 EditAction::make(),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    // Seuls les brouillons sont supprimables (InvoicePolicy::delete).
-                    DeleteBulkAction::make(),
-                ]),
-            ])
+            // Pas de suppression en masse : les bulk actions Filament ne vérifient
+            // que deleteAny() (jamais la Policy par enregistrement) — ajouter un
+            // deleteAny() rendrait supprimables des factures ÉMISES (§3.6).
+            // La suppression d'un brouillon passe par sa page d'édition.
             ->defaultSort('created_at', 'desc');
     }
 }

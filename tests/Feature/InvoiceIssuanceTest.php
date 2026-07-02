@@ -91,6 +91,15 @@ it('un brouillon ne consomme pas le compteur tant qu\'il n\'est pas émis', func
     expect($issued->refresh()->number)->toBe('EW-'.now()->year.'-00001');
 });
 
+it('refuse d\'émettre un brouillon sans ligne (review F15)', function () {
+    $invoice = Invoice::factory()->create(['status' => InvoiceStatus::Draft->value, 'number' => null]);
+
+    expect(fn () => app(IssueInvoiceService::class)->issue($invoice))
+        ->toThrow(RuntimeException::class)
+        // Le compteur n'a pas été consommé par la tentative.
+        ->and($invoice->fresh()->number)->toBeNull();
+});
+
 it('refuse de réémettre une facture déjà émise', function () {
     $invoice = draftInvoiceWithLines();
     app(IssueInvoiceService::class)->issue($invoice);

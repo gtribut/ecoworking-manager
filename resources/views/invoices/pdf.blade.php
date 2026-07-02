@@ -108,7 +108,10 @@
 
     <table class="totals">
         <tr><td>Total HT</td><td class="num" style="text-align:right">{{ $money($invoice->subtotal_ht) }}</td></tr>
-        <tr><td>TVA</td><td class="num" style="text-align:right">{{ $money($invoice->total_vat) }}</td></tr>
+        {{-- Ventilation par taux : base HT + montant de taxe (art. 242 nonies A ann. II CGI). --}}
+        @foreach($invoice->vatBreakdown() as $rate => $amounts)
+            <tr><td>TVA {{ number_format((float) $rate, 1, ',', ' ') }} % (base {{ $money($amounts['base_ht']) }})</td><td class="num" style="text-align:right">{{ $money($amounts['vat']) }}</td></tr>
+        @endforeach
         <tr class="grand"><td>Total TTC</td><td class="num" style="text-align:right">{{ $money($invoice->total_ttc) }}</td></tr>
     </table>
 

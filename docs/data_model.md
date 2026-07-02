@@ -530,6 +530,7 @@ passage `cancelled` + **avoir** auto (V2). Montants figés sur les lignes à l'�
 | `credit_note_for_invoice_id` | bigint FK→invoices | ✓ | NULL | (avoir) facture annulée d'origine. `onDelete restrict` |
 | `cancellation_credit_note_id` | bigint FK→invoices | ✓ | NULL | (facture annulée) son avoir. `onDelete restrict` |
 | `cancelled_at` | timestamptz | ✓ | NULL | |
+| `overdue_notified_at` | timestamptz | ✓ | NULL | Notification de retard envoyée (unique par facture — review F7, migration 2026-07-02) |
 | `factur_x_xml_path` | varchar(255) | ✓ | NULL | **V2** (cf. §8) |
 | `pa_transmission_id` | varchar(120) | ✓ | NULL | **V2** Plateforme Agréée |
 | `pa_transmission_status` | varchar(40) | ✓ | NULL | **V2** |

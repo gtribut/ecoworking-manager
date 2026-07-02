@@ -24,9 +24,22 @@ final class InvoiceNumberingService
     public function nextNumber(int $year): string
     {
         return $this->db->transaction(function () use ($year): string {
+            // `firstOrCreate` sous verrou ne protège pas la PREMIÈRE émission de
+            // l'année : aucune ligne à verrouiller, deux transactions concurrentes
+            // tenteraient toutes deux l'INSERT (violation UNIQUE pour l'une).
+            // L'upsert « do nothing » rend la création idempotente, puis le
+            // SELECT ... FOR UPDATE sérialise les incréments.
+            InvoiceCounter::query()->insertOrIgnore([
+                'year' => $year,
+                'value' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
             $counter = InvoiceCounter::query()
+                ->where('year', $year)
                 ->lockForUpdate()
-                ->firstOrCreate(['year' => $year], ['value' => 0]);
+                ->firstOrFail();
 
             $counter->increment('value');
 

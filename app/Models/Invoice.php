@@ -30,8 +30,8 @@ use Illuminate\Support\Collection;
     'billing_name', 'billing_address', 'billing_siret', 'billing_vat_number',
     'subtotal_ht', 'total_vat', 'total_ttc', 'amount_paid', 'pdf_path', 'notes',
     'is_credit_note', 'credit_note_for_invoice_id', 'cancellation_credit_note_id',
-    'cancelled_at', 'factur_x_xml_path', 'pa_transmission_id', 'pa_transmission_status',
-    'emitted_by',
+    'cancelled_at', 'overdue_notified_at', 'factur_x_xml_path', 'pa_transmission_id',
+    'pa_transmission_status', 'emitted_by',
 ])]
 #[ObservedBy(InvoiceObserver::class)]
 class Invoice extends Model
@@ -55,6 +55,7 @@ class Invoice extends Model
             'amount_paid' => 'decimal:2',
             'is_credit_note' => 'boolean',
             'cancelled_at' => 'datetime',
+            'overdue_notified_at' => 'datetime',
         ];
     }
 
@@ -107,6 +108,26 @@ class Invoice extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(InvoiceLine::class);
+    }
+
+    /**
+     * Ventilation de la TVA par taux (base HT + montant de taxe), pour la
+     * mention obligatoire du PDF dès que plusieurs taux coexistent
+     * (art. 242 nonies A ann. II CGI). Clés = taux normalisé (`"20.00"`),
+     * triées numériquement.
+     *
+     * @return Collection<string, array{base_ht: float, vat: float}>
+     */
+    public function vatBreakdown(): Collection
+    {
+        return $this->lines
+            ->toBase()
+            ->groupBy(fn (InvoiceLine $line): string => number_format((float) $line->vat_rate, 2, '.', ''))
+            ->map(fn (Collection $lines): array => [
+                'base_ht' => round((float) $lines->sum('line_total_ht'), 2),
+                'vat' => round((float) $lines->sum('line_vat'), 2),
+            ])
+            ->sortKeys(SORT_NUMERIC);
     }
 
     /** @return HasMany<Payment, $this> */

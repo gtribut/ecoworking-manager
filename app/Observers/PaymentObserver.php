@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Services\InvoicePaymentService;
 
@@ -23,6 +24,15 @@ final class PaymentObserver
 
     public function updated(Payment $payment): void
     {
+        // Paiement réaffecté à une autre facture : l'ancienne doit être
+        // recalculée elle aussi, sinon elle reste `paid` à tort pour toujours.
+        if ($payment->wasChanged('invoice_id')) {
+            $previous = Invoice::query()->find($payment->getOriginal('invoice_id'));
+            if ($previous !== null) {
+                $this->payments->recalculate($previous);
+            }
+        }
+
         $this->sync($payment);
     }
 
@@ -38,7 +48,9 @@ final class PaymentObserver
 
     private function sync(Payment $payment): void
     {
-        $invoice = $payment->invoice;
+        // Lecture par FK et non via la relation : après une réaffectation,
+        // `$payment->invoice` peut encore pointer (cache) l'ancienne facture.
+        $invoice = Invoice::query()->find($payment->invoice_id);
 
         if ($invoice !== null) {
             $this->payments->recalculate($invoice);

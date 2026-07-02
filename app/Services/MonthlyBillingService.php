@@ -56,12 +56,21 @@ final class MonthlyBillingService
             ->distinct()
             ->get()
             ->each(function (Subscription $entity) use ($periodStart, $periodEnd, $created): void {
-                $invoice = $this->generateForEntity(
-                    $entity->billable_type,
-                    (int) $entity->billable_id,
-                    $periodStart,
-                    $periodEnd,
-                );
+                // Une entité en échec (ex. course sur le UNIQUE backstop) ne
+                // doit pas empêcher la facturation des suivantes : on signale
+                // (Sentry via report) et on poursuit le run.
+                try {
+                    $invoice = $this->generateForEntity(
+                        $entity->billable_type,
+                        (int) $entity->billable_id,
+                        $periodStart,
+                        $periodEnd,
+                    );
+                } catch (\Throwable $e) {
+                    report($e);
+
+                    return;
+                }
                 if ($invoice !== null) {
                     $created->push($invoice);
                 }
@@ -194,14 +203,18 @@ final class MonthlyBillingService
                 ]);
 
                 // Quote-part HT par abonnement (remise + prorata inclus), figée.
+                // L'arrondi unitaire peut dévier d'un centime du total de ligne
+                // (arrondi globalement) : l'écart est absorbé par la DERNIÈRE
+                // quote-part pour que somme(quote-parts) = line_total_ht.
                 $quotePartHt = round($first['unit_price_ht'] * (1 - $first['discount_rate'] / 100), 2);
-                foreach ($group as $plan) {
+                $lastQuotePartHt = round((float) $totals['line_total_ht'] - $quotePartHt * ($quantity - 1), 2);
+                foreach ($group->values() as $index => $plan) {
                     InvoiceLineSubscription::create([
                         'invoice_line_id' => $line->id,
                         'subscription_id' => $plan['subscription_id'],
                         'period_start' => $plan['period_start']->toDateString(),
                         'period_end' => $plan['period_end']->toDateString(),
-                        'amount_ht' => number_format($quotePartHt, 2, '.', ''),
+                        'amount_ht' => number_format($index === $quantity - 1 ? $lastQuotePartHt : $quotePartHt, 2, '.', ''),
                     ]);
                 }
 

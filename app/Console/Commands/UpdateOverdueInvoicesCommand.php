@@ -23,11 +23,17 @@ final class UpdateOverdueInvoicesCommand extends Command
 
     public function handle(): int
     {
-        // On récupère les factures concernées AVANT la bascule pour pouvoir
-        // notifier leurs destinataires (C8) : le passage `overdue` est unique
-        // (le statut ne revient pas à `sent`), donc une seule notif par facture.
+        // Factures émises, échues, non soldées et PAS ENCORE notifiées :
+        // `overdue_notified_at` garantit une notification unique par facture
+        // (le statut seul ne suffit pas — l'observer paiements peut basculer
+        // `overdue` sans cron, et un paiement partiel ne re-notifie pas).
         $invoices = Invoice::query()
-            ->whereIn('status', [InvoiceStatus::Sent->value, InvoiceStatus::PartiallyPaid->value])
+            ->whereIn('status', [
+                InvoiceStatus::Sent->value,
+                InvoiceStatus::PartiallyPaid->value,
+                InvoiceStatus::Overdue->value,
+            ])
+            ->whereNull('overdue_notified_at')
             ->whereNotNull('number')
             ->where('is_credit_note', false)
             ->whereNotNull('due_at')
@@ -36,7 +42,10 @@ final class UpdateOverdueInvoicesCommand extends Command
             ->get();
 
         foreach ($invoices as $invoice) {
-            $invoice->update(['status' => InvoiceStatus::Overdue->value]);
+            $invoice->update([
+                'status' => InvoiceStatus::Overdue->value,
+                'overdue_notified_at' => Carbon::now(),
+            ]);
             Notification::send($invoice->recipients(), new InvoiceOverdueNotification($invoice));
         }
 

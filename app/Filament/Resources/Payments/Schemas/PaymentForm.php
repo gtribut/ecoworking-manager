@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Payments\Schemas;
 
+use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Invoice;
 use Filament\Forms\Components\DatePicker;
@@ -22,13 +23,17 @@ class PaymentForm
                 Section::make('Encaissement')
                     ->columns(2)
                     ->schema([
-                        // Seules les factures émises (numéro posé) sont encaissables.
+                        // Seules les factures émises encore encaissables : ni les
+                        // brouillons (pas de numéro), ni les annulées, ni les avoirs.
                         Select::make('invoice_id')
                             ->label('Facture')
                             ->relationship(
                                 'invoice',
                                 'number',
-                                fn ($query) => $query->whereNotNull('number'),
+                                fn ($query) => $query
+                                    ->whereNotNull('number')
+                                    ->where('is_credit_note', false)
+                                    ->where('status', '!=', InvoiceStatus::Cancelled->value),
                             )
                             ->getOptionLabelFromRecordUsing(fn (Invoice $record): string => $record->number ?? "#{$record->id}")
                             ->searchable()
@@ -41,6 +46,9 @@ class PaymentForm
                         TextInput::make('amount')
                             ->label('Montant')
                             ->numeric()
+                            // Pas de montant nul/négatif : un remboursement passe
+                            // par le flux avoir, pas par un paiement inversé.
+                            ->minValue(0.01)
                             ->required()
                             ->prefix('€'),
                         DatePicker::make('paid_at')

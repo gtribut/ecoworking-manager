@@ -16,8 +16,10 @@ use App\Services\InvoicePdfService;
 use App\Services\IssueInvoiceService;
 use App\Services\MonthlyBillingService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Activitylog\Models\Activity;
 
 /** C6 — Facturation : génération PDF (C6.2), paiements (C6.6), idempotence récurrente (C6.5). */
 
@@ -90,6 +92,54 @@ it('recalcule amount_paid à la suppression d\'un paiement', function () {
 
     expect($invoice->fresh()->amount_paid)->toBe('0.00')
         ->and($invoice->fresh()->status)->toBe(InvoiceStatus::Sent);
+});
+
+it('recalcule l\'ancienne facture quand un paiement change de facture (review F6)', function () {
+    $a = Invoice::factory()->issued()->create(['total_ttc' => 100, 'amount_paid' => 0]);
+    $b = Invoice::factory()->issued()->create(['total_ttc' => 100, 'amount_paid' => 0]);
+    $payment = Payment::factory()->create(['invoice_id' => $a->id, 'amount' => 100]);
+    expect($a->fresh()->status)->toBe(InvoiceStatus::Paid);
+
+    // L'admin corrige : le paiement visait en réalité la facture B.
+    $payment->update(['invoice_id' => $b->id]);
+
+    expect($a->fresh()->amount_paid)->toBe('0.00')
+        ->and($a->fresh()->status)->toBe(InvoiceStatus::Sent)
+        ->and($b->fresh()->amount_paid)->toBe('100.00')
+        ->and($b->fresh()->status)->toBe(InvoiceStatus::Paid);
+});
+
+it('journalise les transitions de paiement dans l\'audit log (review F10)', function () {
+    $invoice = Invoice::factory()->issued()->create(['total_ttc' => 100, 'amount_paid' => 0]);
+
+    Payment::factory()->create(['invoice_id' => $invoice->id, 'amount' => 100]);
+
+    $activity = Activity::forSubject($invoice)->forEvent('updated')->latest('id')->first();
+    expect($activity)->not->toBeNull()
+        ->and($activity->attribute_changes['attributes']['status'])->toBe('paid')
+        ->and($activity->attribute_changes['old']['status'])->toBe('sent');
+});
+
+it('ventile la TVA par taux — base HT et montant (review F8)', function () {
+    $invoice = Invoice::factory()->issued()->create();
+    InvoiceLine::factory()->create([
+        'invoice_id' => $invoice->id, 'vat_rate' => 20,
+        'line_total_ht' => 100, 'line_vat' => 20, 'line_total_ttc' => 120,
+    ]);
+    InvoiceLine::factory()->create([
+        'invoice_id' => $invoice->id, 'vat_rate' => 20,
+        'line_total_ht' => 50, 'line_vat' => 10, 'line_total_ttc' => 60,
+    ]);
+    InvoiceLine::factory()->create([
+        'invoice_id' => $invoice->id, 'vat_rate' => 5.5,
+        'line_total_ht' => 200, 'line_vat' => 11, 'line_total_ttc' => 211,
+    ]);
+
+    $breakdown = $invoice->load('lines')->vatBreakdown();
+
+    expect($breakdown->keys()->all())->toBe(['5.50', '20.00'])
+        ->and($breakdown['5.50'])->toBe(['base_ht' => 200.0, 'vat' => 11.0])
+        ->and($breakdown['20.00'])->toBe(['base_ht' => 150.0, 'vat' => 30.0]);
 });
 
 it('passe en retard les factures émises échues et non soldées', function () {
@@ -234,6 +284,55 @@ it('facture le reliquat des abonnements non encore facturés sur la période (re
     // A n'est pas refacturé, et l'idempotence tient toujours au passage suivant.
     expect(InvoiceLineSubscription::query()->where('subscription_id', $subA->id)->count())->toBe(1)
         ->and($svc->generateForEntity('company', $company->id, $start, $end))->toBeNull();
+});
+
+it('fait coïncider la somme des quote-parts avec le total de ligne (review F13)', function () {
+    // PU 10,05 € − 10 % = 9,045 €/abo : l'arrondi unitaire (9,05 × 3 = 27,15)
+    // dévie d'un centime de la ligne arrondie globalement (27,14).
+    $company = Company::factory()->create(['discount_rate' => 10]);
+    $offer = Offer::factory()->subscription()->create(['unit_price_ht' => 10.05, 'vat_rate' => 20]);
+    Subscription::factory()->count(3)->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'starts_at' => '2026-04-01',
+    ]);
+
+    $invoice = app(MonthlyBillingService::class)->generateForEntity(
+        'company', $company->id,
+        CarbonImmutable::parse('2026-04-01'), CarbonImmutable::parse('2026-04-30'),
+    );
+
+    $line = $invoice->lines->first();
+    expect((float) $line->subscriptionLinks()->sum('amount_ht'))
+        ->toBe((float) $line->line_total_ht);
+});
+
+it('poursuit la génération mensuelle malgré l\'échec d\'une entité (review F16)', function () {
+    Exceptions::fake();
+    $offer = Offer::factory()->subscription()->create(['unit_price_ht' => 100, 'vat_rate' => 20]);
+    $failing = Company::factory()->create();
+    $healthy = Company::factory()->create();
+    Subscription::factory()->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $failing->id,
+        'starts_at' => '2026-04-01',
+    ]);
+    Subscription::factory()->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $healthy->id,
+        'starts_at' => '2026-04-01',
+    ]);
+
+    // Simule un échec isolé sur la première entité (ex. violation du UNIQUE
+    // backstop en cas de course entre deux runs).
+    Invoice::creating(function (Invoice $invoice) use ($failing): void {
+        if ($invoice->billable_type === 'company' && $invoice->billable_id === $failing->id) {
+            throw new RuntimeException('boom');
+        }
+    });
+
+    $created = app(MonthlyBillingService::class)->generateMonth(CarbonImmutable::parse('2026-04-15'));
+
+    expect($created)->toHaveCount(1)
+        ->and($created->first()->billable_id)->toBe($healthy->id);
+    Exceptions::assertReported(RuntimeException::class);
 });
 
 it('génère une facture par entité distincte via generateMonth', function () {

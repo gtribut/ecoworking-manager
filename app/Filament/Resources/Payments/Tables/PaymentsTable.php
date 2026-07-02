@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Payments\Tables;
 
 use App\Enums\PaymentMethod;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -48,11 +46,8 @@ class PaymentsTable
             ->recordActions([
                 EditAction::make(),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ])
+            // Pas de suppression en masse (cf. InvoicesTable) : la suppression
+            // unitaire d'un paiement passe par sa page d'édition (Policy vérifiée).
             ->defaultSort('paid_at', 'desc');
     }
 }

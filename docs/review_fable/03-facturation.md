@@ -3,6 +3,12 @@
 > Audit des services de facturation, observer paiements, commandes/scheduler, modèles, Policy,
 > Resources Filament, migrations, job/template PDF et des 3 suites de tests concernées.
 > Référentiel : CLAUDE.md §3.6 (règles non négociables), PRD §5/§6, data_model.
+>
+> **MàJ 2026-07-02** : **F1 à F5 corrigés** (verrou + re-check en transaction sur
+> émission/annulation, PDF de l'avoir dispatché, `InvoiceObserver::deleting` purge les
+> liaisons d'un brouillon supprimé, idempotence au grain abonnement avec facturation du
+> reliquat). Tests ajoutés dans `C6BillingTest` et `InvoiceIssuanceTest`. Restent ouverts :
+> F6 à F17.
 
 ## 1. Conformité aux règles §3.6
 

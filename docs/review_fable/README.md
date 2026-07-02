@@ -63,9 +63,9 @@ Les problèmes réels se concentrent sur **quatre thèmes transverses** :
 |---|---|---|---|
 | 1 | ✅ **Corrigé le 02/07** — Brancher `PurchaseService` sur la création d'achat Filament (tickets jamais générés) | 🔴 Critique | [04](./04-backend-php.md) |
 | 2 | ✅ **Corrigé le 02/07** (feature désactivée, action supprimée) — action Fortify `UpdateUserProfileInformation` (colonne `name` inexistante) | 🔴 Critique | [04](./04-backend-php.md) |
-| 3 | Verrouiller émission/annulation de facture (re-check statut sous `lockForUpdate` en transaction) | 🔴 Élevé | [03](./03-facturation.md) |
-| 4 | Purger `invoice_line_subscriptions` à la suppression d'un brouillon (entité infacturable sinon) | 🔴 Élevé | [03](./03-facturation.md) |
-| 5 | Générer le PDF des avoirs (pièce comptable, aujourd'hui 404) | 🔴 Élevé | [03](./03-facturation.md) |
+| 3 | ✅ **Corrigé le 02/07** — Verrouiller émission/annulation de facture (`lockForUpdate` + re-check en transaction, F1/F2) | 🔴 Élevé | [03](./03-facturation.md) |
+| 4 | ✅ **Corrigé le 02/07** (`InvoiceObserver::deleting` purge les liaisons, F4) — brouillon supprimé ⇒ entité refacturable | 🔴 Élevé | [03](./03-facturation.md) |
+| 5 | ✅ **Corrigé le 02/07** — PDF de l'avoir dispatché à l'annulation (F3) | 🔴 Élevé | [03](./03-facturation.md) |
 | 6 | ✅ **Tranché le 02/07** — `APP_TIMEZONE=Europe/Paris` (ADR-0010) | 🟠 Majeur | [04](./04-backend-php.md) |
 | 7 | Réconcilier le périmètre MVP — plan d'action prêt : [07-chantier-mvp-restant.md](./07-chantier-mvp-restant.md) | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
 | 8 | Câbler le serving SPA prod (catch-all + Blade + build `public/portal/`) — inclus dans C12.1 du doc 07 | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
@@ -74,8 +74,9 @@ Les problèmes réels se concentrent sur **quatre thèmes transverses** :
 | 11 | Idempotence facturation au grain abonnement (pas entité) + résilience par entité du cron | 🟠 Majeur | [03](./03-facturation.md) |
 | 12 | Backstop DB pour les bureaux nomades (exclusion GiST ou UNIQUE partiel — race applicative possible) | 🟠 Majeur | [04](./04-backend-php.md), [06](./06-db-tests-ci.md) |
 
-Viennent ensuite (détail dans les docs) : correction de `MonthlyBillingService::alreadyBilled`
-et de l'oscillation `overdue↔partially_paid` (notifications dupliquées), recalcul de l'ancienne
+Viennent ensuite (détail dans les docs) : ~~correction de `MonthlyBillingService::alreadyBilled`~~
+(✅ corrigé le 02/07, idempotence au grain abonnement, F5) et de l'oscillation
+`overdue↔partially_paid` (notifications dupliquées), recalcul de l'ancienne
 facture quand un paiement change d'`invoice_id`, `composer.json` `^8.3`→`^8.5`, `down()` de la
 migration `activity_log`, tests d'isolation HTTP manquants (liste bookings, DELETE occupations/
 absences), gestion 401/419 + `lang/fr` côté SPA, recovery code 2FA inutilisable dans l'UI,

@@ -100,6 +100,17 @@ Réf. : PRD §3.7, §4.12.
   explicite du PRD.
 - SPA : feature `directory/` (liste + recherche). Plan SVG : alternative accessible
   obligatoire (équivalent texte de l'occupation, CLAUDE.md §3.5).
+- **Spec plan SVG (Guillaume, 02/07)** : 2 étages — étage 1 = 29 bureaux, étage 2 = 20
+  bureaux. Un SVG placeholder est **prégénéré dans `docs/plan/etages.svg`** : 2 zones
+  (`#etage-1`, `#etage-2`) + 49 rectangles en grille, ids `desk-1` à `desk-49`
+  (+ `data-desk="N"`), numérotation 1-29 (étage 1) et 30-49 (étage 2). Guillaume
+  redessinera les formes réelles **en repartant de ce fichier et en conservant les ids** —
+  le code doit donc cibler exclusivement `#desk-N`/`data-desk`, jamais les coordonnées.
+  Prévoir une table de correspondance `data-desk` ↔ `resources.id` (seedée ou en config),
+  pas de couplage aux ids DB dans le SVG.
+- ⚠️ **Incohérence à trancher au câblage** : 29 + 20 = **49** bureaux, mais le seeder et le
+  PRD en comptent **48** (asserté dans `SeederTest`). Vérifier avec Guillaume quel étage
+  gagne/perd un bureau et aligner seeder + PRD + SVG.
 
 ### C12.6 — Dashboard admin + vue « Occupation du jour »
 Réf. : PRD §4.1, §4.8.4.

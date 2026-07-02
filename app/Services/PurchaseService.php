@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\TicketStatus;
 use App\Enums\TicketType;
 use App\Models\Offer;
+use App\Models\Purchase;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Database\DatabaseManager;
@@ -55,6 +56,29 @@ final class PurchaseService
             );
 
             return ['purchase' => $purchase, 'tickets' => $tickets];
+        });
+    }
+
+    /**
+     * Crée un achat depuis des données déjà validées (formulaire admin : snapshot
+     * pré-rempli depuis l'offre mais ajustable, §3.6) et génère les tickets
+     * associés dans la même transaction.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function createWithTickets(array $data): Purchase
+    {
+        return $this->db->transaction(function () use ($data): Purchase {
+            $purchase = Purchase::create($data);
+
+            $this->generateTickets(
+                holder: $purchase->user,
+                type: $purchase->ticket_type,
+                quantity: max(1, (int) $purchase->quantity),
+                purchaseId: $purchase->id,
+            );
+
+            return $purchase;
         });
     }
 

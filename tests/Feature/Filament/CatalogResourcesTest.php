@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\TicketStatus;
 use App\Enums\TicketType;
 use App\Filament\Resources\Offers\Pages\CreateOffer;
 use App\Filament\Resources\Offers\Pages\EditOffer;
@@ -15,6 +16,7 @@ use App\Filament\Resources\Subscriptions\Pages\ListSubscriptions;
 use App\Models\Offer;
 use App\Models\Purchase;
 use App\Models\Subscription;
+use App\Models\Ticket;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
@@ -85,4 +87,31 @@ it('fige le prix à l\'achat et trace l\'admin créateur (Purchase)', function (
     expect($purchase->created_by)->toBe($admin->id)
         ->and((float) $purchase->unit_price_ht)->toBe(12.50)
         ->and($purchase->quantity)->toBe(5);
+});
+
+it('génère les tickets du bénéficiaire à la création d\'un achat (admin)', function () {
+    $admin = User::factory()->admin()->create();
+    actingAs($admin);
+    $beneficiary = User::factory()->create();
+
+    Livewire::test(CreatePurchase::class)
+        ->fillForm([
+            'user_id' => $beneficiary->id,
+            'ticket_type' => TicketType::MeetingRoomHalfDay->value,
+            'quantity' => 3,
+            'unit_price_ht' => 17.50,
+            'vat_rate' => 20,
+            'purchased_at' => now(),
+            'label' => 'Pack 3 demi-journées salle',
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $purchase = Purchase::firstOrFail();
+    $tickets = Ticket::query()->where('purchase_id', $purchase->id)->get();
+
+    expect($tickets)->toHaveCount(3)
+        ->and($tickets->every(fn (Ticket $ticket): bool => $ticket->user_id === $beneficiary->id
+            && $ticket->type === TicketType::MeetingRoomHalfDay
+            && $ticket->status === TicketStatus::Available))->toBeTrue();
 });

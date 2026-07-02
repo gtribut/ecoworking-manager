@@ -453,7 +453,7 @@ Bouton "Demander une modification" → `mailto:contact@ecoworking.fr?subject=[ba
 #### 3.4.5 Sécurité
 
 - Changement de mot de passe : ré-authentification requise (mot de passe actuel obligatoire)
-- Changement d'email : envoi d'un email de confirmation à la nouvelle adresse + invalidation jusqu'à confirmation 🟡
+- Changement d'email : **acte admin uniquement** (back-office, Resource User — unicité validée). Le membre ne peut pas modifier son email lui-même : aucun flux self-service (décision Guillaume du 2026-07-02, arbitrage D de `docs/review_fable/07`). Aucun endpoint portail n'expose l'email en écriture (`PATCH /api/profile` l'exclut, feature Fortify `updateProfileInformation` désactivée). Le reset de mot de passe par email (Fortify) couvre le besoin de récupération de compte
 - Audit log : trace tout changement de champs sensibles (email, mot de passe, opt-in newsletter, visibilité annuaire)
 
 #### 3.4.6 Mon bureau & mes absences (résidents et staff uniquement)

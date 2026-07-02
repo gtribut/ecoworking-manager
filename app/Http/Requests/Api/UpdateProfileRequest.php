@@ -9,9 +9,11 @@ use Illuminate\Foundation\Http\FormRequest;
 /**
  * Édition du profil membre par le membre lui-même (PRD §3.4.2 / §3.4.4, PATCH
  * partiel). Périmètre volontairement restreint aux champs personnels : le nom
- * est en lecture seule (édition admin), et l'email / mot de passe relèvent de
- * flux dédiés avec ré-authentification (§3.4.5, Fortify) — donc hors de ce
- * Form Request. L'auto-scope (toujours `$request->user()`) garantit qu'un
+ * est en lecture seule (édition admin), l'email est modifiable UNIQUEMENT par
+ * un admin via le back-office (§3.4.5, décision D du 2026-07-02 — aucun flux
+ * self-service), et le mot de passe relève d'un flux dédié avec
+ * ré-authentification (Fortify) — donc tous hors de ce Form Request.
+ * L'auto-scope (toujours `$request->user()`) garantit qu'un
  * membre n'édite que son propre profil (CLAUDE.md §3.1).
  */
 final class UpdateProfileRequest extends FormRequest

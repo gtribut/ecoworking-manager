@@ -51,7 +51,9 @@ class CompanyForm
                             ->maxLength(50),
                         TextInput::make('siret')
                             ->label('SIRET')
-                            ->numeric()
+                            // Champ texte (PAS ->numeric()) : un SIRET peut commencer
+                            // par 0 — un cast numérique perdrait les zéros de tête.
+                            ->regex('/^\d{14}$/')
                             ->length(14)
                             ->helperText('14 chiffres.'),
                         TextInput::make('vat_number')
@@ -113,8 +115,9 @@ class CompanyForm
                             ->options(PaymentMethod::class),
                         TextInput::make('sepa_iban_last4')
                             ->label('IBAN — 4 derniers chiffres')
+                            // Champ texte (PAS ->numeric()) : « 0123 » doit garder son zéro.
+                            ->regex('/^\d{4}$/')
                             ->length(4)
-                            ->numeric()
                             // RGPD §3.4 : jamais l'IBAN complet en clair.
                             ->helperText('4 derniers chiffres uniquement — jamais l\'IBAN complet.'),
                         TextInput::make('sepa_mandate_reference')

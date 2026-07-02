@@ -13,6 +13,7 @@ use App\Http\Requests\Api\StoreBookingRequest;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Models\Resource;
+use App\Models\User;
 use App\Services\BookingService;
 use App\Services\RoomAvailabilityService;
 use App\Services\TicketService;
@@ -73,7 +74,7 @@ final class BookingController extends Controller
         return response()->json(['message' => 'Réservation annulée.']);
     }
 
-    private function storeResident(StoreBookingRequest $request, $user, Resource $room, BookingService $bookings): Booking
+    private function storeResident(StoreBookingRequest $request, User $user, Resource $room, BookingService $bookings): Booking
     {
         return $bookings->create([
             'resource' => $room,
@@ -87,7 +88,7 @@ final class BookingController extends Controller
 
     private function storeExternal(
         StoreBookingRequest $request,
-        $user,
+        User $user,
         Resource $room,
         BookingService $bookings,
         RoomAvailabilityService $availability,

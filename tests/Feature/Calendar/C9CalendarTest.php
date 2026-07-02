@@ -87,6 +87,40 @@ it('isole le flux entité d\'une autre entité', function () {
     expect($content)->not->toContain("booking-{$strangerBooking->id}@");
 });
 
+it('borne le flux aux réservations récentes (exclut celles antérieures à 3 mois)', function () {
+    $user = User::factory()->create();
+    $token = $user->ensureCalendarToken();
+
+    $old = Booking::factory()->for($user)->create([
+        'starts_at' => now()->subMonths(4),
+        'ends_at' => now()->subMonths(4)->addHour(),
+    ]);
+    $recent = Booking::factory()->for($user)->create();
+
+    $content = $this->get("/calendar/{$token}/mine.ics")->getContent();
+
+    expect($content)
+        ->toContain("booking-{$recent->id}@")
+        ->not->toContain("booking-{$old->id}@");
+});
+
+it('plie les longues lignes UTF-8 sans couper un caractère accentué (RFC 5545)', function () {
+    $user = User::factory()->create();
+    $token = $user->ensureCalendarToken();
+    $title = str_repeat('éàüœ', 40); // > 75 octets, multi-octets partout
+    Booking::factory()->for($user)->create(['title' => $title]);
+
+    $content = $this->get("/calendar/{$token}/mine.ics")->getContent();
+
+    foreach (explode("\r\n", $content) as $line) {
+        expect(strlen($line))->toBeLessThanOrEqual(75)
+            ->and(mb_check_encoding($line, 'UTF-8'))->toBeTrue();
+    }
+
+    // Dépliage RFC 5545 (CRLF + espace) : le titre se reconstitue intact.
+    expect(str_replace("\r\n ", '', $content))->toContain($title);
+});
+
 it('renvoie 404 sur un token inconnu (pas d\'énumération)', function () {
     $this->get('/calendar/'.str_repeat('a', 48).'/mine.ics')->assertNotFound();
 });
@@ -124,7 +158,8 @@ it('révoque l\'abonnement iCal', function () {
 
     $this->actingAs($user)->deleteJson('/api/calendar/token')
         ->assertOk()
-        ->assertJsonPath('enabled', false);
+        ->assertJsonPath('enabled', false)
+        ->assertJsonPath('urls', null); // contrat TS : `urls` toujours présent
 
     $this->get("/calendar/{$token}/mine.ics")->assertNotFound();
 });

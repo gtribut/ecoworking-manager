@@ -71,7 +71,10 @@ it('émet une facture via l\'action de la page d\'édition', function () {
     ]);
 
     Livewire::test(EditInvoice::class, ['record' => $invoice->getRouteKey()])
-        ->callAction('issue');
+        ->callAction('issue')
+        // Review #19 : le toast de succès part bien sans $action->success()
+        // explicite (statut Success par défaut en Filament 5).
+        ->assertNotified('Facture émise');
 
     $invoice->refresh();
     expect($invoice->status)->toBe(InvoiceStatus::Sent)
@@ -106,7 +109,8 @@ it('annule une facture émise via l\'action de la page de consultation', functio
     ]);
 
     Livewire::test(ViewInvoice::class, ['record' => $invoice->getRouteKey()])
-        ->callAction('cancel', ['reason' => 'Erreur de saisie']);
+        ->callAction('cancel', ['reason' => 'Erreur de saisie'])
+        ->assertNotified('Facture annulée, avoir généré');
 
     $invoice->refresh();
     expect($invoice->status)->toBe(InvoiceStatus::Cancelled)

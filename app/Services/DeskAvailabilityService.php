@@ -16,6 +16,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 
@@ -39,20 +40,27 @@ final class DeskAvailabilityService
      */
     public function availableDesks(CarbonInterface $date, Period $period): Collection
     {
-        $occupiedDeskIds = $this->occupiedDeskIds($date, $period);
-
-        return Resource::query()
-            ->where('type', ResourceType::Desk->value)
-            ->where('assignment', ResourceAssignment::Unassigned->value)
-            ->where('is_active', true)
-            ->whereNotIn('id', $occupiedDeskIds)
+        return $this->availableDesksQuery($date, $period)
             ->orderBy('display_order')
             ->get();
     }
 
+    /** Compte en SQL (pas d'hydratation de modèles pour un simple total). */
     public function availableCount(CarbonInterface $date, Period $period): int
     {
-        return $this->availableDesks($date, $period)->count();
+        return $this->availableDesksQuery($date, $period)->count();
+    }
+
+    /**
+     * @return Builder<resource>
+     */
+    private function availableDesksQuery(CarbonInterface $date, Period $period): Builder
+    {
+        return Resource::query()
+            ->where('type', ResourceType::Desk->value)
+            ->where('assignment', ResourceAssignment::Unassigned->value)
+            ->where('is_active', true)
+            ->whereNotIn('id', $this->occupiedDeskIds($date, $period));
     }
 
     /**

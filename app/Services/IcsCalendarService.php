@@ -19,12 +19,19 @@ use Illuminate\Support\Collection;
  */
 final class IcsCalendarService
 {
+    /**
+     * Borne temporelle des flux : les résas plus anciennes sont exclues
+     * (l'historique complet à vie gonflerait le flux à chaque pull client).
+     */
+    private const int PAST_MONTHS = 3;
+
     /** Réservations de salles du membre (flux « Mes réservations »). */
     public function forUser(User $user): string
     {
         $bookings = Booking::query()
             ->confirmed()
             ->where('user_id', $user->id)
+            ->where('starts_at', '>=', $this->horizon())
             ->with('resource')
             ->orderBy('starts_at')
             ->get();
@@ -46,6 +53,7 @@ final class IcsCalendarService
             ->whereHas('user.memberProfile', function ($q) use ($companyIds): void {
                 $q->whereIn('company_id', $companyIds->all());
             })
+            ->where('starts_at', '>=', $this->horizon())
             ->with(['resource', 'user'])
             ->orderBy('starts_at')
             ->get();
@@ -118,7 +126,18 @@ final class IcsCalendarService
         );
     }
 
-    /** Repli d'une ligne à 75 octets (continuation préfixée d'un espace). */
+    /** Plus vieille date de début incluse dans un flux. */
+    private function horizon(): CarbonImmutable
+    {
+        return CarbonImmutable::now()->subMonths(self::PAST_MONTHS);
+    }
+
+    /**
+     * Repli d'une ligne à 75 octets max (continuation préfixée d'un espace).
+     * Découpe via `mb_strcut` : la coupe se fait en OCTETS mais jamais au
+     * milieu d'un caractère UTF-8 (un `str_split` binaire scindait les accents,
+     * produisant des séquences invalides chez certains clients).
+     */
     private function fold(string $line): string
     {
         if (strlen($line) <= 75) {
@@ -126,9 +145,17 @@ final class IcsCalendarService
         }
 
         $folded = '';
-        $chunks = str_split($line, 73); // marge pour le CRLF + espace
-        foreach ($chunks as $index => $chunk) {
-            $folded .= ($index === 0 ? '' : "\r\n ").$chunk;
+        $first = true;
+
+        while ($line !== '') {
+            // 73 octets utiles : marge pour l'espace de continuation.
+            $chunk = mb_strcut($line, 0, 73, 'UTF-8');
+            if ($chunk === '') {
+                $chunk = substr($line, 0, 73); // filet anti-boucle (contenu non-UTF-8)
+            }
+            $folded .= ($first ? '' : "\r\n ").$chunk;
+            $line = substr($line, strlen($chunk));
+            $first = false;
         }
 
         return $folded;

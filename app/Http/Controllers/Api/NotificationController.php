@@ -42,7 +42,9 @@ final class NotificationController extends Controller
     /** Marque toutes les notifications du membre comme lues (action bulk). */
     public function markAllAsRead(Request $request): JsonResponse
     {
-        $request->user()->unreadNotifications->markAsRead();
+        // UPDATE de masse : un seul ordre SQL (la collection `unreadNotifications`
+        // ferait un UPDATE par ligne après avoir hydraté chaque notification).
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
         return response()->json(['message' => 'Toutes les notifications marquées comme lues.']);
     }

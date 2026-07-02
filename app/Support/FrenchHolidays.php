@@ -15,7 +15,11 @@ use Carbon\CarbonInterface;
  */
 final class FrenchHolidays
 {
-    /** Cache des dates (Y-m-d) par année, évite de recalculer Pâques. */
+    /**
+     * Cache des dates (Y-m-d) par année, évite de recalculer Pâques.
+     *
+     * @var array<int, list<string>>
+     */
     private static array $cache = [];
 
     /** Jour ouvré = lundi→vendredi ET hors jour férié. */

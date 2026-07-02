@@ -41,7 +41,8 @@ final class CalendarSubscriptionController extends Controller
         $user->calendar_token = null;
         $user->save();
 
-        return response()->json(['enabled' => false]);
+        // `urls` explicite (même forme que show/regenerate — contrat TS de la SPA).
+        return response()->json(['enabled' => false, 'urls' => null]);
     }
 
     /**

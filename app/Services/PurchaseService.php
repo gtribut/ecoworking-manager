@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\TicketStatus;
 use App\Enums\TicketType;
+use App\Exceptions\DomainActionException;
 use App\Models\Offer;
 use App\Models\Purchase;
 use App\Models\Ticket;
@@ -29,9 +30,19 @@ final class PurchaseService
      * (N = `quantity_per_purchase`) au statut `available`. Prix figé.
      *
      * @param  Model  $billable  entité facturée (User ou Company)
+     * @return array{purchase: Purchase, tickets: Collection<int, Ticket>}
+     *
+     * @throws DomainActionException si l'offre ne porte pas de type de ticket
      */
     public function createFromOffer(Offer $offer, User $holder, Model $billable, int $createdBy): array
     {
+        // Garde métier : seule une offre « tickets » (ticket_type renseigné) peut
+        // créditer des tickets — une offre d'abonnement créerait des tickets
+        // invalides (type null).
+        if ($offer->ticket_type === null) {
+            throw new DomainActionException("L'offre « {$offer->name} » ne porte pas de type de ticket : impossible de créer un achat de tickets.");
+        }
+
         return $this->db->transaction(function () use ($offer, $holder, $billable, $createdBy): array {
             $quantity = max(1, (int) $offer->quantity_per_purchase);
 

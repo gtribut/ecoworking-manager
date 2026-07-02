@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Users\Schemas;
 
 use App\Enums\Role;
+use App\Rules\ExclusiveUsageRole;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -54,10 +55,15 @@ class UserForm
                             ->relationship('roles', 'name')
                             ->multiple()
                             ->preload()
-                            // Libellés FR via l'enum Role (la valeur stockée = nom Spatie).
-                            ->options(collect(Role::cases())->mapWithKeys(
-                                fn (Role $role): array => [$role->value => $role->getLabel()],
-                            ))
+                            // Libellés FR via l'enum Role. L'état du Select reste les IDs
+                            // spatie (requis par la relation) — surcharger `options()` avec
+                            // les noms cassait la sélection ET la sauvegarde (sync par ID).
+                            ->getOptionLabelFromRecordUsing(
+                                fn ($record): string => Role::tryFrom($record->name)?->getLabel() ?? $record->name,
+                            )
+                            // XOR des rôles d'usage (PRD §2.4) : au plus un parmi
+                            // resident/additional/external/staff.
+                            ->rules([new ExclusiveUsageRole])
                             ->helperText('Rôles d\'usage (résident/additionnel/externe/équipe) exclusifs entre eux ; admin et contact facturation se cumulent.')
                             ->columnSpanFull(),
                     ]),

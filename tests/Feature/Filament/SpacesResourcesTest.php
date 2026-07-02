@@ -149,7 +149,8 @@ it('annule une résa via l\'action dédiée et restitue le ticket (back-office)'
     ]);
 
     Livewire::test(EditBooking::class, ['record' => $booking->getRouteKey()])
-        ->callAction('cancel', ['reason' => 'Erreur de saisie']);
+        ->callAction('cancel', ['reason' => 'Erreur de saisie'])
+        ->assertNotified('Réservation annulée');
 
     expect($booking->refresh()->status)->toBe(BookingStatus::Cancelled)
         ->and($booking->cancel_reason)->toBe('Erreur de saisie')

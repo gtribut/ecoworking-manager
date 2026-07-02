@@ -105,6 +105,53 @@ it('refuse une résa external sans ticket disponible (422)', function () {
     ])->assertStatus(422);
 });
 
+// --- C4.4 Disponibilité d'une salle ---------------------------------------
+
+it('renvoie 404 sur la dispo d\'une ressource qui n\'est pas une salle de réunion', function () {
+    $desk = Resource::factory()->desk()->create();
+    $day = apiNextWorkingDay();
+
+    // Moindre exposition (review sécu I1) : un bureau ne doit pas répondre
+    // avec ses créneaux via l'endpoint salles.
+    $this->actingAs(User::factory()->resident()->create())
+        ->getJson("/api/rooms/{$desk->id}/availability?date={$day->toDateString()}")
+        ->assertNotFound();
+});
+
+it('compte une résa à cheval sur minuit dans les créneaux occupés du lendemain', function () {
+    $room = Resource::factory()->meetingRoom()->create();
+    $day = apiNextWorkingDay()->addDay();
+    $eve = $day->subDay();
+    Booking::factory()->create([
+        'resource_id' => $room->id,
+        'starts_at' => $eve->setTime(23, 0),
+        'ends_at' => $day->setTime(1, 0), // franchit minuit
+        'status' => BookingStatus::Confirmed->value,
+    ]);
+
+    $this->actingAs(User::factory()->resident()->create())
+        ->getJson("/api/rooms/{$room->id}/availability?date={$day->toDateString()}")
+        ->assertOk()
+        ->assertJsonCount(1, 'busy');
+});
+
+it('n\'inclut pas dans la dispo du jour une résa se terminant exactement à minuit', function () {
+    $room = Resource::factory()->meetingRoom()->create();
+    $day = apiNextWorkingDay()->addDay();
+    $eve = $day->subDay();
+    Booking::factory()->create([
+        'resource_id' => $room->id,
+        'starts_at' => $eve->setTime(22, 0),
+        'ends_at' => $day->startOfDay(), // borne semi-ouverte : pas le lendemain
+        'status' => BookingStatus::Confirmed->value,
+    ]);
+
+    $this->actingAs(User::factory()->resident()->create())
+        ->getJson("/api/rooms/{$room->id}/availability?date={$day->toDateString()}")
+        ->assertOk()
+        ->assertJsonCount(0, 'busy');
+});
+
 // --- C4.4 Annulation & isolation -----------------------------------------
 
 it('annule sa propre réservation, mais pas celle d\'un autre membre (403)', function () {

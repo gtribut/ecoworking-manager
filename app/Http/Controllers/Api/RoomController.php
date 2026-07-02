@@ -41,13 +41,23 @@ final class RoomController extends Controller
      */
     public function availability(Request $request, Resource $room, RoomAvailabilityService $availability): JsonResponse
     {
+        // Moindre exposition (review sécu I1) : cet endpoint ne répond que pour
+        // les salles de réunion — un bureau (ou la salle event) → 404.
+        abort_unless($room->type === ResourceType::MeetingRoom, 404);
+
         $request->validate(['date' => ['required', 'date']]);
         $date = CarbonImmutable::parse($request->string('date')->toString());
+
+        // Chevauchement réel avec la journée [J 00:00, J+1 00:00) — un simple
+        // whereDate(starts_at) raterait une résa à cheval sur minuit.
+        $dayStart = $date->startOfDay();
+        $dayEnd = $dayStart->addDay();
 
         $busy = Booking::query()
             ->where('resource_id', $room->id)
             ->where('status', BookingStatus::Confirmed->value)
-            ->whereDate('starts_at', $date->toDateString())
+            ->where('starts_at', '<', $dayEnd)
+            ->where('ends_at', '>', $dayStart)
             ->orderBy('starts_at')
             ->get(['id', 'starts_at', 'ends_at'])
             ->map(fn (Booking $b): array => [

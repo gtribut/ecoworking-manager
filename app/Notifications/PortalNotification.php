@@ -7,6 +7,7 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
+use Illuminate\Queue\SerializesModels;
 
 /**
  * Base des notifications portail (C8). Centralise le routage des canaux selon
@@ -27,6 +28,11 @@ use Illuminate\Notifications\Notification;
 abstract class PortalNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    // Les modèles portés par les notifications concrètes (Invoice, DeskAbsence…)
+    // sont sérialisés en identifiants dans le payload de queue (léger + données
+    // fraîches au traitement), pas en objets complets.
+    use SerializesModels;
 
     /**
      * La notification est-elle un événement critique doublé par email ?

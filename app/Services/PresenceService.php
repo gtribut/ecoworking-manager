@@ -74,27 +74,33 @@ final class PresenceService
             return false;
         }
 
-        if (! FrenchHolidays::isWorkingDay($date)) {
-            return false;
-        }
-
-        return ! $this->isCoveredByAbsence($user, $date, $period);
+        return $this->presentOn($this->candidateAbsences($user), $date, $period);
     }
 
     /**
      * Calendrier de présence d'un membre sur une plage (jours ouvrés) :
      * liste des jours présents au format Y-m-d.
      *
+     * Les absences sont chargées UNE seule fois pour toute la plage (l'itération
+     * jour par jour ne refait aucune requête — ~90 requêtes économisées sur
+     * 3 mois par rapport à un appel d'isPresent() par jour).
+     *
      * @return list<string>
      */
     public function presentDays(User $user, CarbonInterface $from, CarbonInterface $to): array
     {
+        if ($user->memberProfile?->desk_id === null) {
+            return [];
+        }
+
+        $absences = $this->candidateAbsences($user);
+
         $days = [];
         $cursor = CarbonImmutable::parse($from->format('Y-m-d'));
         $end = CarbonImmutable::parse($to->format('Y-m-d'));
 
         while ($cursor->lessThanOrEqualTo($end)) {
-            if ($this->isPresent($user, $cursor)) {
+            if ($this->presentOn($absences, $cursor)) {
                 $days[] = $cursor->format('Y-m-d');
             }
             $cursor = $cursor->addDay();
@@ -103,11 +109,19 @@ final class PresenceService
         return $days;
     }
 
-    /** Une absence (ponctuelle, plage ou récurrente) couvre-t-elle ce créneau ? */
-    private function isCoveredByAbsence(User $user, CarbonInterface $date, Period $period): bool
+    /**
+     * Présent = jour ouvré ET aucune absence (ponctuelle, plage ou récurrente)
+     * ne couvre le créneau.
+     *
+     * @param  Collection<int, DeskAbsence>  $absences
+     */
+    private function presentOn(Collection $absences, CarbonInterface $date, Period $period = Period::FullDay): bool
     {
-        return $this->candidateAbsences($user)
-            ->contains(fn (DeskAbsence $absence): bool => $this->absenceCovers($absence, $date, $period));
+        if (! FrenchHolidays::isWorkingDay($date)) {
+            return false;
+        }
+
+        return ! $absences->contains(fn (DeskAbsence $absence): bool => $this->absenceCovers($absence, $date, $period));
     }
 
     /** @return Collection<int, DeskAbsence> */

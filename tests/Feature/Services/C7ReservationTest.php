@@ -24,6 +24,7 @@ use App\Services\RoomAvailabilityService;
 use App\Services\TicketService;
 use App\Support\FrenchHolidays;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /** Prochain jour ouvré à partir d'aujourd'hui (évite week-ends/fériés). */
 function nextWorkingDay(): CarbonImmutable
@@ -142,6 +143,13 @@ it('génère N tickets disponibles avec prix figé depuis l\'offre', function ()
         ->and(app(TicketService::class)->availableCount($user, TicketType::DeskHalfDay))->toBe(10);
 });
 
+it('refuse de créer un achat de tickets depuis une offre sans type de ticket', function () {
+    $offer = Offer::factory()->subscription()->create(); // ticket_type null
+    $user = User::factory()->create();
+
+    app(PurchaseService::class)->createFromOffer($offer, $user, $user, $user->id);
+})->throws(DomainActionException::class);
+
 // --- C7.2 RoomAvailabilityService ----------------------------------------
 
 it('ne propose aucune demi-journée external le week-end', function () {
@@ -256,4 +264,29 @@ it('ne déclare pas présent un membre sans bureau attitré', function () {
     MemberProfile::factory()->for($user)->create(['desk_id' => null]);
 
     expect(app(PresenceService::class)->isPresent($user->fresh(), nextWorkingDay()))->toBeFalse();
+});
+
+it('charge les absences une seule fois sur presentDays (pas de N+1 sur la plage)', function () {
+    $desk = Resource::factory()->assignedResident()->create();
+    $user = User::factory()->create();
+    MemberProfile::factory()->for($user)->create(['desk_id' => $desk->id]);
+    DeskAbsence::factory()->for($user)->create([
+        'desk_id' => $desk->id,
+        'date_start' => nextWorkingDay()->format('Y-m-d'),
+        'period' => Period::FullDay->value,
+    ]);
+
+    $svc = app(PresenceService::class);
+    $user = $user->fresh();
+    $from = CarbonImmutable::today();
+
+    DB::enableQueryLog();
+    $days = $svc->presentDays($user, $from, $from->addMonths(3));
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+    DB::flushQueryLog();
+
+    // 1 requête memberProfile (lazy) + 1 requête absences — jamais 1 par jour.
+    expect($queries)->toBeLessThanOrEqual(2)
+        ->and($days)->not->toContain(nextWorkingDay()->format('Y-m-d'));
 });

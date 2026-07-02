@@ -18,6 +18,7 @@
 | [04-backend-php.md](./04-backend-php.md) | Qualité code Laravel, services, Filament, timezone, performance |
 | [05-spa-portail.md](./05-spa-portail.md) | React/TS, TanStack Query, a11y RGAA, contrats API, UX |
 | [06-db-tests-ci.md](./06-db-tests-ci.md) | Migrations, contraintes, factories, couverture de tests, CI |
+| [07-chantier-mvp-restant.md](./07-chantier-mvp-restant.md) | Prompt de mission pour développer les modules MVP manquants (C12) |
 
 ## État constaté (exécuté le 2026-07-02)
 
@@ -60,14 +61,14 @@ Les problèmes réels se concentrent sur **quatre thèmes transverses** :
 
 | # | Action | Sévérité | Doc |
 |---|---|---|---|
-| 1 | Brancher `PurchaseService` sur la création d'achat Filament (tickets jamais générés) | 🔴 Critique | [04](./04-backend-php.md) |
-| 2 | Corriger/désactiver l'action Fortify `UpdateUserProfileInformation` (colonne `name` inexistante, feature active) | 🔴 Critique | [04](./04-backend-php.md) |
+| 1 | ✅ **Corrigé le 02/07** — Brancher `PurchaseService` sur la création d'achat Filament (tickets jamais générés) | 🔴 Critique | [04](./04-backend-php.md) |
+| 2 | ✅ **Corrigé le 02/07** (feature désactivée, action supprimée) — action Fortify `UpdateUserProfileInformation` (colonne `name` inexistante) | 🔴 Critique | [04](./04-backend-php.md) |
 | 3 | Verrouiller émission/annulation de facture (re-check statut sous `lockForUpdate` en transaction) | 🔴 Élevé | [03](./03-facturation.md) |
 | 4 | Purger `invoice_line_subscriptions` à la suppression d'un brouillon (entité infacturable sinon) | 🔴 Élevé | [03](./03-facturation.md) |
 | 5 | Générer le PDF des avoirs (pièce comptable, aujourd'hui 404) | 🔴 Élevé | [03](./03-facturation.md) |
-| 6 | Trancher la timezone (ADR : `Europe/Paris` recommandé en mono-tenant) | 🟠 Majeur | [04](./04-backend-php.md) |
-| 7 | Réconcilier le périmètre MVP (BRIEF §2 vs §18 vs SUIVI) — dé-scoper explicitement ou créer C12 | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
-| 8 | Câbler le serving SPA prod (catch-all + Blade + build `public/portal/`) et le tracer | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
+| 6 | ✅ **Tranché le 02/07** — `APP_TIMEZONE=Europe/Paris` (ADR-0010) | 🟠 Majeur | [04](./04-backend-php.md) |
+| 7 | Réconcilier le périmètre MVP — plan d'action prêt : [07-chantier-mvp-restant.md](./07-chantier-mvp-restant.md) | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
+| 8 | Câbler le serving SPA prod (catch-all + Blade + build `public/portal/`) — inclus dans C12.1 du doc 07 | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
 | 9 | Activer le rate limiting sur `/api/*` (`throttleApi()` — absent par défaut en Laravel 11+) | 🟠 Majeur | [02](./02-securite.md) |
 | 10 | Faire passer le back-office Bookings/DeskOccupations par les services (restitution ticket, conflits en 409 pas en 500) | 🟠 Majeur | [04](./04-backend-php.md) |
 | 11 | Idempotence facturation au grain abonnement (pas entité) + résilience par entité du cron | 🟠 Majeur | [03](./03-facturation.md) |

@@ -26,6 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // résolve l'utilisateur via la session du portail.
         $middleware->statefulApi();
 
+        // Rate limiting du groupe `api` : Laravel 11+ n'en applique AUCUN par
+        // défaut. Le limiteur `api` (60 req/min par user|IP) est défini dans
+        // AppServiceProvider. Login/2FA ont leurs limiteurs Fortify dédiés.
+        $middleware->throttleApi();
+
         // Alias des middlewares spatie/laravel-permission (gating par rôle/permission
         // sur les routes — PRD §2.7). Les Policies restent la source de vérité de
         // l'isolation des données ; ces middlewares ne sont qu'un filtre d'accès route.

@@ -11,9 +11,12 @@ use App\Models\Payment;
 use App\Models\Purchase;
 use App\Models\Subscription;
 use App\Models\User;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoApiTransport;
 
@@ -32,6 +35,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Limiteur du groupe `api` (activé par throttleApi() dans bootstrap/app.php,
+        // review sécurité M1) : par utilisateur authentifié, sinon par IP. 60/min
+        // couvre largement l'usage SPA (~50 membres) tout en bloquant l'abus.
+        RateLimiter::for('api', fn (Request $request): Limit => Limit::perMinute(60)
+            ->by((string) ($request->user()?->id ?: $request->ip())));
+
         // Morph map : découple la base des namespaces PHP (data_model §5).
         // Alias courts stockés en colonnes `*_type`. enforceMorphMap interdit
         // tout type polymorphe non déclaré ici (filet anti-fuite de namespace).

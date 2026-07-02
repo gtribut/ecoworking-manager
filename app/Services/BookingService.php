@@ -42,10 +42,11 @@ final class BookingService
     /**
      * Crée une réservation de salle confirmée. Si `$ticket` est fourni (résa
      * external payée via ticket), il est consommé dans la même transaction.
+     * `user` peut être null (résa interne/événement créée par l'admin).
      *
      * @param  array{
-     *     resource: resource,
-     *     user: User,
+     *     resource: Resource,
+     *     user?: ?User,
      *     starts_at: Carbon,
      *     ends_at: Carbon,
      *     title?: ?string,
@@ -62,7 +63,7 @@ final class BookingService
     public function create(array $data): Booking
     {
         $resource = $data['resource'];
-        $user = $data['user'];
+        $user = $data['user'] ?? null;
         $startsAt = $data['starts_at'];
         $endsAt = $data['ends_at'];
         $billable = $data['billable'] ?? $user;
@@ -85,9 +86,9 @@ final class BookingService
             try {
                 $booking = Booking::create([
                     'resource_id' => $resource->id,
-                    'user_id' => $user->id,
-                    'billable_type' => $billable->getMorphClass(),
-                    'billable_id' => $billable->getKey(),
+                    'user_id' => $user?->id,
+                    'billable_type' => $billable?->getMorphClass(),
+                    'billable_id' => $billable?->getKey(),
                     'title' => $data['title'] ?? null,
                     'starts_at' => $startsAt,
                     'ends_at' => $endsAt,
@@ -113,12 +114,56 @@ final class BookingService
     }
 
     /**
+     * Met à jour une réservation (back-office) avec la même double protection
+     * anti-chevauchement que create() : verrou applicatif (en excluant la résa
+     * elle-même) + backstop GiST traduit en exception métier.
+     *
+     * @param  array<string, mixed>  $attributes
+     *
+     * @throws BookingConflictException si le nouveau créneau est déjà pris
+     */
+    public function update(Booking $booking, array $attributes): Booking
+    {
+        return $this->db->transaction(function () use ($booking, $attributes): Booking {
+            $booking->fill($attributes);
+
+            if ($booking->status === BookingStatus::Confirmed) {
+                $hasOverlap = Booking::query()
+                    ->whereKeyNot($booking->getKey())
+                    ->where('resource_id', $booking->resource_id)
+                    ->where('status', BookingStatus::Confirmed->value)
+                    ->where('starts_at', '<', $booking->ends_at)
+                    ->where('ends_at', '>', $booking->starts_at)
+                    ->lockForUpdate()
+                    ->exists();
+
+                if ($hasOverlap) {
+                    throw BookingConflictException::forSlot();
+                }
+            }
+
+            try {
+                $booking->save();
+            } catch (QueryException $e) {
+                throw $this->isExclusionViolation($e) ? BookingConflictException::forSlot() : $e;
+            }
+
+            return $booking;
+        });
+    }
+
+    /**
      * Annule une réservation : statut `cancelled` + horodatage, et restitue le
      * ticket éventuel (l'autorisation/temporalité est vérifiée en amont par la
-     * Policy/Form Request).
+     * Policy/Form Request). Idempotent : une résa déjà annulée est renvoyée
+     * telle quelle (pas de ré-écrasement de `cancelled_at`/`cancel_reason`).
      */
     public function cancel(Booking $booking, ?string $reason = null): Booking
     {
+        if ($booking->status === BookingStatus::Cancelled) {
+            return $booking;
+        }
+
         return $this->db->transaction(function () use ($booking, $reason): Booking {
             $booking->status = BookingStatus::Cancelled;
             $booking->cancelled_at = Carbon::now();

@@ -6,8 +6,10 @@ namespace App\Models;
 
 use App\Enums\BookingStatus;
 use App\Models\Concerns\Auditable;
+use App\Observers\BookingObserver;
 use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
     'is_internal', 'recurrence_group_id', 'cancel_reason', 'cancelled_at',
     'google_calendar_event_id', 'created_by',
 ])]
+#[ObservedBy(BookingObserver::class)]
 class Booking extends Model
 {
     /** @use HasFactory<BookingFactory> */

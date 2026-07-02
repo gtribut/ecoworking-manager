@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Bookings\Schemas;
 
 use App\Enums\BookingStatus;
 use App\Enums\ResourceType;
+use App\Models\Booking;
 use App\Models\Company;
 use App\Models\User;
 use Filament\Forms\Components\DateTimePicker;
@@ -55,6 +56,13 @@ class BookingForm
                             ->label('Statut')
                             ->options(BookingStatus::class)
                             ->default(BookingStatus::Confirmed->value)
+                            // Création : toujours `confirmed` (posé par BookingService).
+                            ->hiddenOn('create')
+                            // Annuler ≠ changer le statut : l'action « Annuler la
+                            // réservation » restitue le ticket et horodate.
+                            ->disableOptionWhen(fn (string $value, ?Booking $record): bool => $value === BookingStatus::Cancelled->value
+                                && $record?->status !== BookingStatus::Cancelled)
+                            ->helperText('Pour annuler : action « Annuler la réservation » (restitue le ticket).')
                             ->required(),
                         DateTimePicker::make('starts_at')
                             ->label('Début')

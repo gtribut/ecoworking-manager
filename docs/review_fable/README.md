@@ -74,13 +74,13 @@ Les problèmes réels se concentrent sur **quatre thèmes transverses** :
 | 11 | Idempotence facturation au grain abonnement (pas entité) + résilience par entité du cron | 🟠 Majeur | [03](./03-facturation.md) |
 | 12 | Backstop DB pour les bureaux nomades (exclusion GiST ou UNIQUE partiel — race applicative possible) | 🟠 Majeur | [04](./04-backend-php.md), [06](./06-db-tests-ci.md) |
 
-Viennent ensuite (détail dans les docs) : ~~correction de `MonthlyBillingService::alreadyBilled`~~
-(✅ corrigé le 02/07, idempotence au grain abonnement, F5) et de l'oscillation
-`overdue↔partially_paid` (notifications dupliquées), recalcul de l'ancienne
-facture quand un paiement change d'`invoice_id`, `composer.json` `^8.3`→`^8.5`, `down()` de la
-migration `activity_log`, tests d'isolation HTTP manquants (liste bookings, DELETE occupations/
-absences), gestion 401/419 + `lang/fr` côté SPA, recovery code 2FA inutilisable dans l'UI,
-XOR des rôles d'usage non appliqué dans le formulaire admin.
+Viennent ensuite (détail dans les docs) : ✅ **l'intégralité des findings facturation F1-F17
+est traitée au 02/07** (F14/F17 assumés sans code, cf. [03](./03-facturation.md)). Restent :
+`composer.json` `^8.3`→`^8.5`, `down()` de la migration `activity_log`, tests d'isolation
+HTTP manquants (liste bookings, DELETE occupations/absences), gestion 401/419 + `lang/fr`
+côté SPA, recovery code 2FA inutilisable dans l'UI, XOR des rôles d'usage non appliqué dans
+le formulaire admin, back-office Bookings contournant `BookingService`, backstop DB bureaux
+nomades, rate limiting `/api/*`.
 
 ## Ce qui est remarquablement bien fait
 

@@ -7,8 +7,21 @@
 > **MàJ 2026-07-02** : **F1 à F5 corrigés** (verrou + re-check en transaction sur
 > émission/annulation, PDF de l'avoir dispatché, `InvoiceObserver::deleting` purge les
 > liaisons d'un brouillon supprimé, idempotence au grain abonnement avec facturation du
-> reliquat). Tests ajoutés dans `C6BillingTest` et `InvoiceIssuanceTest`. Restent ouverts :
-> F6 à F17.
+> reliquat). Tests ajoutés dans `C6BillingTest` et `InvoiceIssuanceTest`.
+>
+> **MàJ 2026-07-02 (2e passe)** : **F6 à F13, F15, F16 corrigés** — recalcul de l'ancienne
+> facture à la réaffectation d'un paiement (F6) ; statut `overdue` sticky + notification
+> tracée par `overdue_notified_at` (F7, migration) ; ventilation TVA par taux dans le PDF
+> via `Invoice::vatBreakdown()` (F8) ; `DeleteBulkAction` retirées des tables Invoices et
+> Payments (F9) ; `save()` au lieu de `saveQuietly()` → transitions auditées (F10) ;
+> `minValue(0.01)` + exclusion annulées/avoirs sur PaymentForm (F11) ; `insertOrIgnore`
+> avant le verrou du compteur (F12) ; quote-parts ajustées au centime sur la dernière (F13) ;
+> refus d'émettre un brouillon sans ligne + PU ≥ 0 (F15) ; `generateMonth` résilient par
+> entité avec `report()` (F16). **F14 et F17 : assumés sans code** — F14 (float + round
+> HALF_UP à chaque étape) reste correct aux magnitudes du projet, bcmath serait de la
+> sur-ingénierie MVP ; F17 (avoir figé `sent` = cosmétique ; remboursement d'une facture
+> payée annulée = processus manuel hors système en MVP ; dates émission/échéance
+> hardcodées = conforme à la règle figée PRD §5.1).
 
 ## 1. Conformité aux règles §3.6
 

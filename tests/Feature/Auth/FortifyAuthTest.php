@@ -43,6 +43,17 @@ it('désactive l\'inscription self-service (PRD §3.2)', function () {
     ])->assertNotFound();
 });
 
+it('désactive la mise à jour de profil Fortify (flux dédiés : /api/profile, PRD §3.4.5)', function () {
+    $user = User::factory()->create();
+
+    // L'action scaffoldée écrivait une colonne `name` inexistante et aurait
+    // permis un changement d'email libre, exclu du MVP — feature désactivée.
+    $this->actingAs($user)
+        ->putJson('/user/profile-information', [
+            'name' => 'Nouveau Nom', 'email' => 'nouvel-email@ecoworking.fr',
+        ])->assertNotFound();
+});
+
 it('permet d\'activer le 2FA TOTP pour un compte (Fortify)', function () {
     $user = User::factory()->create();
 

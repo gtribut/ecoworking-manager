@@ -149,10 +149,11 @@ return [
     // Pas d'inscription self-service (PRD §3.2 : comptes créés par l'admin) ni de
     // passkeys (hors périmètre MVP, cf. BRIEF §8). 2FA TOTP : optionnel membre /
     // obligatoire admin (enforcement au panel Filament, C3.1).
+    // Pas de `updateProfileInformation` : le profil membre passe par /api/profile
+    // (nom read-only, email = flux dédié hors MVP, PRD §3.4.3/§3.4.5).
     'features' => [
         Features::resetPasswords(),
         // Features::emailVerification(),
-        Features::updateProfileInformation(),
         Features::updatePasswords(),
         Features::twoFactorAuthentication([
             'confirm' => true,

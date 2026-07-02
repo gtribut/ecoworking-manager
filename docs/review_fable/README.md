@@ -69,18 +69,21 @@ Les problèmes réels se concentrent sur **quatre thèmes transverses** :
 | 6 | ✅ **Tranché le 02/07** — `APP_TIMEZONE=Europe/Paris` (ADR-0010) | 🟠 Majeur | [04](./04-backend-php.md) |
 | 7 | Réconcilier le périmètre MVP — plan d'action prêt : [07-chantier-mvp-restant.md](./07-chantier-mvp-restant.md) | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
 | 8 | Câbler le serving SPA prod (catch-all + Blade + build `public/portal/`) — inclus dans C12.1 du doc 07 | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
-| 9 | Activer le rate limiting sur `/api/*` (`throttleApi()` — absent par défaut en Laravel 11+) | 🟠 Majeur | [02](./02-securite.md) |
-| 10 | Faire passer le back-office Bookings/DeskOccupations par les services (restitution ticket, conflits en 409 pas en 500) | 🟠 Majeur | [04](./04-backend-php.md) |
-| 11 | Idempotence facturation au grain abonnement (pas entité) + résilience par entité du cron | 🟠 Majeur | [03](./03-facturation.md) |
-| 12 | Backstop DB pour les bureaux nomades (exclusion GiST ou UNIQUE partiel — race applicative possible) | 🟠 Majeur | [04](./04-backend-php.md), [06](./06-db-tests-ci.md) |
+| 9 | ✅ **Corrigé le 02/07** — rate limiting `/api/*` (`throttleApi()` + limiteur 60/min user\|IP, testé 429) | 🟠 Majeur | [02](./02-securite.md) |
+| 10 | ✅ **Corrigé le 02/07** — back-office Bookings via `BookingService` (create/update/cancel action + restitution ticket, conflits en erreur de formulaire), observer de restitution à la suppression | 🟠 Majeur | [04](./04-backend-php.md) |
+| 11 | ✅ **Corrigé le 02/07** — idempotence au grain abonnement + `generateMonth` résilient (F5/F16) | 🟠 Majeur | [03](./03-facturation.md) |
+| 12 | ✅ **Corrigé le 02/07** — exclusion GiST `desk_occupations_no_overlap` (période→int4range, WHERE present) + traduction 422 côté service et admin | 🟠 Majeur | [04](./04-backend-php.md), [06](./06-db-tests-ci.md) |
 
 Viennent ensuite (détail dans les docs) : ✅ **l'intégralité des findings facturation F1-F17
-est traitée au 02/07** (F14/F17 assumés sans code, cf. [03](./03-facturation.md)). Restent :
-`composer.json` `^8.3`→`^8.5`, `down()` de la migration `activity_log`, tests d'isolation
-HTTP manquants (liste bookings, DELETE occupations/absences), gestion 401/419 + `lang/fr`
-côté SPA, recovery code 2FA inutilisable dans l'UI, XOR des rôles d'usage non appliqué dans
-le formulaire admin, back-office Bookings contournant `BookingService`, backstop DB bureaux
-nomades, rate limiting `/api/*`.
+est traitée au 02/07** (F14/F17 assumés sans code, cf. [03](./03-facturation.md)), ainsi que
+(2e passe du 02/07) : `composer.json` `^8.5`, `down()` d'`activity_log`, tests d'isolation
+HTTP (liste bookings, DELETE occupations/absences, tickets). **Restent** : gestion 401/419 +
+`lang/fr` côté SPA, recovery code 2FA inutilisable dans l'UI, XOR des rôles d'usage non
+appliqué dans le formulaire admin, les mineurs des docs 04/05/06 (dont N+1 `PresenceService`,
+SIRET `->numeric()`, factories `SubscriptionFactory`/`TicketFactory`, seeder non idempotent,
+CI `permissions:`/audits deps), et le chantier C12 ([07](./07-chantier-mvp-restant.md)).
+⚠️ `composer audit` signale 4 advisories medium (guzzle ×2, psr7, phpseclib) — mise à jour
+des dépendances à planifier.
 
 ## Ce qui est remarquablement bien fait
 

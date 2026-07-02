@@ -4,12 +4,14 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { ConfirmButton } from '@/components/ui/ConfirmButton'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { getApiErrorMessage } from '@/lib/errors'
+import { usePageTitle } from '@/lib/usePageTitle'
 import type { Absence, AbsencePeriod, CreateAbsenceInput, RecurrenceType } from './types'
 import { useCreateAbsence, useDeleteAbsence, usePresence } from './usePresence'
 
@@ -19,7 +21,11 @@ const PERIOD_LABELS: Record<AbsencePeriod, string> = {
   full_day: 'Journée complète',
 }
 
+/** Libellés indexés par la valeur back (0 = dimanche … 6 = samedi). */
 const WEEKDAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+
+/** Ordre d'affichage français (lundi d'abord) — les valeurs 0-6 restent celles du back. */
+const WEEKDAY_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
 const schema = z
   .object({
@@ -62,6 +68,8 @@ function formatDate(value: string): string {
 }
 
 export function PresencePage() {
+  usePageTitle('Ma présence — Portail Ecoworking')
+
   const { isResident } = usePermissions()
 
   if (!isResident) {
@@ -213,9 +221,9 @@ function PresenceContent() {
                 {...form.register('recurrence_day_of_week')}
               >
                 <option value="">Choisir un jour…</option>
-                {WEEKDAYS.map((day, index) => (
-                  <option key={day} value={index}>
-                    {day}
+                {WEEKDAY_DISPLAY_ORDER.map((value) => (
+                  <option key={value} value={value}>
+                    {WEEKDAYS[value]}
                   </option>
                 ))}
               </Select>
@@ -268,15 +276,18 @@ function PresenceContent() {
                     <span className="block text-xs text-neutral-500">{absence.notes}</span>
                   )}
                 </span>
-                <Button
+                <ConfirmButton
                   variant="danger"
                   size="sm"
                   disabled={deleteAbsence.isPending}
-                  onClick={() => void onDelete(absence)}
+                  confirmMessage="Supprimer cette absence ?"
+                  confirmLabel="Oui, supprimer"
+                  cancelLabel="Non"
+                  onConfirm={() => void onDelete(absence)}
                 >
                   Supprimer
                   <span className="sr-only"> l’absence du {formatDate(absence.date_start)}</span>
-                </Button>
+                </ConfirmButton>
               </li>
             ))}
           </ul>

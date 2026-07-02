@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/Label'
 import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import { getApiErrorMessage } from '@/lib/errors'
+import { usePageTitle } from '@/lib/usePageTitle'
 import type { Desk, DeskPeriod } from './types'
 import { useCreateDeskOccupation, useDeskAvailability, useTickets } from './useTickets'
 
@@ -23,6 +24,8 @@ function todayIso(): string {
 }
 
 export function TicketsPage() {
+  usePageTitle('Tickets & bureaux nomades — Portail Ecoworking')
+
   const { data, isLoading, isError } = useTickets()
 
   return (
@@ -79,7 +82,15 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
     null,
   )
 
-  const availability = useDeskAvailability(date, period, submitted)
+  // Validation client (en plus du Form Request côté back) : pas de date passée.
+  const dateError =
+    date === ''
+      ? 'La date est requise.'
+      : date < todayIso()
+        ? 'La date ne peut pas être dans le passé.'
+        : null
+
+  const availability = useDeskAvailability(date, period, submitted && dateError === null)
   const createOccupation = useCreateDeskOccupation()
 
   function onSearch(event: React.FormEvent) {
@@ -124,11 +135,18 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
             type="date"
             min={todayIso()}
             value={date}
+            aria-invalid={submitted && dateError !== null}
+            aria-describedby={submitted && dateError !== null ? 'desk-date-error' : undefined}
             onChange={(event) => {
               setDate(event.target.value)
               setSubmitted(false)
             }}
           />
+          {submitted && dateError !== null && (
+            <p id="desk-date-error" className="mt-1 text-sm text-red-600">
+              {dateError}
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="desk-period">Période</Label>
@@ -148,7 +166,7 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
         <Button type="submit">Voir les bureaux disponibles</Button>
       </form>
 
-      {submitted && (
+      {submitted && dateError === null && (
         <div aria-live="polite">
           {availability.isLoading && <Spinner label="Recherche des bureaux disponibles…" />}
           {availability.isError && (

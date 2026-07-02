@@ -3,6 +3,7 @@ import { Armchair, CalendarDays, CalendarOff, FileText, UserCircle } from 'lucid
 import { Link } from 'react-router'
 import { useAuth } from '@/features/auth/useAuth'
 import { usePermissions } from '@/features/auth/usePermissions'
+import { usePageTitle } from '@/lib/usePageTitle'
 
 interface Tile {
   to: string
@@ -17,6 +18,8 @@ interface Tile {
  * les endpoints correspondants existeront.
  */
 export function DashboardPage() {
+  usePageTitle('Accueil — Portail Ecoworking')
+
   const { user } = useAuth()
   const { isResident, isExternal } = usePermissions()
 

@@ -1,17 +1,22 @@
 import { http } from '@/lib/http'
-import type { CalendarSubscription } from './types'
+import type { CalendarSubscription, CalendarSubscriptionPayload } from './types'
+
+/** Normalise le payload API (`urls` absent OU null → `urls: null`). */
+function normalize(payload: CalendarSubscriptionPayload): CalendarSubscription {
+  return { enabled: payload.enabled, urls: payload.urls ?? null }
+}
 
 export async function fetchCalendarSubscription(): Promise<CalendarSubscription> {
-  const { data } = await http.get<CalendarSubscription>('/api/calendar')
-  return data
+  const { data } = await http.get<CalendarSubscriptionPayload>('/api/calendar')
+  return normalize(data)
 }
 
 export async function regenerateCalendarToken(): Promise<CalendarSubscription> {
-  const { data } = await http.post<CalendarSubscription>('/api/calendar/token')
-  return data
+  const { data } = await http.post<CalendarSubscriptionPayload>('/api/calendar/token')
+  return normalize(data)
 }
 
 export async function revokeCalendarToken(): Promise<CalendarSubscription> {
-  const { data } = await http.delete<CalendarSubscription>('/api/calendar/token')
-  return data
+  const { data } = await http.delete<CalendarSubscriptionPayload>('/api/calendar/token')
+  return normalize(data)
 }

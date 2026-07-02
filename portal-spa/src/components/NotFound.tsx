@@ -1,6 +1,9 @@
 import { Link } from 'react-router'
+import { usePageTitle } from '@/lib/usePageTitle'
 
 export function NotFound() {
+  usePageTitle('Page introuvable — Portail Ecoworking')
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
       <h1 className="text-3xl font-semibold">Page introuvable</h1>

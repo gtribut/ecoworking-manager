@@ -1,7 +1,7 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { server } from '@/test/server'
 import { renderWithProviders } from '@/test/utils'
 import { LoginPage } from './LoginPage'
@@ -55,5 +55,73 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /se connecter/i }))
 
     expect(await screen.findByLabelText('Code de vérification')).toBeInTheDocument()
+  })
+
+  it('permet d’utiliser un code de récupération 2FA', async () => {
+    const user = userEvent.setup()
+    withUnauthenticated()
+    const challengeSpy = vi.fn()
+    server.use(
+      http.post('/login', () => HttpResponse.json({ two_factor: true })),
+      http.post('/two-factor-challenge', async ({ request }) => {
+        challengeSpy(await request.json())
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    renderWithProviders(<LoginPage />, { withAuth: true })
+
+    await user.type(screen.getByLabelText('Email'), 'a@b.fr')
+    await user.type(screen.getByLabelText('Mot de passe'), 'secret')
+    await user.click(screen.getByRole('button', { name: /se connecter/i }))
+
+    await user.click(
+      await screen.findByRole('button', { name: /utiliser un code de récupération/i }),
+    )
+    await user.type(screen.getByLabelText('Code de récupération'), 'abcdef-123456')
+    await user.click(screen.getByRole('button', { name: /vérifier/i }))
+
+    await waitFor(() =>
+      expect(challengeSpy).toHaveBeenCalledWith({ recovery_code: 'abcdef-123456' }),
+    )
+  })
+
+  it('propose un retour du défi 2FA vers le formulaire de connexion', async () => {
+    const user = userEvent.setup()
+    withUnauthenticated()
+    server.use(http.post('/login', () => HttpResponse.json({ two_factor: true })))
+
+    renderWithProviders(<LoginPage />, { withAuth: true })
+
+    await user.type(screen.getByLabelText('Email'), 'a@b.fr')
+    await user.type(screen.getByLabelText('Mot de passe'), 'secret')
+    await user.click(screen.getByRole('button', { name: /se connecter/i }))
+
+    await user.click(await screen.findByRole('button', { name: /retour à la connexion/i }))
+
+    expect(await screen.findByLabelText('Mot de passe')).toBeInTheDocument()
+  })
+
+  it('envoie remember quand « Se souvenir de moi » est cochée', async () => {
+    const user = userEvent.setup()
+    withUnauthenticated()
+    const loginSpy = vi.fn()
+    server.use(
+      http.post('/login', async ({ request }) => {
+        loginSpy(await request.json())
+        return HttpResponse.json({})
+      }),
+    )
+
+    renderWithProviders(<LoginPage />, { withAuth: true })
+
+    await user.type(screen.getByLabelText('Email'), 'a@b.fr')
+    await user.type(screen.getByLabelText('Mot de passe'), 'secret')
+    await user.click(screen.getByLabelText(/se souvenir de moi/i))
+    await user.click(screen.getByRole('button', { name: /se connecter/i }))
+
+    await waitFor(() =>
+      expect(loginSpy).toHaveBeenCalledWith(expect.objectContaining({ remember: true })),
+    )
   })
 })

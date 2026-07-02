@@ -1,5 +1,6 @@
+import type { Paginated } from '@/lib/api-types'
 import { http } from '@/lib/http'
-import type { Booking, CreateBookingInput, Paginated, Room, RoomAvailability } from './types'
+import type { Booking, CreateBookingInput, Room, RoomAvailability } from './types'
 
 export async function fetchRooms(): Promise<Room[]> {
   const { data } = await http.get<{ data: Room[] }>('/api/rooms')

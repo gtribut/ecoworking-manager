@@ -7,13 +7,16 @@ import { useMarkAllAsRead, useMarkAsRead, useNotifications } from './useNotifica
 
 /**
  * Centre de notifications in-app (PRD §3.8.4) : cloche + badge « non lues »,
- * panneau déroulant accessible (fermeture Escape / clic extérieur, tab order
- * logique, aria-expanded). Cliquer une notification la marque lue et navigue
- * vers la page liée.
+ * panneau déroulant accessible. Pas de pattern ARIA « menu » (APG) : le panneau
+ * est une simple région parcourue au Tab natif. Le focus est déplacé dans le
+ * panneau à l'ouverture et rendu au bouton à la fermeture (Escape / sélection).
+ * Cliquer une notification la marque lue et navigue vers la page liée.
  */
 export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
 
   const { data } = useNotifications()
@@ -24,10 +27,17 @@ export function NotificationBell() {
   const unread = data?.meta.unread_count ?? 0
 
   useEffect(() => {
+    if (open) panelRef.current?.focus()
+  }, [open])
+
+  useEffect(() => {
     if (!open) return
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') {
+        setOpen(false)
+        buttonRef.current?.focus()
+      }
     }
     const onClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -46,16 +56,17 @@ export function NotificationBell() {
   const handleSelect = (item: NotificationItem) => {
     if (!item.is_read) markAsRead.mutate(item.id)
     setOpen(false)
+    buttonRef.current?.focus()
     if (item.data.url) navigate(item.data.url)
   }
 
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        aria-haspopup="menu"
         aria-label={
           unread > 0 ? `Notifications, ${unread} non lue${unread > 1 ? 's' : ''}` : 'Notifications'
         }
@@ -73,9 +84,10 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div
-          role="menu"
-          aria-label="Liste des notifications"
+        <section
+          ref={panelRef}
+          aria-label="Notifications"
+          tabIndex={-1}
           className="absolute right-0 z-20 mt-2 w-80 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
         >
           <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-2 dark:border-neutral-800">
@@ -101,7 +113,6 @@ export function NotificationBell() {
                 <li key={item.id}>
                   <button
                     type="button"
-                    role="menuitem"
                     onClick={() => handleSelect(item)}
                     className={cn(
                       'flex w-full flex-col gap-0.5 px-4 py-3 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800',
@@ -122,7 +133,7 @@ export function NotificationBell() {
                     {item.created_at && (
                       <time
                         dateTime={item.created_at}
-                        className="text-xs text-neutral-400 dark:text-neutral-500"
+                        className="text-xs text-neutral-500 dark:text-neutral-400"
                       >
                         {formatDate(item.created_at)}
                       </time>
@@ -132,7 +143,7 @@ export function NotificationBell() {
               ))}
             </ul>
           )}
-        </div>
+        </section>
       )}
     </div>
   )

@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ticketsQueryKey } from '@/features/tickets/useTickets'
 import {
   cancelBooking,
   createBooking,
@@ -41,6 +42,9 @@ export function useCreateBooking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
       queryClient.invalidateQueries({ queryKey: ['rooms'] })
+      // Une résa de salle payante consomme un ticket : le solde affiché
+      // (TicketsPage) doit être rafraîchi, comme pour les bureaux nomades.
+      queryClient.invalidateQueries({ queryKey: ticketsQueryKey })
     },
   })
 }
@@ -53,6 +57,8 @@ export function useCancelBooking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
       queryClient.invalidateQueries({ queryKey: ['rooms'] })
+      // L'annulation peut re-créditer le ticket consommé : solde à rafraîchir.
+      queryClient.invalidateQueries({ queryKey: ticketsQueryKey })
     },
   })
 }

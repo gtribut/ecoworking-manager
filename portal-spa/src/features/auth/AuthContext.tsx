@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, type ReactNode, useCallback, useEffect } from 'react'
+import { setSessionExpiredHandler } from '@/lib/http'
 import { fetchCurrentUser, logout as logoutRequest } from './api'
 import type { AuthUser } from './types'
 
@@ -27,10 +28,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const user = data ?? null
 
-  // Applique le thème de l'utilisateur (classe `dark` sur <html>).
+  // Session expirée détectée par l'interceptor HTTP (401/419) : on purge la
+  // query auth → RequireAuth redirige vers /login au rendu suivant.
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      queryClient.setQueryData(authQueryKey, null)
+      void queryClient.invalidateQueries({ queryKey: authQueryKey })
+    })
+    return () => setSessionExpiredHandler(null)
+  }, [queryClient])
+
+  // Applique le thème (classe `dark` sur <html>). `theme: null` = automatique :
+  // on suit `prefers-color-scheme` (et ses changements) au lieu de forcer le clair.
   useEffect(() => {
     const root = document.documentElement
-    root.classList.toggle('dark', user?.theme === 'dark')
+    const theme = user?.theme ?? null
+
+    if (theme !== null) {
+      root.classList.toggle('dark', theme === 'dark')
+      return
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const applySystemTheme = () => root.classList.toggle('dark', mediaQuery.matches)
+    applySystemTheme()
+    mediaQuery.addEventListener('change', applySystemTheme)
+    return () => mediaQuery.removeEventListener('change', applySystemTheme)
   }, [user?.theme])
 
   const logout = useCallback(async () => {

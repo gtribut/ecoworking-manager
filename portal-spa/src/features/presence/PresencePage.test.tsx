@@ -102,7 +102,7 @@ describe('PresencePage', () => {
     expect(await screen.findByText(/choisissez un jour de la semaine/i)).toBeInTheDocument()
   })
 
-  it('supprime une absence', async () => {
+  it('supprime une absence après confirmation', async () => {
     const user = userEvent.setup()
     const deleteSpy = vi.fn()
     server.use(
@@ -131,7 +131,10 @@ describe('PresencePage', () => {
 
     renderWithProviders(<PresencePage />, { withAuth: true })
 
-    await user.click(await screen.findByRole('button', { name: /supprimer/i }))
+    await user.click(await screen.findByRole('button', { name: /supprimer l’absence/i }))
+    // Confirmation accessible avant l'action destructrice.
+    expect(deleteSpy).not.toHaveBeenCalled()
+    await user.click(await screen.findByRole('button', { name: /oui, supprimer/i }))
 
     await waitFor(() => expect(deleteSpy).toHaveBeenCalledTimes(1))
   })

@@ -1,5 +1,6 @@
+import type { Paginated } from '@/lib/api-types'
 import { http } from '@/lib/http'
-import type { Invoice, Paginated } from './types'
+import type { Invoice } from './types'
 
 export async function fetchInvoices(page = 1): Promise<Paginated<Invoice>> {
   const { data } = await http.get<Paginated<Invoice>>('/api/invoices', { params: { page } })

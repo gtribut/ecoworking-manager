@@ -1,6 +1,7 @@
 import { Check, Copy } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
+import { ConfirmButton } from '@/components/ui/ConfirmButton'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import {
@@ -39,22 +40,28 @@ export function CalendarSubscription() {
           <FeedField id="feed-entity" label="Réservations de mon entité" url={data.urls.entity} />
 
           <div className="flex flex-wrap gap-3 pt-2">
-            <Button
+            <ConfirmButton
               variant="secondary"
               size="sm"
-              onClick={() => regenerate.mutate()}
+              confirmMessage="Les anciens liens seront invalidés immédiatement."
+              confirmLabel="Oui, régénérer"
+              cancelLabel="Non"
               disabled={regenerate.isPending}
+              onConfirm={() => regenerate.mutate()}
             >
               Régénérer les liens
-            </Button>
-            <Button
+            </ConfirmButton>
+            <ConfirmButton
               variant="ghost"
               size="sm"
-              onClick={() => revoke.mutate()}
+              confirmMessage="Vos agendas ne se mettront plus à jour."
+              confirmLabel="Oui, désactiver"
+              cancelLabel="Non"
               disabled={revoke.isPending}
+              onConfirm={() => revoke.mutate()}
             >
               Désactiver l’abonnement
-            </Button>
+            </ConfirmButton>
           </div>
           <p className="text-xs text-neutral-500">
             Régénérer invalide immédiatement les anciens liens d’abonnement.
@@ -73,11 +80,27 @@ export function CalendarSubscription() {
 
 function FeedField({ id, label, url }: { id: string; label: string; url: string }) {
   const [copied, setCopied] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
+  const timeoutRef = useRef<number | null>(null)
+
+  // Nettoie le timer de retour à « Copier » si le composant est démonté avant.
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
   const copy = async () => {
-    await navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setCopyFailed(false)
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+      timeoutRef.current = window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
+      setCopyFailed(true)
+    }
   }
 
   return (
@@ -105,6 +128,15 @@ function FeedField({ id, label, url }: { id: string; label: string; url: string 
           )}
         </Button>
       </div>
+      {/* Annonce le passage « Copié » aux lecteurs d'écran. */}
+      <span aria-live="polite" className="sr-only">
+        {copied ? `Lien « ${label} » copié dans le presse-papiers.` : ''}
+      </span>
+      {copyFailed && (
+        <p className="mt-1 text-sm text-red-600" role="alert">
+          Copie impossible : sélectionnez le lien et copiez-le manuellement.
+        </p>
+      )}
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
+import { usePageTitle } from '@/lib/usePageTitle'
 import { invoicePdfUrl } from './api'
 import { useInvoices } from './useInvoices'
 
@@ -15,12 +16,15 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_CLASSES: Record<string, string> = {
-  sent: 'bg-blue-100 text-blue-800',
-  paid: 'bg-green-100 text-green-800',
-  partially_paid: 'bg-amber-100 text-amber-800',
-  overdue: 'bg-red-100 text-red-800',
-  cancelled: 'bg-neutral-200 text-neutral-700',
+  sent: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200',
+  paid: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
+  partially_paid: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
+  overdue: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200',
+  cancelled: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
 }
+
+const STATUS_FALLBACK_CLASS =
+  'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
 
 const euros = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' })
 
@@ -29,6 +33,8 @@ function formatDate(value: string | null): string {
 }
 
 export function InvoicesPage() {
+  usePageTitle('Factures — Portail Ecoworking')
+
   const [page, setPage] = useState(1)
   const { data, isLoading, isError } = useInvoices(page)
 
@@ -80,7 +86,7 @@ export function InvoicesPage() {
                     <td className="px-4 py-3">
                       <span
                         className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                          STATUS_CLASSES[invoice.status] ?? 'bg-neutral-200 text-neutral-700'
+                          STATUS_CLASSES[invoice.status] ?? STATUS_FALLBACK_CLASS
                         }`}
                       >
                         {STATUS_LABELS[invoice.status] ?? invoice.status}
@@ -101,7 +107,7 @@ export function InvoicesPage() {
                           </span>
                         </a>
                       ) : (
-                        <span className="text-neutral-400">Indisponible</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">Indisponible</span>
                       )}
                     </td>
                   </tr>
@@ -120,7 +126,7 @@ export function InvoicesPage() {
               >
                 Précédent
               </Button>
-              <span className="text-sm text-neutral-600 dark:text-neutral-300">
+              <span aria-live="polite" className="text-sm text-neutral-600 dark:text-neutral-300">
                 Page {data.meta.current_page} sur {data.meta.last_page}
               </span>
               <Button

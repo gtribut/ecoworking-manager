@@ -63,7 +63,15 @@ export function BookingForm({ isExternal, onBooked }: BookingFormProps) {
     null,
   )
 
-  const availability = useRoomAvailability(roomId, date)
+  // Validation client (en plus du Form Request côté back) : pas de date passée.
+  const dateError =
+    date === ''
+      ? 'La date est requise.'
+      : date < todayIso()
+        ? 'La date ne peut pas être dans le passé.'
+        : null
+
+  const availability = useRoomAvailability(dateError === null ? roomId : null, date)
   const createBooking = useCreateBooking()
 
   const selectedRoom = rooms?.find((room) => room.id === roomId) ?? null
@@ -146,11 +154,18 @@ export function BookingForm({ isExternal, onBooked }: BookingFormProps) {
             type="date"
             min={todayIso()}
             value={date}
+            aria-invalid={dateError !== null}
+            aria-describedby={dateError !== null ? 'booking-date-error' : undefined}
             onChange={(event) => {
               resetFeedback()
               setDate(event.target.value)
             }}
           />
+          {dateError !== null && (
+            <p id="booking-date-error" className="mt-1 text-sm text-red-600">
+              {dateError}
+            </p>
+          )}
         </div>
       </div>
 
@@ -169,7 +184,7 @@ export function BookingForm({ isExternal, onBooked }: BookingFormProps) {
         <p className="text-sm text-neutral-500">{selectedRoom.description}</p>
       )}
 
-      {roomId !== null && (
+      {roomId !== null && dateError === null && (
         <div aria-live="polite">
           {availability.isLoading && <Spinner label="Chargement des disponibilités…" />}
           {availability.isError && (
@@ -212,6 +227,11 @@ function AgendaSlotList({
   onBook: (startIso: string, endIso: string) => void
   pending: boolean
 }) {
+  // Filtre les créneaux déjà commencés du jour courant (le back les refuse en
+  // `after:now`) : inutile de proposer un créneau voué au rejet.
+  const now = Date.now()
+  const hours = HOURS.filter((hour) => new Date(isoFor(date, hour)).getTime() > now)
+
   return (
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-800">
       <h3 className="border-b border-neutral-200 px-4 py-2 text-sm font-medium dark:border-neutral-800">
@@ -222,8 +242,13 @@ function AgendaSlotList({
           month: 'long',
         })}
       </h3>
+      {hours.length === 0 && (
+        <p className="px-4 py-3 text-sm text-neutral-500">
+          Plus aucun créneau à venir pour cette date.
+        </p>
+      )}
       <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
-        {HOURS.map((hour) => {
+        {hours.map((hour) => {
           const startIso = isoFor(date, hour)
           const endIso = isoFor(date, hour + 1)
           const taken = overlaps(startIso, endIso, busy)
@@ -232,7 +257,7 @@ function AgendaSlotList({
             <li key={hour} className="flex items-center justify-between px-4 py-2">
               <span className="text-sm tabular-nums">{label}</span>
               {taken ? (
-                <span className="text-sm text-neutral-400">Occupé</span>
+                <span className="text-sm text-neutral-500 dark:text-neutral-400">Occupé</span>
               ) : (
                 <Button
                   size="sm"
@@ -280,7 +305,7 @@ function ExternalSlotList({
             <li key={slot.period} className="flex items-center justify-between px-4 py-2">
               <span className="text-sm">{label}</span>
               {taken ? (
-                <span className="text-sm text-neutral-400">Occupé</span>
+                <span className="text-sm text-neutral-500 dark:text-neutral-400">Occupé</span>
               ) : (
                 <Button
                   size="sm"

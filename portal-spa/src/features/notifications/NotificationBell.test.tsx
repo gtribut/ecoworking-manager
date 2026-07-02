@@ -58,6 +58,25 @@ describe('NotificationBell', () => {
     await waitFor(() => expect(readAllCalled).toBe(true))
   })
 
+  it('ouvre un panneau simple (pas de pattern menu) avec gestion du focus', async () => {
+    const user = userEvent.setup()
+    server.use(http.get('/api/notifications', () => HttpResponse.json(response())))
+
+    renderWithProviders(<NotificationBell />)
+
+    const bell = await screen.findByRole('button', { name: /1 non lue/i })
+    await user.click(bell)
+
+    const panel = await screen.findByRole('region', { name: 'Notifications' })
+    expect(panel).toHaveFocus()
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem')).not.toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('region', { name: 'Notifications' })).not.toBeInTheDocument()
+    expect(bell).toHaveFocus()
+  })
+
   it('n’affiche pas de badge sans notification non lue', async () => {
     server.use(
       http.get('/api/notifications', () =>

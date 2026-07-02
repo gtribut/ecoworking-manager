@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
+import { ConfirmButton } from '@/components/ui/ConfirmButton'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { CalendarSubscription } from '@/features/calendar/CalendarSubscription'
 import { getApiErrorMessage } from '@/lib/errors'
+import { usePageTitle } from '@/lib/usePageTitle'
 import { BookingForm } from './BookingForm'
 import type { Booking, BookingStatus } from './types'
 import { useBookings, useCancelBooking } from './useBookings'
@@ -16,9 +18,9 @@ const STATUS_LABELS: Record<BookingStatus, string> = {
 }
 
 const STATUS_CLASSES: Record<BookingStatus, string> = {
-  confirmed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-neutral-200 text-neutral-700',
-  no_show: 'bg-amber-100 text-amber-800',
+  confirmed: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
+  cancelled: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+  no_show: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
 }
 
 function formatRange(startIso: string, endIso: string): string {
@@ -30,6 +32,8 @@ function formatRange(startIso: string, endIso: string): string {
 }
 
 export function BookingsPage() {
+  usePageTitle('Réservations — Portail Ecoworking')
+
   const { isExternal } = usePermissions()
   const [page, setPage] = useState(1)
   const { data, isLoading, isError } = useBookings(page)
@@ -111,17 +115,20 @@ export function BookingsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         {booking.cancellable ? (
-                          <Button
+                          <ConfirmButton
                             variant="danger"
                             size="sm"
                             disabled={cancelBooking.isPending}
-                            onClick={() => void onCancel(booking)}
+                            confirmMessage="Annuler cette réservation ?"
+                            confirmLabel="Oui, annuler"
+                            cancelLabel="Non"
+                            onConfirm={() => void onCancel(booking)}
                           >
                             Annuler
                             <span className="sr-only"> la réservation {booking.resource_name}</span>
-                          </Button>
+                          </ConfirmButton>
                         ) : (
-                          <span className="text-neutral-400">—</span>
+                          <span className="text-neutral-500 dark:text-neutral-400">—</span>
                         )}
                       </td>
                     </tr>
@@ -143,7 +150,7 @@ export function BookingsPage() {
                 >
                   Précédent
                 </Button>
-                <span className="text-sm text-neutral-600 dark:text-neutral-300">
+                <span aria-live="polite" className="text-sm text-neutral-600 dark:text-neutral-300">
                   Page {data.meta.current_page} sur {data.meta.last_page}
                 </span>
                 <Button

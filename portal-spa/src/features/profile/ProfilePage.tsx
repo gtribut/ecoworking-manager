@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
 import { getApiErrorMessage } from '@/lib/errors'
+import { usePageTitle } from '@/lib/usePageTitle'
 import type { CompanyData } from './types'
 import { useProfile, useUpdateProfile } from './useProfile'
 
@@ -35,6 +36,8 @@ function nullable(value: string | undefined): string | null {
 }
 
 export function ProfilePage() {
+  usePageTitle('Mon profil — Portail Ecoworking')
+
   const { data, isLoading, isError } = useProfile()
   const updateProfile = useUpdateProfile()
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
@@ -122,7 +125,7 @@ export function ProfilePage() {
         <fieldset className="space-y-4">
           <legend className="text-lg font-medium">Mes informations</legend>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="first_name">Prénom</Label>
               <Input id="first_name" value={data.user.first_name} disabled readOnly />
@@ -189,7 +192,7 @@ export function ProfilePage() {
               <Label htmlFor="interests">Centres d’intérêt</Label>
               <Input id="interests" {...form.register('interests')} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="linkedin_url">LinkedIn</Label>
                 <Input

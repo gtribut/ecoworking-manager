@@ -45,7 +45,7 @@ final class BookingService
      * `user` peut être null (résa interne/événement créée par l'admin).
      *
      * @param  array{
-     *     resource: Resource,
+     *     resource: resource,
      *     user?: ?User,
      *     starts_at: Carbon,
      *     ends_at: Carbon,

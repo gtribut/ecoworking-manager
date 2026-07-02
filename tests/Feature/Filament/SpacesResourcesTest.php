@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Enums\BookingStatus;
+use App\Enums\TicketStatus;
+use App\Enums\TicketType;
 use App\Filament\Resources\Bookings\Pages\CreateBooking;
 use App\Filament\Resources\Bookings\Pages\EditBooking;
 use App\Filament\Resources\Bookings\Pages\ListBookings;
@@ -12,8 +14,6 @@ use App\Filament\Resources\DeskOccupations\Pages\ListDeskOccupations;
 use App\Filament\Resources\Resources\Pages\CreateResource;
 use App\Filament\Resources\Resources\Pages\EditResource;
 use App\Filament\Resources\Resources\Pages\ListResources;
-use App\Enums\TicketStatus;
-use App\Enums\TicketType;
 use App\Models\Booking;
 use App\Models\DeskOccupation;
 use App\Models\Resource;

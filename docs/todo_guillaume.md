@@ -25,6 +25,16 @@
 > dans **LastPass** (valeurs prod, en attendant Clever Cloud). Claude ne touche
 > qu'au `.env.example` (placeholders), jamais à tes valeurs réelles.
 
+### Modifs du 02/07/26 après-midi (seed admin + nettoyage Redis)
+
+| Variable | Dev local (`.env`) | Prod (LastPass → Clever Cloud) |
+|---|---|---|
+| `SEED_ADMIN_PASSWORD` | optionnel (vide = mdp aléatoire affiché au seed) | à définir SI on seed en prod (sinon inutile) |
+| `REDIS_CLIENT/HOST/PASSWORD/PORT`, `MEMCACHED_HOST` | **supprimées** de `.env.example` (variables mortes, ADR-0007) | à retirer des `.env` si présentes |
+
+- [ ] 🟡 **`.env` local** : retirer les variables Redis/Memcached si présentes ; `SEED_ADMIN_PASSWORD` optionnel.
+- [ ] 🟡 **LastPass (prod)** : idem.
+
 ### Modifs du 02/07/26 (timezone Europe/Paris — ADR-0010)
 
 | Variable | Dev local (`.env`) | Prod (LastPass → Clever Cloud) |

@@ -76,14 +76,19 @@ Les problèmes réels se concentrent sur **quatre thèmes transverses** :
 
 Viennent ensuite (détail dans les docs) : ✅ **l'intégralité des findings facturation F1-F17
 est traitée au 02/07** (F14/F17 assumés sans code, cf. [03](./03-facturation.md)), ainsi que
-(2e passe du 02/07) : `composer.json` `^8.5`, `down()` d'`activity_log`, tests d'isolation
-HTTP (liste bookings, DELETE occupations/absences, tickets). **Restent** : gestion 401/419 +
-`lang/fr` côté SPA, recovery code 2FA inutilisable dans l'UI, XOR des rôles d'usage non
-appliqué dans le formulaire admin, les mineurs des docs 04/05/06 (dont N+1 `PresenceService`,
-SIRET `->numeric()`, factories `SubscriptionFactory`/`TicketFactory`, seeder non idempotent,
-CI `permissions:`/audits deps), et le chantier C12 ([07](./07-chantier-mvp-restant.md)).
-⚠️ `composer audit` signale 4 advisories medium (guzzle ×2, psr7, phpseclib) — mise à jour
-des dépendances à planifier.
+la 2e passe (php `^8.5`, `down()` d'`activity_log`, isolation HTTP) et la **3e passe du
+02/07 soir** : tous les majeurs/mineurs SPA (401/419, recovery 2FA, ARIA cloche, thème,
+contrastes, titres/focus, ErrorBoundary, responsive, confirmations…), `lang/fr`, tous les
+mineurs backend (dont M7 XOR rôles — **avec réparation du Select rôles, cassé en profondeur**
+— et M8 N+1 Presence), factories/seeder/indexes FK/CI durcie/tests manquants (cron
+facturation, UNIQUE liaison, mentions PDF art. 289, challenge 2FA), advisories composer
+corrigées (audit propre, step CI bloquant).
+
+**Restent au 02/07 soir** : le chantier **C12** ([07](./07-chantier-mvp-restant.md), arbitrages
+tranchés, prêt à lancer), C11.3/C11.4 (e2e Playwright + axe-core), 2 décisions ouvertes
+(jours ouvrés des bureaux nomades — PRD muet ; 48 vs 49 bureaux du plan SVG), l'advisory
+npm `form-data` (via axios, pnpm audit non bloquant en CI), et les points « dérive
+documentaire » P2 du doc [01](./01-architecture-et-documentation.md).
 
 ## Ce qui est remarquablement bien fait
 

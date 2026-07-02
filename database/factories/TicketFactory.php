@@ -25,7 +25,12 @@ class TicketFactory extends Factory
     {
         return [
             'purchase_id' => Purchase::factory(),
-            'user_id' => User::factory(),
+            // Détenteur = acheteur du purchase parent par défaut (review 06 M5).
+            // La closure reçoit purchase_id déjà résolu ; fallback user dédié
+            // si le purchase est retiré par un state (ex. credited()).
+            'user_id' => fn (array $attributes) => $attributes['purchase_id'] !== null
+                ? Purchase::query()->find($attributes['purchase_id'])?->user_id
+                : User::factory(),
             'type' => TicketType::DeskHalfDay->value,
             'status' => TicketStatus::Available->value,
         ];

@@ -42,15 +42,19 @@ class AnnouncementFactory extends Factory
     /** Événement avec inscription. */
     public function event(): static
     {
-        $start = fake()->dateTimeBetween('+1 day', '+30 days');
+        // Dates tirées DANS la closure : chaque instance d'un count(n) reçoit
+        // son propre créneau (sinon la même date figée pour tout le lot).
+        return $this->state(function (array $attributes) {
+            $start = fake()->dateTimeBetween('+1 day', '+30 days');
 
-        return $this->state(fn (array $attributes) => [
-            'type' => AnnouncementType::Event->value,
-            'event_starts_at' => $start,
-            'event_ends_at' => (clone $start)->modify('+2 hours'),
-            'location' => fake()->address(),
-            'requires_registration' => true,
-            'max_participants' => fake()->numberBetween(10, 50),
-        ]);
+            return [
+                'type' => AnnouncementType::Event->value,
+                'event_starts_at' => $start,
+                'event_ends_at' => (clone $start)->modify('+2 hours'),
+                'location' => fake()->address(),
+                'requires_registration' => true,
+                'max_participants' => fake()->numberBetween(10, 50),
+            ];
+        });
     }
 }

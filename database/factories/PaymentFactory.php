@@ -23,7 +23,16 @@ class PaymentFactory extends Factory
     {
         return [
             'invoice_id' => Invoice::factory()->issued(),
-            'amount' => fake()->randomFloat(2, 10, 500),
+            // Montant corrélé à la facture liée : solde exact du total TTC
+            // (review 06 mineur 6). Fallback plausible si la facture n'a pas
+            // encore de totaux (brouillon à 0) ou est absente.
+            'amount' => function (array $attributes) {
+                $total = Invoice::query()->find($attributes['invoice_id'])?->total_ttc;
+
+                return $total !== null && (float) $total > 0
+                    ? $total
+                    : fake()->randomFloat(2, 10, 500);
+            },
             'paid_at' => now()->toDateString(),
             'method' => fake()->randomElement(PaymentMethod::values()),
         ];

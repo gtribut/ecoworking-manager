@@ -26,14 +26,15 @@ class SubscriptionFactory extends Factory
      */
     public function definition(): array
     {
-        $user = User::factory();
-
         return [
             'offer_id' => Offer::factory()->subscription(),
             'subscriber_type' => 'user',
-            'subscriber_id' => $user,
+            'subscriber_id' => User::factory(),
             'billable_type' => 'user',
-            'billable_id' => $user,
+            // Même user que le souscripteur : la closure reçoit les attributs
+            // déjà résolus (une même instance de factory passée deux fois
+            // serait résolue deux fois → 2 users distincts, review 06 M5).
+            'billable_id' => fn (array $attributes) => $attributes['subscriber_id'],
             'status' => SubscriptionStatus::Active->value,
             'starts_at' => now()->startOfMonth()->toDateString(),
             'billing_day' => 1,

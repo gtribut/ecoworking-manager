@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use PragmaRX\Google2FA\Google2FA;
 
 use function Pest\Laravel\postJson;
 
@@ -68,6 +69,65 @@ it('permet d\'activer le 2FA TOTP pour un compte (Fortify)', function () {
     expect($user->two_factor_secret)->not->toBeNull()
         // confirm=true : le secret est posé mais pas encore confirmé.
         ->and($user->two_factor_confirmed_at)->toBeNull();
+});
+
+it('exige le challenge 2FA au login puis authentifie avec un code TOTP valide', function () {
+    $engine = app(Google2FA::class);
+    $secret = $engine->generateSecretKey();
+    $user = User::factory()->create([
+        'email' => 'totp@ecoworking.fr',
+        'two_factor_secret' => encrypt($secret),
+        'two_factor_recovery_codes' => encrypt(json_encode(['abcde-12345'])),
+        'two_factor_confirmed_at' => now(),
+    ]);
+
+    // Login : identifiants valides → PAS de session, redirection vers le challenge.
+    postJson('/login', ['email' => 'totp@ecoworking.fr', 'password' => 'password'])
+        ->assertSuccessful()
+        ->assertJson(['two_factor' => true]);
+    $this->assertGuest();
+
+    // Challenge avec le code TOTP courant (généré par le provider du package).
+    postJson('/two-factor-challenge', ['code' => $engine->getCurrentOtp($secret)])
+        ->assertSuccessful();
+
+    $this->assertAuthenticatedAs($user);
+});
+
+it('rejette un code TOTP invalide au challenge 2FA (session non ouverte)', function () {
+    $engine = app(Google2FA::class);
+    User::factory()->create([
+        'email' => 'totp@ecoworking.fr',
+        'two_factor_secret' => encrypt($engine->generateSecretKey()),
+        'two_factor_recovery_codes' => encrypt(json_encode(['abcde-12345'])),
+        'two_factor_confirmed_at' => now(),
+    ]);
+    postJson('/login', ['email' => 'totp@ecoworking.fr', 'password' => 'password'])
+        ->assertJson(['two_factor' => true]);
+
+    postJson('/two-factor-challenge', ['code' => '000000'])->assertStatus(422);
+
+    $this->assertGuest();
+});
+
+it('authentifie via un recovery code au challenge 2FA (et le consomme)', function () {
+    $engine = app(Google2FA::class);
+    $user = User::factory()->create([
+        'email' => 'totp@ecoworking.fr',
+        'two_factor_secret' => encrypt($engine->generateSecretKey()),
+        'two_factor_recovery_codes' => encrypt(json_encode(['abcde-12345', 'fghij-67890'])),
+        'two_factor_confirmed_at' => now(),
+    ]);
+    postJson('/login', ['email' => 'totp@ecoworking.fr', 'password' => 'password'])
+        ->assertJson(['two_factor' => true]);
+
+    postJson('/two-factor-challenge', ['recovery_code' => 'abcde-12345'])
+        ->assertSuccessful();
+
+    $this->assertAuthenticatedAs($user);
+    // Usage unique : le code consommé est remplacé dans la liste.
+    expect(json_decode(decrypt($user->fresh()->two_factor_recovery_codes), true))
+        ->not->toContain('abcde-12345');
 });
 
 it('déconnecte et détruit la session (POST /logout)', function () {

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Subscription;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
@@ -99,6 +100,49 @@ it('empêche la suppression d\'une facture ayant un paiement (restrict, intégri
 
     expect(fn () => DB::table('invoices')->where('id', $invoiceId)->delete())
         ->toThrow(QueryException::class);
+});
+
+it('interdit de facturer deux fois un abonnement sur la même période (UNIQUE uniq_sub_period, §5.1)', function () {
+    $invoiceId = DB::table('invoices')->insertGetId(invoiceRow());
+    $lineId = DB::table('invoice_lines')->insertGetId(invoiceLineRow(['invoice_id' => $invoiceId]));
+    $otherLineId = DB::table('invoice_lines')->insertGetId(invoiceLineRow(['invoice_id' => $invoiceId]));
+    $subscriptionId = Subscription::factory()->create()->id;
+
+    $link = fn (int $line): array => [
+        'invoice_line_id' => $line,
+        'subscription_id' => $subscriptionId,
+        'period_start' => '2026-04-01',
+        'period_end' => '2026-04-30',
+        'amount_ht' => 328.50,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ];
+
+    DB::table('invoice_line_subscriptions')->insert($link($lineId));
+
+    // Doublon (subscription_id, period_start, period_end) — même via une AUTRE
+    // ligne de facture : le backstop d'idempotence doit rejeter.
+    expect(fn () => DB::table('invoice_line_subscriptions')->insert($link($otherLineId)))
+        ->toThrow(QueryException::class);
+});
+
+it('accepte une autre période pour le même abonnement (uniq_sub_period)', function () {
+    $invoiceId = DB::table('invoices')->insertGetId(invoiceRow());
+    $lineId = DB::table('invoice_lines')->insertGetId(invoiceLineRow(['invoice_id' => $invoiceId]));
+    $subscriptionId = Subscription::factory()->create()->id;
+
+    DB::table('invoice_line_subscriptions')->insert([
+        'invoice_line_id' => $lineId, 'subscription_id' => $subscriptionId,
+        'period_start' => '2026-04-01', 'period_end' => '2026-04-30',
+        'amount_ht' => 328.50, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+    DB::table('invoice_line_subscriptions')->insert([
+        'invoice_line_id' => $lineId, 'subscription_id' => $subscriptionId,
+        'period_start' => '2026-05-01', 'period_end' => '2026-05-31',
+        'amount_ht' => 328.50, 'created_at' => now(), 'updated_at' => now(),
+    ]);
+
+    expect(DB::table('invoice_line_subscriptions')->where('subscription_id', $subscriptionId)->count())->toBe(2);
 });
 
 it('rejette un payments.method hors énumération (CHECK)', function () {

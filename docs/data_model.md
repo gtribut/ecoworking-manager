@@ -316,10 +316,10 @@ Index : `code` (unique), `type`, `is_active`, `ticket_type`.
 | `additional_person` | subscription | member | 59.00 | 1 | — | true |
 | `domiciliation` | subscription | entity | 35.00 | 1 | — | true |
 | `desk_half_day` | one_shot | member | 17.50 | 1 | desk_half_day | false |
-| `desk_half_day_pack2` | pack | member | 31.50 | 2 | desk_half_day | false |
-| `desk_half_day_pack10` | pack | member | 140.00 | 10 | desk_half_day | false |
+| `desk_half_day_pack_2` | pack | member | 31.50 | 2 | desk_half_day | false |
+| `desk_half_day_pack_10` | pack | member | 140.00 | 10 | desk_half_day | false |
 | `meeting_room_half_day` | one_shot | member | 71.00 | 1 | meeting_room_half_day | false |
-| `meeting_room_half_day_pack10` | pack | member | 568.00 | 10 | meeting_room_half_day | false |
+| `meeting_room_half_day_pack_10` | pack | member | 568.00 | 10 | meeting_room_half_day | false |
 
 > 🟡 **Packs = offres distinctes** (un SKU par prix vendable) plutôt qu'une table de paliers : plus simple,
 > et le prix est de toute façon snapshoté sur le `purchase`. Le **créneau** matin/après-midi d'un ticket est

@@ -81,6 +81,22 @@ it('respecte les états métier des factories', function () {
         ->and(Offer::factory()->subscription()->create()->billing_period->value)->toBe('monthly');
 });
 
+it('ne crée qu\'un user par défaut : souscripteur = billable (review 06 M5)', function () {
+    $before = User::count();
+
+    $subscription = Subscription::factory()->create();
+
+    expect(User::count())->toBe($before + 1)
+        ->and($subscription->billable_type)->toBe('user')
+        ->and($subscription->billable_id)->toBe($subscription->subscriber_id);
+});
+
+it('donne par défaut le ticket à l\'acheteur du purchase parent (review 06 M5)', function () {
+    $ticket = Ticket::factory()->create();
+
+    expect($ticket->user_id)->toBe($ticket->purchase->user_id);
+});
+
 it('honore la domiciliation unique par entité (index §6.3)', function () {
     $company = Company::factory()->create();
     Subscription::factory()->domiciliation($company)->create();

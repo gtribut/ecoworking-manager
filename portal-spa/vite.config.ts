@@ -11,7 +11,10 @@ const apiProxyTarget = process.env.VITE_API_PROXY ?? 'http://localhost'
 
 const proxiedPaths = ['/api', '/login', '/logout', '/sanctum', '/two-factor-challenge']
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // En build les assets sont servis sous portail.ecoworking.fr/portal/*
+  // (BRIEF §6). En dev le serveur Vite reste servi à la racine (:5173).
+  base: command === 'build' ? '/portal/' : '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -25,8 +28,13 @@ export default defineConfig({
     ),
   },
   build: {
-    // Exposé par Laravel via public/portal/ (cf. CLAUDE.md arborescence).
-    outDir: 'dist',
+    // Build directement dans public/portal/ du projet Laravel (BRIEF §6,
+    // ADR-0004) : la vue Blade `portal-spa` lit le manifest Vite
+    // (public/portal/.vite/manifest.json) pour injecter les assets hashés.
+    // Dossier gitignoré — buildé en CI / au déploiement.
+    outDir: '../public/portal',
+    emptyOutDir: true,
+    manifest: true,
   },
   test: {
     globals: true,
@@ -34,4 +42,4 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: true,
   },
-})
+}))

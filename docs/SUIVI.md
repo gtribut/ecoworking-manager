@@ -175,7 +175,7 @@
 
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
-| C12.1 | Serving SPA en production (build → `public/portal/`, Blade + catch-all, CSRF Sanctum) | ⬜ | 🔴 bloquant déploiement — BRIEF §6, ADR-0004 |
+| C12.1 | Serving SPA en production (build → `public/portal/`, Blade + catch-all, CSRF Sanctum) | ✅ | Vite `base:/portal/` + manifest → `PortalSpaController` (503 si build absent) ; catch-all domaine portail déclaré en dernier (exclusions api/sanctum/up/pulse/portal/auth/calendar) ; welcome supprimée ; fix 500→401 invités API (`redirectGuestsTo(null)`) ; assets gitignorés (build = déploiement → hook Clever Cloud dans `todo_guillaume.md`) ; `PortalSpaServingTest` (9) |
 | C12.2 | Tickets côté admin (`TicketResource` + action crédit manuel `PurchaseService::creditManual()`) | ⬜ | PRD §4.8.1 |
 | C12.3 | Annonces & événements côté portail (API + RSVP + feature SPA + bloc dashboard) | ⬜ | PRD §3.3.2, §4.11 — exercer `AnnouncementRegistrationPolicy` (tests A/B) |
 | C12.4 | Documents internes à valider + administratifs côté portail | ⬜ | PRD §3.3.2, §3.6.3, §5.3 — téléchargements disque privé + Gate |

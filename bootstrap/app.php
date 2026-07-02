@@ -26,6 +26,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // résolve l'utilisateur via la session du portail.
         $middleware->statefulApi();
 
+        // Aucune route web nommée `login` (le portail est une SPA, l'admin
+        // Filament gère sa propre redirection de login) : sans ceci, un invité
+        // naviguant en HTML sur une route `auth:sanctum` (ex. /api/user dans un
+        // navigateur) provoquerait une RouteNotFoundException 500 au lieu d'un
+        // 401 (rendu JSON pour /api/* via shouldRenderJsonWhen ci-dessous).
+        $middleware->redirectGuestsTo(fn (): null => null);
+
         // Rate limiting du groupe `api` : Laravel 11+ n'en applique AUCUN par
         // défaut. Le limiteur `api` (60 req/min par user|IP) est défini dans
         // AppServiceProvider. Login/2FA ont leurs limiteurs Fortify dédiés.

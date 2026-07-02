@@ -38,10 +38,13 @@ it('ne révèle pas si l\'email existe (même message d\'erreur)', function () {
 });
 
 it('désactive l\'inscription self-service (PRD §3.2)', function () {
+    // 405 (et non 404) depuis le catch-all SPA (C12.1) : l'URI /register
+    // matche le GET catch-all du portail, mais aucune route POST n'existe —
+    // la feature Fortify reste bien désactivée.
     postJson('/register', [
         'name' => 'X', 'email' => 'x@ecoworking.fr',
         'password' => 'password', 'password_confirmation' => 'password',
-    ])->assertNotFound();
+    ])->assertMethodNotAllowed();
 });
 
 it('désactive la mise à jour de profil Fortify (flux dédiés : /api/profile, PRD §3.4.5)', function () {
@@ -49,10 +52,12 @@ it('désactive la mise à jour de profil Fortify (flux dédiés : /api/profile, 
 
     // L'action scaffoldée écrivait une colonne `name` inexistante et aurait
     // permis un changement d'email libre, exclu du MVP — feature désactivée.
+    // 405 (et non 404) depuis le catch-all SPA (C12.1) : l'URI matche le GET
+    // catch-all du portail, mais aucune route PUT n'existe.
     $this->actingAs($user)
         ->putJson('/user/profile-information', [
             'name' => 'Nouveau Nom', 'email' => 'nouvel-email@ecoworking.fr',
-        ])->assertNotFound();
+        ])->assertMethodNotAllowed();
 });
 
 it('permet d\'activer le 2FA TOTP pour un compte (Fortify)', function () {

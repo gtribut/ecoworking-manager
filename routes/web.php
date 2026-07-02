@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\GoogleOAuthController;
 use App\Http\Controllers\CalendarFeedController;
+use App\Http\Controllers\PortalSpaController;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/', function () {
-    return view('welcome');
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -60,4 +57,31 @@ if ($adminDomain = config('domains.admin')) {
     Route::domain($adminDomain)->group($adminAuthRoutes);
 } else {
     $adminAuthRoutes();
+}
+
+/*
+|--------------------------------------------------------------------------
+| SPA portail — catch-all (C12.1, BRIEF §6 / ADR-0004)
+|--------------------------------------------------------------------------
+|
+| Sert le shell HTML de la SPA (assets injectés depuis le manifest Vite) sur
+| toutes les routes GET du domaine portail : le routing applicatif est géré
+| côté client (React Router). Exclusions par regex — jamais interceptés :
+| /api/* (JSON), /sanctum/* (CSRF cookie Sanctum), /up (healthcheck), /pulse,
+| /portal/* (assets buildés → 404 propre si absent), et — utile en test où
+| les routes sont enregistrées sans contrainte de domaine — /auth/google/* et
+| /calendar/* (flux iCal). Déclarée en DERNIER : les routes précédentes
+| priment. Remplace l'ancienne route `/` welcome.
+|
+*/
+$portalSpa = function (): void {
+    Route::get('/{any?}', PortalSpaController::class)
+        ->where('any', '^(?!api(?:/|$)|sanctum(?:/|$)|up$|pulse(?:/|$)|portal(?:/|$)|auth/google(?:/|$)|calendar(?:/|$)).*$')
+        ->name('portal.spa');
+};
+
+if ($portalDomain = config('domains.portal')) {
+    Route::domain($portalDomain)->group($portalSpa);
+} else {
+    $portalSpa();
 }

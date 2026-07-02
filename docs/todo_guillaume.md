@@ -152,6 +152,15 @@
 
 ---
 
+## C12.1 — Serving SPA en production (2026-07-02)
+
+> Les assets buildés (`public/portal/`) sont **gitignorés** : le build SPA est une
+> étape de déploiement. Sans build, le portail répond 503 explicite.
+
+- [ ] 🟡 (jour du déploiement) Configurer le **hook de build Clever Cloud** pour builder la SPA : `cd portal-spa && pnpm install --frozen-lockfile && pnpm build` (sortie automatique vers `public/portal/`)
+
+---
+
 ## Plus tard / hors MVP (pour mémoire)
 
 - [ ] 🟡 (V1.5) Provisioning **Clever Cloud** : app, Postgres 18, Cellar, FS Bucket, DNS, env vars prod (cf. BRIEF §11, SUIVI D1-D2)

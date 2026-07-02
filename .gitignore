@@ -32,6 +32,9 @@ Homestead.json
 .phpunit.result.cache
 
 /public/build
+# Build SPA portail (Vite → public/portal/, cf. BRIEF §6) — buildé en CI /
+# au déploiement (`pnpm build` dans portal-spa/), jamais commité.
+/public/portal
 # Assets Filament publiés (régénérés par `artisan filament:assets`,
 # via `filament:upgrade` au post-autoload-dump de composer) — non versionnés.
 /public/css/filament

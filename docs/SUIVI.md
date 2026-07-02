@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-06-07 (C2 ✅ ; C3 ✅ ; C4 ✅ ; C5 ✅ ; C6 ✅ ; C7 ✅ ; C0.4 ✅ CI ; **C8 ✅ notifications/emails** ; **C9.2 ✅ flux iCal** (C9.1 push Google → V1.5) ; **C10 ✅ observabilité** (Sentry/Pulse/Healthchecks câblés, comptes = TODO Guillaume). 232 tests Pest + 32 Vitest verts. Prochaines étapes : C11 tests e2e/a11y, puis V1.5 déploiement.).**
+> **Dernière mise à jour : 2026-07-02 — ouverture du chantier C12 « Modules MVP restants » (review `docs/review_fable/07`, arbitrages tranchés, 49 bureaux actés). C2→C10 ✅. Prochaines étapes : C12 lot par lot, puis C11.3/C11.4 (e2e + a11y), puis V1.5.**
 
 ---
 
@@ -40,7 +40,7 @@
 > C9.1 push Google → V1.5). **C10 ✅** observabilité (Sentry back+front, Pulse `/pulse` admin-only, ping Healthchecks sur les
 > crons, `/up` ; comptes/DSN = `todo_guillaume.md`).
 > Suite complète **232 tests Pest verts** (+ 32 Vitest SPA). **C0.4 ✅ CI GitHub Actions** (Pint/Biome/Pest/Vitest/build).
-> Prochaines étapes : **C11** (tests e2e Playwright, a11y axe-core), puis **V1.5** (déploiement Clever Cloud, import Cosoft).
+> Prochaines étapes : **C12** — modules MVP restants (serving SPA prod, tickets admin, annonces, documents, annuaire + plan SVG, dashboard admin, RGPD, magic link, audit/rôles/settings), puis **C11.3/C11.4** (tests e2e Playwright, a11y axe-core), puis **V1.5** (déploiement Clever Cloud, import Cosoft).
 
 ---
 
@@ -166,6 +166,25 @@
 | C11.3 | Tests e2e Playwright (SPA) + Pest 4 browser (Filament) | ⬜ | ADR-0008 |
 | C11.4 | a11y axe-core sur écrans critiques | ⬜ | |
 | C11.5 | Pint + Biome propres en CI | ✅ | Pint `--test` + Biome `check` branchés dans `.github/workflows/ci.yml` (C0.4) ; verts |
+
+### C12 — Modules MVP restants
+
+> Périmètre issu de la review 2026-07-02 : [`docs/review_fable/07-chantier-mvp-restant.md`](./review_fable/07-chantier-mvp-restant.md).
+> Arbitrages A/B/C/D tranchés par Guillaume le 2026-07-02 (tous les lots = MVP ferme).
+> Bureaux : **49 actés** (étage 1 = 29, étage 2 = 20) le 2026-07-02 — aligner seeder + PRD dans C12.5.
+
+| Code | Tâche | Statut | Note |
+|---|---|---|---|
+| C12.1 | Serving SPA en production (build → `public/portal/`, Blade + catch-all, CSRF Sanctum) | ⬜ | 🔴 bloquant déploiement — BRIEF §6, ADR-0004 |
+| C12.2 | Tickets côté admin (`TicketResource` + action crédit manuel `PurchaseService::creditManual()`) | ⬜ | PRD §4.8.1 |
+| C12.3 | Annonces & événements côté portail (API + RSVP + feature SPA + bloc dashboard) | ⬜ | PRD §3.3.2, §4.11 — exercer `AnnouncementRegistrationPolicy` (tests A/B) |
+| C12.4 | Documents internes à valider + administratifs côté portail | ⬜ | PRD §3.3.2, §3.6.3, §5.3 — téléchargements disque privé + Gate |
+| C12.5 | Annuaire coworkers (opt-in) + plan SVG des étages (alternative accessible) | ⬜ | PRD §3.7, §4.12 — SVG prégénéré `docs/plan/etages.svg`, cibler `#desk-N`/`data-desk` uniquement ; 49 bureaux (aligner seeder + PRD) |
+| C12.6 | Dashboard admin (KPIs, alertes) + page « Occupation du jour » | ⬜ | PRD §4.1, §4.8.4 — corriger le N+1 (finding M8) avant appel en boucle |
+| C12.7 | Anonymisation RGPD (`AnonymizeUserService` + action Filament) | ⬜ | PRD §5.6, CLAUDE.md §3.4 — colonne `anonymized_at` déjà migrée |
+| C12.8a | Magic link membre (usage unique, 15 min, rate-limité, anti-énumération) | ⬜ | PRD §3.2 Q6 — jamais pour les admins |
+| C12.8b | Audit log UI + gestion rôles UI + Settings | ⬜ | PRD §4.13-4.15 — vérifier périmètre Settings avant `spatie/laravel-settings` |
+| C12.9 | Acter décision D : email membre = admin-only (PRD §3.4.5 + test UserForm) | ✅ | PRD §3.4.5 amendé ; `UserEmailAdminOnlyTest` (3) : édition admin OK, unicité, `PATCH /api/profile` ignore l'email ; docblock `UpdateProfileRequest` aligné |
 
 ---
 

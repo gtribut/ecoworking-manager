@@ -39,18 +39,20 @@ notifications C8, iCal C9.2, observabilité C10. 238 tests Pest + 32 Vitest vert
 Manquant (MVP « papier ») : les lots ci-dessous. Aucun n'a de code de tâche, d'endpoint,
 ni de ligne de code — sauf mention contraire.
 
-## 2. Arbitrages à trancher par Guillaume AVANT de coder
+## 2. Arbitrages — ✅ TRANCHÉS par Guillaume le 2026-07-02
 
-| # | Question | Options |
+| # | Question | Décision |
 |---|---|---|
-| A | Le **plan interactif SVG des étages** (PRD §3.7.2, gros morceau front) reste-t-il MVP ou passe V1.5 ? | MVP / V1.5 (l'annuaire liste peut vivre sans le plan) |
-| B | **Magic link** (PRD §3.2, Q6 « V1 ») : à faire maintenant ou requalifier V1.5 ? | maintenant / V1.5 |
-| C | **Audit log UI / gestion rôles UI / Settings** (PRD §4.13-4.15) : MVP ou V1.5 ? (l'audit log *s'écrit* déjà en base ; il s'agit seulement de le consulter) | MVP / V1.5 |
-| D | **Flux changement email/mot de passe membre** (PRD §3.4.5) : périmètre exact ? (le reset par email Fortify existe déjà ; le « changement d'email » n'a aucun flux) | préciser |
+| A | Plan interactif SVG des étages (PRD §3.7.2) | ✅ **MVP** — à faire dans C12.5, avec son alternative accessible obligatoire |
+| B | Magic link (PRD §3.2, Q6) | ✅ **Maintenant** (MVP) — nouveau lot C12.8a |
+| C | Audit log UI / gestion rôles UI / Settings (PRD §4.13-4.15) | ✅ **MVP** — nouveau lot C12.8b |
+| D | Flux changement email membre (PRD §3.4.5) | ✅ **Admin-only** : seul un admin peut modifier l'email d'un membre (via le back-office User). Le membre ne peut PAS changer son email lui-même — aucun flux self-service à construire. Le reset de mot de passe par email (Fortify) existe déjà et suffit |
 
-Tout lot dé-scopé → l'acter dans BRIEF §2/§18 + SUIVI (🔮 V1.5) au lieu de le laisser en
-zone grise. **Le reste des lots ci-dessous est considéré MVP ferme** (portail membre incomplet
-sans eux).
+Conséquences de D : vérifier simplement que `UserForm` (Filament) permet bien à l'admin
+d'éditer l'email (unicité validée) et qu'aucun endpoint portail n'expose l'email en
+écriture (déjà le cas : `/api/profile` l'exclut, la feature Fortify
+`updateProfileInformation` a été désactivée le 02/07). Amender PRD §3.4.5 pour acter la
+décision. **Tous les lots ci-dessous sont donc MVP ferme.**
 
 ## 3. Lots de travail proposés (ordre recommandé)
 
@@ -90,7 +92,7 @@ Réf. : PRD §3.3.2, §3.6.3, §5.3 (Resources admin existantes).
   vérifier la règle exacte §5.3), page documents.
 - ⚠️ Téléchargements : disque privé + `Gate::authorize`, comme les PDF factures.
 
-### C12.5 — Annuaire des coworkers (+ plan SVG si arbitrage A = MVP)
+### C12.5 — Annuaire des coworkers + plan SVG des étages (arbitrage A : MVP)
 Réf. : PRD §3.7, §4.12.
 - Endpoint `GET /api/directory` : **uniquement** les membres opt-in
   (`directory_opt_in` — le champ existe et l'opt-in est déjà testé dans AuthorizationTest),
@@ -116,7 +118,30 @@ Réf. : PRD §5.6, CLAUDE.md §3.4.
 - Action Filament avec confirmation forte + entrée d'audit log.
 - Tests : PII effacée, factures intactes, l'utilisateur ne peut plus se connecter.
 
-### C12.8 — (selon arbitrages B/C/D) Magic link, audit log UI, rôles UI, Settings, flux email/mdp
+### C12.8a — Magic link (arbitrage B : maintenant)
+Réf. : PRD §3.2 (Q6 « V1 »).
+- Envoi d'un lien de connexion à usage unique par email (membre portail uniquement, jamais
+  admin — l'admin garde mdp + 2FA obligatoire). Token signé à expiration courte (~15 min),
+  usage unique, rate-limité, invalidé au changement de mot de passe.
+- Endpoints : demande (`POST /magic-link`, réponse identique que l'email existe ou non —
+  anti-énumération) + consommation (route signée, domaine portail).
+- SPA : option « recevoir un lien de connexion » sur la page login.
+- Tests : usage unique, expiration, pas d'escalade admin, anti-énumération, rate limit.
+
+### C12.8b — Audit log UI, gestion des rôles UI, Settings (arbitrage C : MVP)
+Réf. : PRD §4.13, §4.14, §4.15.
+- Audit log : Resource Filament en lecture seule sur `activity_log` (filtres sujet/causer/
+  event/date). Les données s'écrivent déjà (trait `Auditable`).
+- Rôles : UI d'affectation des rôles (la contrainte XOR `ExclusiveUsageRole` est appliquée
+  dans UserForm depuis le 02/07) + vue de la matrice rôles → permissions (lecture seule,
+  la composition est seedée).
+- Settings : vérifier le périmètre exact PRD §4.15 avant d'installer `spatie/laravel-settings`
+  (data_model §4.6 liste une table `settings` non créée — l'installer ou amender le doc).
+
+### C12.9 — Acter la décision D (email admin-only)
+- Amender PRD §3.4.5 : changement d'email = acte admin (back-office), pas de flux membre.
+- Vérifier l'édition d'email dans `UserForm` (unicité) + test ; confirmer qu'aucun endpoint
+  portail n'accepte l'email en écriture (déjà le cas au 02/07).
 
 ## 4. Définition de « MVP terminé »
 

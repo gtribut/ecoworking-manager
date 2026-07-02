@@ -16,6 +16,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 
 /**
@@ -80,16 +81,25 @@ final class DeskAvailabilityService
                 throw new DomainActionException('Ce bureau est déjà occupé sur ce créneau.');
             }
 
-            $occupation = DeskOccupation::create([
-                'desk_id' => $desk->id,
-                'user_id' => $user->id,
-                'date' => $date->format('Y-m-d'),
-                'period' => $period->value,
-                'source' => DeskOccupationSource::ExternalTicket->value,
-                'ticket_id' => $ticket->id,
-                'status' => DeskOccupationStatus::Present->value,
-                'created_by' => $createdBy,
-            ]);
+            try {
+                $occupation = DeskOccupation::create([
+                    'desk_id' => $desk->id,
+                    'user_id' => $user->id,
+                    'date' => $date->format('Y-m-d'),
+                    'period' => $period->value,
+                    'source' => DeskOccupationSource::ExternalTicket->value,
+                    'ticket_id' => $ticket->id,
+                    'status' => DeskOccupationStatus::Present->value,
+                    'created_by' => $createdBy,
+                ]);
+            } catch (QueryException $e) {
+                // Backstop exclusion `desk_occupations_no_overlap` : créneau gagné
+                // par une transaction concurrente (le lock applicatif ne couvre
+                // pas le cas « aucune ligne existante »).
+                throw $this->isExclusionViolation($e)
+                    ? new DomainActionException('Ce bureau est déjà occupé sur ce créneau.')
+                    : $e;
+            }
 
             $this->tickets->consume($ticket, $occupation);
 
@@ -128,6 +138,13 @@ final class DeskAvailabilityService
             ->pluck('desk_id')
             ->unique()
             ->values();
+    }
+
+    /** SQLSTATE 23P01 = violation d'une contrainte d'exclusion PostgreSQL. */
+    private function isExclusionViolation(QueryException $e): bool
+    {
+        return $e->getCode() === '23P01'
+            || str_contains($e->getMessage(), 'desk_occupations_no_overlap');
     }
 
     /**

@@ -102,6 +102,56 @@ it('autorise le même créneau sur deux salles distinctes', function () {
     expect(DB::table('bookings')->where('status', 'confirmed')->count())->toBe(2);
 });
 
+/** Ligne desk_occupations valide (bureau + user créés à la volée). */
+function deskOccupationRow(array $overrides = []): array
+{
+    $deskId = $overrides['desk_id'] ?? DB::table('resources')->insertGetId(
+        resourceRow(['type' => 'desk', 'assignment' => 'unassigned', 'name' => 'Bureau '.uniqid()]),
+    );
+    $userId = $overrides['user_id'] ?? DB::table('users')->insertGetId([
+        'first_name' => 'O', 'last_name' => 'O', 'email' => 'occ_'.uniqid().'@ecoworking.fr',
+        'password' => bcrypt('x'), 'created_at' => now(), 'updated_at' => now(),
+    ]);
+
+    return array_merge([
+        'desk_id' => $deskId, 'user_id' => $userId, 'date' => '2026-07-01',
+        'period' => 'morning', 'source' => 'external_ticket', 'status' => 'present',
+        'created_at' => now(), 'updated_at' => now(),
+    ], $overrides);
+}
+
+it('refuse deux occupations présentes du même bureau sur la même demi-journée (exclusion)', function () {
+    $row = deskOccupationRow();
+    DB::table('desk_occupations')->insert($row);
+
+    expect(fn () => DB::table('desk_occupations')->insert(deskOccupationRow([
+        'desk_id' => $row['desk_id'], 'period' => 'morning',
+    ])))->toThrow(QueryException::class);
+});
+
+it('refuse une journée complète si une demi-journée est déjà occupée (chevauchement)', function () {
+    $row = deskOccupationRow(['period' => 'afternoon']);
+    DB::table('desk_occupations')->insert($row);
+
+    expect(fn () => DB::table('desk_occupations')->insert(deskOccupationRow([
+        'desk_id' => $row['desk_id'], 'period' => 'full_day',
+    ])))->toThrow(QueryException::class);
+});
+
+it('autorise matin + après-midi sur le même bureau, et ignore les occupations annulées', function () {
+    $row = deskOccupationRow(['period' => 'morning']);
+    DB::table('desk_occupations')->insert($row);
+    DB::table('desk_occupations')->insert(deskOccupationRow([
+        'desk_id' => $row['desk_id'], 'period' => 'afternoon',
+    ]));
+    // Une occupation annulée ne bloque pas le créneau.
+    DB::table('desk_occupations')->insert(deskOccupationRow([
+        'desk_id' => $row['desk_id'], 'period' => 'morning', 'status' => 'cancelled',
+    ]));
+
+    expect(DB::table('desk_occupations')->where('desk_id', $row['desk_id'])->count())->toBe(3);
+});
+
 it('rejette un desk_occupations.source hors énumération (CHECK)', function () {
     $deskId = DB::table('resources')->insertGetId(resourceRow(['type' => 'desk', 'assignment' => 'unassigned']));
     $userId = DB::table('users')->insertGetId([

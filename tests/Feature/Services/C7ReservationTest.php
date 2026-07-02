@@ -168,6 +168,18 @@ it('propose deux demi-journées libres un jour ouvré, et masque celle déjà pr
         ->and($slots[0]['period'])->toBe(Period::Afternoon);
 });
 
+it('génère les demi-journées en heure de Paris, pas en UTC (ADR-0010)', function () {
+    $room = Resource::factory()->meetingRoom()->create();
+    $day = nextWorkingDay();
+
+    $slots = app(RoomAvailabilityService::class)->externalSlotsFor($room, $day);
+
+    // « 9h » doit désigner 9h à Lyon (UTC+1/+2 selon saison), pas 9h UTC.
+    $morningParis = CarbonImmutable::parse($day->format('Y-m-d').' 09:00', 'Europe/Paris');
+    expect($slots[0]['starts_at']->equalTo($morningParis))->toBeTrue()
+        ->and($slots[0]['starts_at']->utcOffset())->toBe($morningParis->utcOffset());
+});
+
 // --- C7.4 DeskAvailabilityService ----------------------------------------
 
 it('réserve un bureau external (occupation + ticket consommé) et le retire des dispos', function () {

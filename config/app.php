@@ -65,7 +65,10 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Europe/Paris (ADR-0010) : les heures « métier » (demi-journées 9h-13h/14h-18h,
+    // bornes de jour, échéances) sont exprimées en heure locale du coworking.
+    // Le stockage reste en timestamptz ; l'iCal convertit explicitement en UTC.
+    'timezone' => env('APP_TIMEZONE', 'Europe/Paris'),
 
     /*
     |--------------------------------------------------------------------------

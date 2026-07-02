@@ -25,6 +25,19 @@
 > dans **LastPass** (valeurs prod, en attendant Clever Cloud). Claude ne touche
 > qu'au `.env.example` (placeholders), jamais à tes valeurs réelles.
 
+### Modifs du 02/07/26 (timezone Europe/Paris — ADR-0010)
+
+| Variable | Dev local (`.env`) | Prod (LastPass → Clever Cloud) |
+|---|---|---|
+| `APP_TIMEZONE` | `Europe/Paris` | `Europe/Paris` |
+
+> Nouvelle variable (défaut du code = `Europe/Paris`, donc non bloquant si absente,
+> mais la poser explicitement partout évite toute divergence). Contexte : les
+> demi-journées « 9h-13h / 14h-18h » étaient construites en UTC (décalage 1-2 h).
+
+- [ ] 🟡 **`.env` local** : ajouter `APP_TIMEZONE=Europe/Paris`.
+- [ ] 🟡 **LastPass (prod)** : ajouter `APP_TIMEZONE=Europe/Paris`.
+
 ### Modifs du 07/06/26 (routing par sous-domaine + APP_KEY)
 
 | Variable | Dev local (`.env`) | Prod (LastPass → Clever Cloud) |

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\InvoiceStatus;
+use App\Jobs\GenerateInvoicePdfJob;
 use App\Models\Invoice;
 use Illuminate\Database\DatabaseManager;
 use RuntimeException;
@@ -29,19 +30,24 @@ final class CancelInvoiceService
      */
     public function cancel(Invoice $invoice, ?string $reason = null, ?int $emittedBy = null): Invoice
     {
-        if ($invoice->status === InvoiceStatus::Draft || $invoice->number === null) {
-            throw new RuntimeException('Un brouillon se supprime, il ne s\'annule pas.');
-        }
+        $creditNote = $this->db->transaction(function () use ($invoice, $reason, $emittedBy): Invoice {
+            // Verrou + re-lecture DANS la transaction : deux annulations
+            // concurrentes de la même facture émettraient deux avoirs numérotés
+            // (sur-crédit comptable).
+            $invoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->getKey());
 
-        if ($invoice->status === InvoiceStatus::Cancelled) {
-            throw new RuntimeException('Facture déjà annulée.');
-        }
+            if ($invoice->status === InvoiceStatus::Draft || $invoice->number === null) {
+                throw new RuntimeException('Un brouillon se supprime, il ne s\'annule pas.');
+            }
 
-        if ($invoice->is_credit_note) {
-            throw new RuntimeException('Un avoir ne s\'annule pas.');
-        }
+            if ($invoice->status === InvoiceStatus::Cancelled) {
+                throw new RuntimeException('Facture déjà annulée.');
+            }
 
-        return $this->db->transaction(function () use ($invoice, $reason, $emittedBy): Invoice {
+            if ($invoice->is_credit_note) {
+                throw new RuntimeException('Un avoir ne s\'annule pas.');
+            }
+
             $invoice->loadMissing('lines');
 
             $issuedAt = now();
@@ -96,6 +102,12 @@ final class CancelInvoiceService
 
             return $creditNote;
         });
+
+        // L'avoir est une pièce comptable au même titre que la facture : son PDF
+        // est généré dès l'émission (même flux que IssueInvoiceService).
+        GenerateInvoicePdfJob::dispatch($creditNote->id)->afterCommit();
+
+        return $creditNote;
     }
 
     private function negate(int|float|string|null $amount): string

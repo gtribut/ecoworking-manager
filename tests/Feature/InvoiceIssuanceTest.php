@@ -118,6 +118,17 @@ it('annule une facture émise en générant un avoir miroir lié', function () {
         ->and((float) $creditNote->lines->sum('line_total_ttc'))->toBe(-300.00);
 });
 
+it('n\'émet qu\'un seul avoir même si l\'annulation est rejouée (review F2)', function () {
+    $invoice = draftInvoiceWithLines();
+    app(IssueInvoiceService::class)->issue($invoice);
+
+    app(CancelInvoiceService::class)->cancel($invoice->refresh());
+
+    expect(fn () => app(CancelInvoiceService::class)->cancel($invoice->refresh()))
+        ->toThrow(RuntimeException::class, 'Facture déjà annulée.')
+        ->and(Invoice::query()->where('is_credit_note', true)->count())->toBe(1);
+});
+
 it('refuse d\'annuler un brouillon (il se supprime)', function () {
     $invoice = draftInvoiceWithLines();
 

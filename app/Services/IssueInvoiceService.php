@@ -32,11 +32,17 @@ final class IssueInvoiceService
      */
     public function issue(Invoice $invoice, ?int $emittedBy = null): Invoice
     {
-        if ($invoice->status !== InvoiceStatus::Draft) {
-            throw new RuntimeException('Seul un brouillon peut être émis.');
-        }
-
         $invoice = $this->db->transaction(function () use ($invoice, $emittedBy): Invoice {
+            // Verrou + re-lecture DANS la transaction : sans lui, deux émissions
+            // concurrentes du même brouillon passeraient toutes deux la garde et
+            // consommeraient deux numéros dont un écrasé → trou de numérotation
+            // (CGI art. 289).
+            $invoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->getKey());
+
+            if ($invoice->status !== InvoiceStatus::Draft) {
+                throw new RuntimeException('Seul un brouillon peut être émis.');
+            }
+
             $invoice->loadMissing(['lines', 'billable']);
 
             // Recalcul défensif des totaux depuis les lignes (jamais le front, §3.6).

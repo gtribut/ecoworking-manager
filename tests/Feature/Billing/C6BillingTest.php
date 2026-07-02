@@ -7,9 +7,11 @@ use App\Jobs\GenerateInvoicePdfJob;
 use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\InvoiceLine;
+use App\Models\InvoiceLineSubscription;
 use App\Models\Offer;
 use App\Models\Payment;
 use App\Models\Subscription;
+use App\Services\CancelInvoiceService;
 use App\Services\InvoicePdfService;
 use App\Services\IssueInvoiceService;
 use App\Services\MonthlyBillingService;
@@ -45,6 +47,24 @@ it('programme la génération du PDF à l\'émission', function () {
     app(IssueInvoiceService::class)->issue($invoice);
 
     Queue::assertPushed(GenerateInvoicePdfJob::class);
+});
+
+it('programme la génération du PDF de l\'avoir à l\'annulation (review F3)', function () {
+    Queue::fake();
+    $invoice = Invoice::factory()->create(['status' => InvoiceStatus::Draft->value, 'number' => null]);
+    InvoiceLine::factory()->create([
+        'invoice_id' => $invoice->id,
+        'line_total_ht' => 100, 'line_vat' => 20, 'line_total_ttc' => 120,
+    ]);
+    app(IssueInvoiceService::class)->issue($invoice);
+
+    $creditNote = app(CancelInvoiceService::class)->cancel($invoice->refresh());
+
+    // L'avoir est une pièce comptable : son PDF doit exister comme celui de la facture.
+    Queue::assertPushed(
+        GenerateInvoicePdfJob::class,
+        fn (GenerateInvoicePdfJob $job): bool => $job->invoiceId === $creditNote->id,
+    );
 });
 
 // --- C6.6 Paiements & statut ---------------------------------------------
@@ -161,6 +181,59 @@ it('reste idempotent au grain entité (pas de doublon de facture)', function () 
     // Second passage : aucune nouvelle facture.
     expect($svc->generateForEntity('company', $company->id, $start, $end))->toBeNull()
         ->and(Invoice::where('billable_id', $company->id)->where('billable_type', 'company')->count())->toBe(1);
+});
+
+it('refacture l\'entité après suppression du brouillon récurrent (review F4)', function () {
+    $company = Company::factory()->create();
+    $offer = Offer::factory()->subscription()->create(['unit_price_ht' => 200, 'vat_rate' => 20]);
+    Subscription::factory()->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'starts_at' => '2026-04-01',
+    ]);
+    $svc = app(MonthlyBillingService::class);
+    $start = CarbonImmutable::parse('2026-04-01');
+    $end = CarbonImmutable::parse('2026-04-30');
+
+    $draft = $svc->generateForEntity('company', $company->id, $start, $end);
+    expect($draft)->not->toBeNull();
+
+    // Suppression du brouillon (soft delete) : les liaisons d'idempotence
+    // doivent être purgées, sinon l'entité devient infacturable sur le mois.
+    $draft->delete();
+
+    expect(InvoiceLineSubscription::query()->count())->toBe(0)
+        ->and($svc->generateForEntity('company', $company->id, $start, $end))->not->toBeNull();
+});
+
+it('facture le reliquat des abonnements non encore facturés sur la période (review F5)', function () {
+    $company = Company::factory()->create();
+    $offer = Offer::factory()->subscription()->create(['unit_price_ht' => 300, 'vat_rate' => 20]);
+    $svc = app(MonthlyBillingService::class);
+    $start = CarbonImmutable::parse('2026-04-01');
+    $end = CarbonImmutable::parse('2026-04-30');
+
+    // Abo A facturé « instant T » (démarrage en cours de mois déjà traité).
+    $subA = Subscription::factory()->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'starts_at' => '2026-04-01',
+    ]);
+    expect($svc->generateForSubscription($subA, $start, $end))->not->toBeNull();
+
+    // Abo B souscrit ensuite : la génération d'entité doit facturer B seul
+    // (et non ignorer toute l'entité parce que A est déjà facturé).
+    $subB = Subscription::factory()->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'starts_at' => '2026-04-15',
+    ]);
+    $invoice = $svc->generateForEntity('company', $company->id, $start, $end);
+
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->lines)->toHaveCount(1) // prorata de B uniquement
+        ->and($invoice->lines->first()->subscriptionLinks()->pluck('subscription_id')->all())->toBe([$subB->id]);
+
+    // A n'est pas refacturé, et l'idempotence tient toujours au passage suivant.
+    expect(InvoiceLineSubscription::query()->where('subscription_id', $subA->id)->count())->toBe(1)
+        ->and($svc->generateForEntity('company', $company->id, $start, $end))->toBeNull();
 });
 
 it('génère une facture par entité distincte via generateMonth', function () {

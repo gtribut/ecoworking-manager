@@ -88,11 +88,20 @@ final class MonthlyBillingService
             return null;
         }
 
-        if ($this->alreadyBilled($subscriptions->pluck('id')->all(), $periodStart, $periodEnd)) {
+        // Idempotence au grain ABONNEMENT : on écarte les abos déjà facturés sur
+        // la période et on facture le reliquat (ex. abo souscrit après le run du
+        // cron). Un `exists()` global rendrait l'entité infacturable dès qu'un
+        // seul abo a été traité (instant T), sans aucun signal.
+        $billed = $this->billedSubscriptionIds($subscriptions->pluck('id')->all(), $periodStart, $periodEnd);
+        $remaining = $subscriptions->reject(
+            fn (Subscription $sub): bool => in_array((int) $sub->id, $billed, true),
+        )->values();
+
+        if ($remaining->isEmpty()) {
             return null;
         }
 
-        return $this->buildInvoice($billableType, $billableId, $subscriptions, $periodStart, $periodEnd);
+        return $this->buildInvoice($billableType, $billableId, $remaining, $periodStart, $periodEnd);
     }
 
     /**
@@ -290,11 +299,25 @@ final class MonthlyBillingService
      */
     private function alreadyBilled(array $subscriptionIds, CarbonImmutable $periodStart, CarbonImmutable $periodEnd): bool
     {
+        return $this->billedSubscriptionIds($subscriptionIds, $periodStart, $periodEnd) !== [];
+    }
+
+    /**
+     * Ids des abonnements déjà facturés sur la période, parmi ceux fournis
+     * (backstop DB : UNIQUE (subscription_id, period_start, period_end)).
+     *
+     * @param  list<int>  $subscriptionIds
+     * @return list<int>
+     */
+    private function billedSubscriptionIds(array $subscriptionIds, CarbonImmutable $periodStart, CarbonImmutable $periodEnd): array
+    {
         return InvoiceLineSubscription::query()
             ->whereIn('subscription_id', $subscriptionIds)
             ->whereDate('period_start', '>=', $periodStart->toDateString())
             ->whereDate('period_end', '<=', $periodEnd->toDateString())
-            ->exists();
+            ->pluck('subscription_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
     }
 
     /** Remise négociée de l'entité facturée (§6.4), 0 si non applicable. */

@@ -7,8 +7,10 @@ namespace App\Models;
 use App\Enums\ContactRole;
 use App\Enums\InvoiceStatus;
 use App\Models\Concerns\Auditable;
+use App\Observers\InvoiceObserver;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +33,7 @@ use Illuminate\Support\Collection;
     'cancelled_at', 'factur_x_xml_path', 'pa_transmission_id', 'pa_transmission_status',
     'emitted_by',
 ])]
+#[ObservedBy(InvoiceObserver::class)]
 class Invoice extends Model
 {
     /** @use HasFactory<InvoiceFactory> */

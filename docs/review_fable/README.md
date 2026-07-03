@@ -67,8 +67,8 @@ Les problèmes réels se concentrent sur **quatre thèmes transverses** :
 | 4 | ✅ **Corrigé le 02/07** (`InvoiceObserver::deleting` purge les liaisons, F4) — brouillon supprimé ⇒ entité refacturable | 🔴 Élevé | [03](./03-facturation.md) |
 | 5 | ✅ **Corrigé le 02/07** — PDF de l'avoir dispatché à l'annulation (F3) | 🔴 Élevé | [03](./03-facturation.md) |
 | 6 | ✅ **Tranché le 02/07** — `APP_TIMEZONE=Europe/Paris` (ADR-0010) | 🟠 Majeur | [04](./04-backend-php.md) |
-| 7 | Réconcilier le périmètre MVP — plan d'action prêt : [07-chantier-mvp-restant.md](./07-chantier-mvp-restant.md) | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
-| 8 | Câbler le serving SPA prod (catch-all + Blade + build `public/portal/`) — inclus dans C12.1 du doc 07 | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
+| 7 | ✅ **Fait le 03/07** — chantier **C12 terminé** (10 lots, 442 Pest + 71 Vitest verts, cf. SUIVI §C12) : le périmètre MVP BRIEF §2/PRD est intégralement codé | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
+| 8 | ✅ **Corrigé le 03/07** (C12.1) — serving SPA prod : build Vite → `public/portal/` + manifest, `PortalSpaController`, catch-all domaine portail | 🟠 Majeur | [01](./01-architecture-et-documentation.md) |
 | 9 | ✅ **Corrigé le 02/07** — rate limiting `/api/*` (`throttleApi()` + limiteur 60/min user\|IP, testé 429) | 🟠 Majeur | [02](./02-securite.md) |
 | 10 | ✅ **Corrigé le 02/07** — back-office Bookings via `BookingService` (create/update/cancel action + restitution ticket, conflits en erreur de formulaire), observer de restitution à la suppression | 🟠 Majeur | [04](./04-backend-php.md) |
 | 11 | ✅ **Corrigé le 02/07** — idempotence au grain abonnement + `generateMonth` résilient (F5/F16) | 🟠 Majeur | [03](./03-facturation.md) |
@@ -84,11 +84,16 @@ mineurs backend (dont M7 XOR rôles — **avec réparation du Select rôles, cas
 facturation, UNIQUE liaison, mentions PDF art. 289, challenge 2FA), advisories composer
 corrigées (audit propre, step CI bloquant).
 
-**Restent au 02/07 soir** : le chantier **C12** ([07](./07-chantier-mvp-restant.md), arbitrages
-tranchés, prêt à lancer), C11.3/C11.4 (e2e Playwright + axe-core), 2 décisions ouvertes
-(jours ouvrés des bureaux nomades — PRD muet ; 48 vs 49 bureaux du plan SVG), l'advisory
-npm `form-data` (via axios, pnpm audit non bloquant en CI), et les points « dérive
-documentaire » P2 du doc [01](./01-architecture-et-documentation.md).
+**Mise à jour du 03/07** : le chantier **C12 est terminé** ([07](./07-chantier-mvp-restant.md),
+10 lots committés — dont Settings dé-scopé par décision, PRD §4.15) et la question
+48 vs 49 bureaux est **tranchée : 49** (étage 1 = 29, étage 2 = 20, propagé seeder/PRD/
+data_model/BRIEF). **Restent** : C11.3/C11.4 (e2e Playwright + axe-core, y compris les
+nouveaux écrans C12), 1 décision ouverte (jours ouvrés des bureaux nomades — PRD muet),
+l'advisory npm `form-data` (via axios, pnpm audit non bloquant en CI), les points « dérive
+documentaire » P2 du doc [01](./01-architecture-et-documentation.md), et un piège
+transverse découvert pendant C12 : timestamps frais relus +2 h (Paris→UTC) — les
+`isFuture()/isPast()` PHP mentent sur des lignes récentes, comparer côté SQL
+(suspect connu : `BookingPolicy`).
 
 ## Ce qui est remarquablement bien fait
 

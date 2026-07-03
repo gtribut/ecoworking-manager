@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\AnnouncementController;
+use App\Http\Controllers\Api\AnnouncementRegistrationController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\CalendarSubscriptionController;
 use App\Http\Controllers\Api\CurrentUserController;
@@ -56,6 +58,12 @@ $register = function (): void {
         Route::get('/presence', [PresenceController::class, 'index'])->name('api.presence.index');
         Route::post('/absences', [PresenceController::class, 'store'])->name('api.absences.store');
         Route::delete('/absences/{absence}', [PresenceController::class, 'destroy'])->name('api.absences.destroy');
+
+        // C12.3 — Annonces & événements (publiées + audience, RSVP auto-scopé).
+        Route::get('/announcements', [AnnouncementController::class, 'index'])->name('api.announcements.index');
+        Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show'])->whereNumber('announcement')->name('api.announcements.show');
+        Route::post('/announcements/{announcement}/registration', [AnnouncementRegistrationController::class, 'store'])->whereNumber('announcement')->name('api.announcements.registration.store');
+        Route::delete('/announcements/{announcement}/registration', [AnnouncementRegistrationController::class, 'destroy'])->whereNumber('announcement')->name('api.announcements.registration.destroy');
 
         // C8.2 — Centre de notifications in-app (driver database, auto-scopé).
         Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');

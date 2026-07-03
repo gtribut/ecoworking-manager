@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { Armchair, CalendarDays, CalendarOff, FileText, UserCircle } from 'lucide-react'
 import { Link } from 'react-router'
+import { DashboardAnnouncements } from '@/features/announcements/DashboardAnnouncements'
 import { useAuth } from '@/features/auth/useAuth'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { usePageTitle } from '@/lib/usePageTitle'
@@ -84,6 +85,9 @@ export function DashboardPage() {
           </li>
         ))}
       </ul>
+
+      {/* Bloc « à la une » (PRD §3.3.2) : 3 dernières actualités visibles. */}
+      <DashboardAnnouncements />
     </div>
   )
 }

@@ -1,6 +1,8 @@
 import { Route, Routes } from 'react-router'
 import { Layout } from '@/components/Layout'
 import { NotFound } from '@/components/NotFound'
+import { AnnouncementDetailPage } from '@/features/announcements/AnnouncementDetailPage'
+import { AnnouncementsPage } from '@/features/announcements/AnnouncementsPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { BookingsPage } from '@/features/bookings/BookingsPage'
@@ -26,6 +28,8 @@ export function App() {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="invoices" element={<InvoicesPage />} />
         <Route path="bookings" element={<BookingsPage />} />
+        <Route path="announcements" element={<AnnouncementsPage />} />
+        <Route path="announcements/:id" element={<AnnouncementDetailPage />} />
         <Route path="tickets" element={<TicketsPage />} />
         <Route path="presence" element={<PresencePage />} />
       </Route>

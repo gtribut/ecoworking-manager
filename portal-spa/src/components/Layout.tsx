@@ -41,6 +41,7 @@ export function Layout() {
   const entries: NavEntry[] = [
     { to: '/', label: 'Accueil', end: true },
     { to: '/bookings', label: 'Réservations' },
+    { to: '/announcements', label: 'Actualités' },
     ...(isExternal ? [{ to: '/tickets', label: 'Tickets' }] : []),
     ...(isResident ? [{ to: '/presence', label: 'Présence' }] : []),
     { to: '/profile', label: 'Profil' },

@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-07-03 — C12 TERMINÉ ✅ (10 lots) puis C11.3 TERMINÉ ✅ (e2e : 6 tests admin Pest browser + 14 tests SPA Playwright, sur les parcours critiques C12 inclus). Suites : 442 Pest + 71 Vitest + 20 e2e, toutes vertes. Prochaines étapes : C11.4 (a11y axe-core sur le hook `checkA11y` prêt), corrections review résiduelles, puis V1.5 (déploiement).**
+> **Dernière mise à jour : 2026-07-03 — MVP COMPLET ✅ : C12 (10 lots), C11.3 (e2e) et C11.4 (a11y axe-core, thème sombre corrigé) terminés, jours ouvrés bureaux tranché, advisory npm + P2 doc soldés. Suites : 444 Pest + 72 Vitest + 26 e2e (dont 14 checks a11y), toutes vertes. Prochaine étape : V1.5 (déploiement Clever Cloud, import Cosoft) — cf. `todo_guillaume.md`.**
 
 ---
 
@@ -169,7 +169,7 @@
 | C11.1 | Tests de schéma DB (Pest) | ✅ | 40 verts |
 | C11.2 | Tests Feature métier (facturation, isolation, résa) | 🚧 | C7 résa/tickets (14), API résa (9), facturation C6 (8), isolation A/B (AuthorizationTest) + Vitest SPA (26) ; à compléter au fil des chantiers |
 | C11.3 | Tests e2e Playwright (SPA) + Pest 4 browser (Filament) | ✅ | ADR-0008 appliqué : admin = `tests/Browser/` (Pest browser, `phpunit.e2e.xml`, base `testing`, login 2FA TOTP réel) **6 tests** ; SPA = `portal-spa/e2e/` (Playwright, SPA **buildée** servie par Laravel, base dédiée `e2e`, seeds `E2eSeeder`, factures plage 90001+) **14 tests** — parcours critiques C12 inclus (tickets, facture émise+PDF, occupation, RGPD, RSVP, documents, annuaire+plan clavier, magic link via Mailpit). Runbook `docs/testing-e2e.md`, scripts `scripts/e2e/`, job CI `e2e` **non bloquant au départ** (à durcir après stabilisation). Hook `checkA11y` prêt pour C11.4 |
-| C11.4 | a11y axe-core sur écrans critiques | ⬜ | |
+| C11.4 | a11y axe-core sur écrans critiques | ✅ | `@axe-core/playwright` branché sur le hook `checkA11y` (tags WCAG 2.1 A/AA, zéro violation tolérée, rapport lisible, exclusion possible mais justification obligatoire — **aucune utilisée**) ; 14 checks sur tous les écrans critiques (dont plan SVG, magic link, notifications ouvertes) + **thème sombre** (dashboard + résa) ; violations trouvées = contrastes dark uniquement, corrigées (token `brand-300` + `dark:text-neutral-400`, ~35 occurrences) ; runbook §a11y |
 | C11.5 | Pint + Biome propres en CI | ✅ | Pint `--test` + Biome `check` branchés dans `.github/workflows/ci.yml` (C0.4) ; verts |
 
 ### C12 — Modules MVP restants

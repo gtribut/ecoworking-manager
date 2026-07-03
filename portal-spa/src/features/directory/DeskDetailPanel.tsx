@@ -79,7 +79,7 @@ export function DeskDetailPanel({ desk, onClose }: DeskDetailPanelProps) {
                   href={occupant.linkedin_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-brand-700 underline"
+                  className="text-brand-700 dark:text-brand-300 underline"
                 >
                   LinkedIn
                   <span className="sr-only"> de {occupant.first_name} (nouvelle fenêtre)</span>
@@ -92,7 +92,7 @@ export function DeskDetailPanel({ desk, onClose }: DeskDetailPanelProps) {
                   href={occupant.website_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-brand-700 underline"
+                  className="text-brand-700 dark:text-brand-300 underline"
                 >
                   Site web
                   <span className="sr-only"> de {occupant.first_name} (nouvelle fenêtre)</span>
@@ -121,7 +121,7 @@ export function DeskDetailPanel({ desk, onClose }: DeskDetailPanelProps) {
 
       {desk.is_own && (
         <p className="mt-4">
-          <Link to="/presence" className="text-sm text-brand-700 underline">
+          <Link to="/presence" className="text-sm text-brand-700 dark:text-brand-300 underline">
             Gérer mes absences
           </Link>
         </p>

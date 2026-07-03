@@ -157,7 +157,7 @@ function PresenceContent() {
         <h2 id="absence-form-heading" className="text-lg font-medium">
           Déclarer une absence
         </h2>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
           Signalez vos jours d’absence pour libérer votre bureau aux membres nomades.
         </p>
 
@@ -271,9 +271,13 @@ function PresenceContent() {
                       )}
                     </span>
                   )}
-                  <span className="text-neutral-500">{PERIOD_LABELS[absence.period]}</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">
+                    {PERIOD_LABELS[absence.period]}
+                  </span>
                   {absence.notes && (
-                    <span className="block text-xs text-neutral-500">{absence.notes}</span>
+                    <span className="block text-xs text-neutral-500 dark:text-neutral-400">
+                      {absence.notes}
+                    </span>
                   )}
                 </span>
                 <ConfirmButton

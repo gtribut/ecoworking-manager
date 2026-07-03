@@ -33,7 +33,7 @@ export function CalendarSubscription() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-neutral-500">Chargement…</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">Chargement…</p>
       ) : data?.enabled && data.urls ? (
         <div className="space-y-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <FeedField id="feed-mine" label="Mes réservations" url={data.urls.mine} />
@@ -63,7 +63,7 @@ export function CalendarSubscription() {
               Désactiver l’abonnement
             </ConfirmButton>
           </div>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
             Régénérer invalide immédiatement les anciens liens d’abonnement.
           </p>
         </div>

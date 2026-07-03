@@ -51,7 +51,7 @@ export function DashboardAnnouncements() {
               <p className="mt-2">
                 <Link
                   to={`/announcements/${announcement.id}`}
-                  className="text-sm text-brand-700 underline"
+                  className="text-sm text-brand-700 dark:text-brand-300 underline"
                 >
                   Voir
                   <span className="sr-only"> l’actualité {announcement.title}</span> →
@@ -63,7 +63,7 @@ export function DashboardAnnouncements() {
       )}
 
       <p>
-        <Link to="/announcements" className="text-sm text-brand-700 underline">
+        <Link to="/announcements" className="text-sm text-brand-700 dark:text-brand-300 underline">
           Voir toutes les actualités →
         </Link>
       </p>

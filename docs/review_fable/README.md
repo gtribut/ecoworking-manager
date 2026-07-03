@@ -91,8 +91,12 @@ corrigées (audit propre, step CI bloquant).
 - ✅ **Advisory npm `form-data` soldée** (≥ 4.0.6 via bump transitif, `pnpm audit` repassé **bloquant** en CI) ;
 - ✅ **P2 « dérive documentaire » soldés** (passe BRIEF complète, ADR-0001 renommé, politique ADR clarifiée — détail au doc [01](./01-architecture-et-documentation.md) §P2).
 
-**Reste** : **C11.4** (brancher axe-core sur le hook `checkA11y`), les P3 « opportunités » du
-doc 01 (backup + headers sécurité en V1.5, fusion des résumés SUIVI, ADR facturation par
+- ✅ **C11.4 fait** (même jour) : axe-core branché sur le hook, 14 checks WCAG 2.1 AA sur les
+écrans critiques + thème sombre, zéro exclusion — seules violations trouvées : contrastes
+dark, corrigés (~35 occurrences).
+
+**Reste** (hors périmètre review, pour la V1.5) : les P3 « opportunités » du doc 01
+(backup + headers sécurité CSP/HSTS, fusion des résumés SUIVI, ADR facturation par
 entité), et un piège transverse découvert pendant C12 : timestamps frais relus +2 h
 (Paris→UTC) — les `isFuture()/isPast()` PHP mentent sur des lignes récentes, comparer côté
 SQL (suspect connu : `BookingPolicy`).

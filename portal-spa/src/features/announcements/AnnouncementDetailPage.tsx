@@ -22,7 +22,7 @@ export function AnnouncementDetailPage() {
       <p>
         <Link
           to="/announcements"
-          className="inline-flex items-center gap-1 text-sm text-brand-700 underline"
+          className="inline-flex items-center gap-1 text-sm text-brand-700 dark:text-brand-300 underline"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           Toutes les actualités

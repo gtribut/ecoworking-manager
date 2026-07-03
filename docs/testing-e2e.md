@@ -1,4 +1,4 @@
-# Tests e2e — runbook (C11.3)
+# Tests e2e — runbook (C11.3, a11y C11.4)
 
 > Deux suites navigateur complémentaires, conformes à l'ADR-0008 :
 >
@@ -161,21 +161,57 @@ test('…', async ({ page, checkA11y }) => {
   await loginViaApi(page)          // session par API, pas de login UI
   await page.goto('/xxx')
   await expect(page.getByRole('heading', { name: '…' })).toBeVisible()
-  await checkA11y('xxx')           // no-op aujourd'hui, axe-core en C11.4
+  await checkA11y('xxx')           // audit axe-core WCAG 2.1 AA (cf. §4 a11y)
 })
 ```
+
+Tout nouvel écran critique doit appeler `checkA11y` une fois son état
+significatif affiché (attendre la fin des chargements : l'audit fige le DOM
+au moment de l'appel).
 
 Données : tout ce qui est asserté vient de `E2eSeeder`
 (`database/seeders/E2eSeeder.php`) et de son miroir
 `portal-spa/e2e/support/seed.ts` — **maintenir les deux en phase**.
 
-### Préparation C11.4 (a11y)
+### Audit a11y (C11.4) — fixture `checkA11y`
 
-La fixture `checkA11y` (`e2e/support/fixtures.ts`) est un point d'ancrage
-vide, déjà appelée sur les écrans critiques. Pour activer l'audit :
-`pnpm add -D @axe-core/playwright` puis implémenter le corps de la fixture
-(fail sur violations serious/critical). Côté admin, le plugin Pest expose
-`assertNoAccessibilityIssues()`. Aucun spec à modifier.
+La fixture `checkA11y` (`e2e/support/fixtures.ts`, `@axe-core/playwright`)
+audite la page courante avec axe-core, restreinte aux tags **`wcag2a`,
+`wcag2aa`, `wcag21a`, `wcag21aa`** — la cible RGAA 4.1 niveau AA du projet
+(CLAUDE.md §3.5). `best-practice` est volontairement hors périmètre.
+**Zéro violation tolérée**, quel que soit l'impact : à l'échec, le rapport
+liste chaque règle (id, impact, URL de la doc axe) et les sélecteurs des
+nœuds fautifs avec les pistes de correction.
+
+Couverture actuelle : login (+ étape magic link), dashboard, réservations,
+factures, annonces (liste + détail), documents, annuaire, plan des étages,
+tickets/bureaux nomades, présence, profil, centre de notifications — via les
+specs fonctionnelles + `e2e/a11y.spec.ts` (passages minimaux pour les écrans
+sans spec dédiée). Le **thème sombre** est audité dans `a11y.spec.ts`
+(dashboard + réservations) via `test.use({ colorScheme: 'dark' })` : le user
+e2e n'a pas de préférence `theme` → la SPA suit `prefers-color-scheme`.
+
+**Exclure un élément de l'audit** (dernier recours) : `checkA11y` accepte un
+second paramètre `{ exclude: ['selector'] }`. CLAUDE.md §3.5 interdit de
+désactiver une règle a11y sans justification documentée → toute exclusion
+DOIT être accompagnée d'un commentaire au point d'appel expliquant le choix
+délibéré et pourquoi il n'est pas corrigeable proprement. Aucune exclusion à
+ce jour.
+
+```ts
+// Justification : <raison écrite, choix délibéré non corrigeable>.
+await checkA11y('xxx', { exclude: ['.selector-cible'] })
+```
+
+Pièges connus :
+- le shell HTML servi est `resources/views/portal-spa.blade.php` (miroir de
+  `portal-spa/index.html`) — une correction sur `<html>`/`<head>`/`<body>`
+  doit se faire dans le Blade, PAS dans le index.html de Vite ;
+- après toute correction de composant, **rebuilder la SPA** avant de relancer
+  la suite (fait automatiquement par `scripts/e2e/spa.sh`).
+
+Côté admin (hors périmètre RGAA — thème Filament tiers), le plugin Pest
+expose `assertNoAccessibilityIssues()` si besoin ponctuel.
 
 ---
 

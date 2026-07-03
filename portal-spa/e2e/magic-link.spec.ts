@@ -3,12 +3,13 @@ import { extractLink, fetchLatestMessageFor } from './support/mailpit'
 import { seed } from './support/seed'
 
 test.describe('Magic link (C12.8a)', () => {
-  test('demande → email Mailpit → consommation → connecté', async ({ page }) => {
+  test('demande → email Mailpit → consommation → connecté', async ({ page, checkA11y }) => {
     // Marge de 5 s : tolère un léger décalage d'horloge entre conteneurs.
     const requestedAt = new Date(Date.now() - 5_000)
 
     await page.goto('/login')
     await page.getByRole('button', { name: 'Recevoir un lien de connexion par email' }).click()
+    await checkA11y('login-magic-link')
     await page.getByLabel('Email').fill(seed.member.email)
     await page.getByRole('button', { name: 'Recevoir le lien de connexion' }).click()
 

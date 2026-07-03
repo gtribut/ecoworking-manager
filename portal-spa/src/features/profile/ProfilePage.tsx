@@ -138,7 +138,7 @@ export function ProfilePage() {
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" value={data.user.email} disabled readOnly />
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
               La modification de l’email se fait via une procédure dédiée.
             </p>
           </div>
@@ -155,7 +155,7 @@ export function ProfilePage() {
 
         <fieldset className="space-y-3">
           <legend className="text-lg font-medium">Notifications</legend>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
             Choisissez comment être prévenu (facture émise, document à valider, réservation…).
           </p>
           <label className="flex items-center gap-2 text-sm">
@@ -276,12 +276,12 @@ function CompanyBlock({ company }: { company: CompanyData }) {
       <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
         {rows.map(([label, value]) => (
           <div key={label}>
-            <dt className="text-neutral-500">{label}</dt>
+            <dt className="text-neutral-500 dark:text-neutral-400">{label}</dt>
             <dd>{value ?? '—'}</dd>
           </div>
         ))}
       </dl>
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-neutral-500 dark:text-neutral-400">
         Ces informations sont gérées par Ecoworking.{' '}
         <a
           className="underline"

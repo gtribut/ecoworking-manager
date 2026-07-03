@@ -79,7 +79,9 @@ export function InvoicesPage() {
                     <th scope="row" className="px-4 py-3 font-medium">
                       {invoice.number ?? '—'}
                       {invoice.is_credit_note && (
-                        <span className="ml-2 text-xs text-neutral-500">(avoir)</span>
+                        <span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">
+                          (avoir)
+                        </span>
                       )}
                     </th>
                     <td className="px-4 py-3">{formatDate(invoice.issued_at)}</td>
@@ -99,7 +101,7 @@ export function InvoicesPage() {
                       {invoice.pdf_available ? (
                         <a
                           href={invoicePdfUrl(invoice.id)}
-                          className="inline-flex items-center gap-1 text-brand-700 underline"
+                          className="inline-flex items-center gap-1 text-brand-700 dark:text-brand-300 underline"
                         >
                           <Download className="size-4" aria-hidden="true" />
                           <span>

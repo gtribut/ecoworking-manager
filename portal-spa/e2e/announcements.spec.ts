@@ -15,6 +15,7 @@ test.describe('Annonces & événements (C12.3)', () => {
     ).toBeVisible()
     await expect(page.getByRole('heading', { name: seed.announcement.news })).toBeVisible()
     await expect(page.getByRole('heading', { name: seed.announcement.event })).toBeVisible()
+    await checkA11y('announcements')
 
     await page.getByRole('link', { name: seed.announcement.event, exact: true }).click()
     await expect(

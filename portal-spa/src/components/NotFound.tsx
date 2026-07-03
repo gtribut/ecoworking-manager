@@ -10,7 +10,7 @@ export function NotFound() {
       <p className="text-neutral-600 dark:text-neutral-300">
         La page que vous cherchez n’existe pas.
       </p>
-      <Link to="/" className="text-brand-700 underline">
+      <Link to="/" className="text-brand-700 dark:text-brand-300 underline">
         Retour à l’accueil
       </Link>
     </main>

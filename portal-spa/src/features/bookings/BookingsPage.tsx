@@ -95,12 +95,14 @@ export function BookingsPage() {
                       <th scope="row" className="px-4 py-3 font-medium">
                         {booking.resource_name}
                         {booking.title && (
-                          <span className="block text-xs font-normal text-neutral-500">
+                          <span className="block text-xs font-normal text-neutral-500 dark:text-neutral-400">
                             {booking.title}
                           </span>
                         )}
                         {booking.is_paid && (
-                          <span className="ml-1 text-xs text-neutral-500">(payante)</span>
+                          <span className="ml-1 text-xs text-neutral-500 dark:text-neutral-400">
+                            (payante)
+                          </span>
                         )}
                       </th>
                       <td className="px-4 py-3">

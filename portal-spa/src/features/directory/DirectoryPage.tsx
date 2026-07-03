@@ -118,7 +118,7 @@ export function DirectoryPage() {
                             href={entry.linkedin_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-sm text-brand-700 underline"
+                            className="inline-flex items-center gap-1 text-sm text-brand-700 dark:text-brand-300 underline"
                           >
                             <Linkedin className="size-4" aria-hidden="true" />
                             LinkedIn
@@ -135,7 +135,7 @@ export function DirectoryPage() {
                             href={entry.website_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-sm text-brand-700 underline"
+                            className="text-sm text-brand-700 dark:text-brand-300 underline"
                           >
                             Site web
                             <span className="sr-only">

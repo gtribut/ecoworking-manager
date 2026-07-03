@@ -38,7 +38,7 @@ export function DashboardDocumentsToValidate() {
             ))}
           </ul>
           <p>
-            <Link to="/documents" className="text-sm text-brand-700 underline">
+            <Link to="/documents" className="text-sm text-brand-700 dark:text-brand-300 underline">
               Voir tous mes documents →
             </Link>
           </p>

@@ -100,7 +100,9 @@ describe('TicketsPage', () => {
     await user.click(screen.getByRole('button', { name: /voir les bureaux disponibles/i }))
 
     expect(
-      await screen.findByText('Les bureaux nomades ne sont réservables que les jours ouvrés (lundi à vendredi).'),
+      await screen.findByText(
+        'Les bureaux nomades ne sont réservables que les jours ouvrés (lundi à vendredi).',
+      ),
     ).toBeInTheDocument()
     expect(availabilitySpy).not.toHaveBeenCalled()
   })

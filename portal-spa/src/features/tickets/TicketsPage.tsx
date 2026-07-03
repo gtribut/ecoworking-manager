@@ -67,7 +67,7 @@ export function TicketsPage() {
                   <span className="block text-2xl font-semibold tabular-nums">
                     {data.balances.desk_half_day}
                   </span>
-                  <span className="block text-sm text-neutral-500">
+                  <span className="block text-sm text-neutral-500 dark:text-neutral-400">
                     Demi-journées bureau nomade
                   </span>
                 </span>
@@ -78,7 +78,7 @@ export function TicketsPage() {
                   <span className="block text-2xl font-semibold tabular-nums">
                     {data.balances.meeting_room_half_day}
                   </span>
-                  <span className="block text-sm text-neutral-500">
+                  <span className="block text-sm text-neutral-500 dark:text-neutral-400">
                     Demi-journées salle de réunion
                   </span>
                 </span>
@@ -211,7 +211,10 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
                     <span className="text-sm">
                       {desk.name}
                       {desk.floor !== null && (
-                        <span className="text-neutral-500"> · étage {desk.floor}</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">
+                          {' '}
+                          · étage {desk.floor}
+                        </span>
                       )}
                     </span>
                     <Button

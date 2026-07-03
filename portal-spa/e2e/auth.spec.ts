@@ -6,6 +6,7 @@ test.describe('Session membre', () => {
   test('login mot de passe → dashboard (annonces + documents)', async ({ page, checkA11y }) => {
     await page.goto('/login')
     await expect(page.getByRole('heading', { level: 1, name: 'Portail Ecoworking' })).toBeVisible()
+    await checkA11y('login')
 
     await page.getByLabel('Email').fill(seed.member.email)
     await page.getByLabel('Mot de passe').fill(seed.password)

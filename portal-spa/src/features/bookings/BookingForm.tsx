@@ -181,7 +181,7 @@ export function BookingForm({ isExternal, onBooked }: BookingFormProps) {
       </div>
 
       {selectedRoom?.description && (
-        <p className="text-sm text-neutral-500">{selectedRoom.description}</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{selectedRoom.description}</p>
       )}
 
       {roomId !== null && dateError === null && (
@@ -243,7 +243,7 @@ function AgendaSlotList({
         })}
       </h3>
       {hours.length === 0 && (
-        <p className="px-4 py-3 text-sm text-neutral-500">
+        <p className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400">
           Plus aucun créneau à venir pour cette date.
         </p>
       )}

@@ -84,7 +84,9 @@ export function DashboardPage() {
               <tile.icon className="size-6 text-brand-600" aria-hidden="true" />
               <span>
                 <span className="block font-medium">{tile.label}</span>
-                <span className="block text-sm text-neutral-500">{tile.description}</span>
+                <span className="block text-sm text-neutral-500 dark:text-neutral-400">
+                  {tile.description}
+                </span>
               </span>
             </Link>
           </li>

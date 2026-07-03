@@ -9,6 +9,8 @@
 
 @theme {
   --color-brand-50: oklch(0.97 0.02 150);
+  /* Ton clair pour texte/liens sur fonds sombres (contraste AA en dark). */
+  --color-brand-300: oklch(0.8 0.12 152);
   --color-brand-500: oklch(0.62 0.13 155);
   --color-brand-600: oklch(0.54 0.13 155);
   --color-brand-700: oklch(0.45 0.12 155);

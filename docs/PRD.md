@@ -635,7 +635,7 @@ Contenu : **résa salles uniquement** (pas les occupations bureaux, gérées via
 
 Pour réserver un bureau, l'external doit avoir des **tickets bureau crédités** par l'admin (pas d'achat sur le portail en MVP, cf. §3.5.6). Il **choisit un bureau libre précis** via une **vue plan** dédiée :
 
-- Sélecteur de date + période (matin / après-midi / journée)
+- Sélecteur de date + période (matin / après-midi / journée) — **jours ouvrés uniquement** (lundi-vendredi hors fériés français), même règle que les salles via ticket. ✅ Tranché le 2026-07-03 (review finding #17) : garde serveur unique dans `DeskAvailabilityService::bookForExternal` (API portail + consommation manuelle admin), week-ends refusés aussi côté client
 - **Vue plan filtrée** ne montrant **que les bureaux `unassigned` libres** sur la période choisie (cliquables pour sélection). L'external **ne voit pas** les bureaux des résidents (ni ceux laissés vacants par une absence) ni aucune information d'identité → confidentialité (cf. Q16 : l'annuaire complet n'est pas accessible aux external). Réutilise le même SVG que le plan des étages (§3.7 / §4.12), en vue restreinte « places libres ».
 - L'external clique sur un bureau libre → réservation pour la période (consommation d'un ticket bureau).
 - Affichage du nombre de bureaux libres restants pour la période.

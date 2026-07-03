@@ -127,9 +127,11 @@ branché nulle part** *(vérifié : grep zéro usage en production)*
 15. UI morte : `ForceDelete(Bulk)Action` sur Users alors que `UserPolicy::forceDelete` = `false` en dur.
 16. `BookingService::cancel` : pas de garde d'état (une résa `cancelled` peut être
     « ré-annulée », écrasant `cancelled_at`/`cancel_reason`).
-17. **Incohérence salles/bureaux pour les external** : les salles exigent un jour ouvré
-    (`FrenchHolidays`), la résa de bureau nomade n'a aucune restriction jour ouvré. À
-    vérifier contre le PRD — probablement un oubli.
+17. ✅ **Tranché et corrigé le 03/07** — **Incohérence salles/bureaux pour les external** : les salles exigent un jour ouvré
+    (`FrenchHolidays`), la résa de bureau nomade n'avait aucune restriction jour ouvré.
+    Décision Guillaume : jours ouvrés pour tous les tickets external (bureaux comme salles).
+    Garde dans `DeskAvailabilityService::bookForExternal` (choke point API + admin), 422,
+    week-ends bloqués aussi côté SPA, PRD §3.5.9 acté, 3 tests.
 18. `PaymentForm` `amount` sans `minValue` (voir [03](./03-facturation.md) F11).
 19. `successNotificationTitle` sur les actions custom (`EditInvoice:39`, `ViewInvoice:47`) :
     ne s'affiche que si le callback appelle `$action->success()` — à vérifier en Filament 5.

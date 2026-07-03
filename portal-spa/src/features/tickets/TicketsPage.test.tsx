@@ -75,6 +75,36 @@ describe('TicketsPage', () => {
     expect(createSpy.mock.calls[0]?.[0]).toMatchObject({ desk_id: 9, period: 'full_day' })
   })
 
+  it('refuse un week-end côté client (jours ouvrés uniquement) sans appeler l’API', async () => {
+    const user = userEvent.setup()
+    const availabilitySpy = vi.fn()
+    server.use(
+      http.get('/api/tickets', () =>
+        HttpResponse.json({
+          balances: { desk_half_day: 3, meeting_room_half_day: 0 },
+          tickets: [],
+        }),
+      ),
+      http.get('/api/desks/availability', () => {
+        availabilitySpy()
+        return HttpResponse.json({ date: '', period: 'full_day', count: 0, desks: [] })
+      }),
+    )
+
+    renderWithProviders(<TicketsPage />)
+
+    const dateInput = await screen.findByLabelText('Date')
+    // Un samedi arbitraire dans le futur lointain (stable quel que soit le jour du run).
+    await user.clear(dateInput)
+    await user.type(dateInput, '2030-07-06')
+    await user.click(screen.getByRole('button', { name: /voir les bureaux disponibles/i }))
+
+    expect(
+      await screen.findByText('Les bureaux nomades ne sont réservables que les jours ouvrés (lundi à vendredi).'),
+    ).toBeInTheDocument()
+    expect(availabilitySpy).not.toHaveBeenCalled()
+  })
+
   it('affiche le message d’erreur 422 quand plus de ticket', async () => {
     const user = userEvent.setup()
     server.use(

@@ -23,6 +23,25 @@ function todayIso(): string {
   return new Date(now.getTime() - offset * 60_000).toISOString().slice(0, 10)
 }
 
+/**
+ * Week-end (samedi/dimanche) — les bureaux nomades ne sont réservables que
+ * les jours ouvrés (règle serveur : DeskAvailabilityService). Les jours
+ * fériés restent validés côté back (422 affiché tel quel).
+ */
+function isWeekend(isoDate: string): boolean {
+  const day = new Date(`${isoDate}T12:00:00`).getDay()
+  return day === 0 || day === 6
+}
+
+/** Aujourd'hui, ou lundi si on est le week-end (date par défaut du formulaire). */
+function nextBookableDateIso(): string {
+  let candidate = new Date(`${todayIso()}T12:00:00`)
+  while (candidate.getDay() === 0 || candidate.getDay() === 6) {
+    candidate = new Date(candidate.getTime() + 86_400_000)
+  }
+  return candidate.toISOString().slice(0, 10)
+}
+
 export function TicketsPage() {
   usePageTitle('Tickets & bureaux nomades — Portail Ecoworking')
 
@@ -75,20 +94,23 @@ export function TicketsPage() {
 }
 
 function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
-  const [date, setDate] = useState(todayIso())
+  const [date, setDate] = useState(nextBookableDateIso())
   const [period, setPeriod] = useState<DeskPeriod>('full_day')
   const [submitted, setSubmitted] = useState(false)
   const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(
     null,
   )
 
-  // Validation client (en plus du Form Request côté back) : pas de date passée.
+  // Validation client (en plus du Form Request côté back) : pas de date
+  // passée, pas de week-end (jours ouvrés uniquement, décision 2026-07-03).
   const dateError =
     date === ''
       ? 'La date est requise.'
       : date < todayIso()
         ? 'La date ne peut pas être dans le passé.'
-        : null
+        : isWeekend(date)
+          ? 'Les bureaux nomades ne sont réservables que les jours ouvrés (lundi à vendredi).'
+          : null
 
   const availability = useDeskAvailability(date, period, submitted && dateError === null)
   const createOccupation = useCreateDeskOccupation()

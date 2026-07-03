@@ -14,6 +14,7 @@ use App\Models\DeskOccupation;
 use App\Models\Resource;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Support\FrenchHolidays;
 use Carbon\CarbonInterface;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Builder;
@@ -74,6 +75,14 @@ final class DeskAvailabilityService
     {
         if ($desk->type !== ResourceType::Desk || $desk->assignment !== ResourceAssignment::Unassigned || ! $desk->is_active) {
             throw new DomainActionException("Ce bureau n'est pas réservable par un nomade.");
+        }
+
+        // Décision 2026-07-03 (review finding #17) : les tickets external suivent
+        // les jours ouvrés, bureaux comme salles (même règle que
+        // RoomAvailabilityService). Point d'étranglement unique : couvre l'API
+        // portail ET la consommation manuelle admin.
+        if (! FrenchHolidays::isWorkingDay($date)) {
+            throw new DomainActionException('Les bureaux nomades ne sont réservables que les jours ouvrés.');
         }
 
         return $this->db->transaction(function () use ($user, $desk, $date, $period, $ticket, $createdBy): DeskOccupation {

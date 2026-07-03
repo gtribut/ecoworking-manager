@@ -68,6 +68,20 @@ it('refuse un bureau déjà occupé sur le créneau (ticket intact)', function (
     expect($second->refresh()->status)->toBe(TicketStatus::Available);
 });
 
+it('refuse un créneau bureau un jour non ouvré (ticket intact)', function () {
+    // Décision 2026-07-03 (review finding #17) : bureaux alignés sur les salles.
+    $desk = Resource::factory()->desk()->create();
+    $ticket = Ticket::factory()->create(['type' => TicketType::DeskHalfDay->value]);
+    $admin = User::factory()->admin()->create();
+    $sunday = CarbonImmutable::today()->next(CarbonInterface::SUNDAY);
+
+    expect(fn () => app(ManualTicketConsumptionService::class)->consume(
+        $ticket, $desk, $sunday, Period::Morning, $admin->id,
+    ))->toThrow(DomainActionException::class);
+
+    expect($ticket->refresh()->status)->toBe(TicketStatus::Available);
+});
+
 it('refuse un créneau salle un jour non ouvré (ticket intact)', function () {
     $room = Resource::factory()->meetingRoom()->create();
     $ticket = Ticket::factory()->create(['type' => TicketType::MeetingRoomHalfDay->value]);

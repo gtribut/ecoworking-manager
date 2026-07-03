@@ -88,7 +88,9 @@ corrigées (audit propre, step CI bloquant).
 10 lots committés — dont Settings dé-scopé par décision, PRD §4.15) et la question
 48 vs 49 bureaux est **tranchée : 49** (étage 1 = 29, étage 2 = 20, propagé seeder/PRD/
 data_model/BRIEF). **Restent** : C11.3/C11.4 (e2e Playwright + axe-core, y compris les
-nouveaux écrans C12), 1 décision ouverte (jours ouvrés des bureaux nomades — PRD muet),
+nouveaux écrans C12 — ✅ fait le 03/07, 6 tests admin + 14 SPA), ~~1 décision ouverte
+(jours ouvrés des bureaux nomades)~~ → **tranchée le 03/07** : jours ouvrés pour tous les
+tickets external, bureaux alignés sur les salles (finding #17 du doc [04](./04-backend-php.md), corrigé),
 l'advisory npm `form-data` (via axios, pnpm audit non bloquant en CI), les points « dérive
 documentaire » P2 du doc [01](./01-architecture-et-documentation.md), et un piège
 transverse découvert pendant C12 : timestamps frais relus +2 h (Paris→UTC) — les

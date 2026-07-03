@@ -15,6 +15,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Support\FrenchHolidays;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Database\Seeders\PermissionSeeder;
 
 /** C4.4 / C4.5 — API portail réservation salle, tickets, bureaux & présence. */
@@ -231,6 +232,24 @@ it('réserve un bureau external (occupation + ticket) et le retire des dispos', 
     $this->actingAs($user)->getJson("/api/desks/availability?date={$day->toDateString()}&period=morning")
         ->assertOk()
         ->assertJsonPath('count', 0);
+});
+
+it('refuse une réservation de bureau external un jour non ouvré (ticket intact)', function () {
+    // Décision 2026-07-03 (review finding #17) : les tickets external suivent
+    // les jours ouvrés, bureaux comme salles.
+    $user = User::factory()->external()->create();
+    $desk = Resource::factory()->desk()->create();
+    $ticket = Ticket::factory()->for($user)->create(['type' => TicketType::DeskHalfDay->value]);
+    $saturday = apiNextWorkingDay()->next(CarbonInterface::SATURDAY);
+
+    $this->actingAs($user)->postJson('/api/desk-occupations', [
+        'desk_id' => $desk->id,
+        'date' => $saturday->toDateString(),
+        'period' => 'morning',
+    ])->assertUnprocessable();
+
+    expect($ticket->refresh()->status)->toBe(TicketStatus::Available)
+        ->and(DeskOccupation::count())->toBe(0);
 });
 
 it('annule sa propre occupation de bureau, mais pas celle d\'un autre (403)', function () {

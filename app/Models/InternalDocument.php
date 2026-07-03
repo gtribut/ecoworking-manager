@@ -60,4 +60,58 @@ class InternalDocument extends Model
     {
         $query->where('is_active', true);
     }
+
+    /**
+     * Chemin de lecture portail (C12.4, CLAUDE.md §3.1) : documents actifs,
+     * publiés, dont l'audience couvre les rôles du membre. Ce sont eux qui
+     * apparaissent dans « Documents à valider » (PRD §3.3.2, §5.3).
+     *
+     * @param  Builder<InternalDocument>  $query
+     */
+    public function scopeApplicableTo(Builder $query, User $user): void
+    {
+        $query->active()
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now());
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        $query->whereIn('audience', self::audiencesFor($user));
+    }
+
+    /**
+     * Le document est-il applicable à ce membre (validable / téléchargeable) ?
+     * Délégué au scope `applicableTo` (source unique de la règle) plutôt que
+     * recalculé en PHP : la comparaison `published_at <= now()` doit se faire
+     * côté SQL, où l'écriture et la lecture des timestamps sont cohérentes.
+     */
+    public function isApplicableTo(User $user): bool
+    {
+        return static::query()
+            ->whereKey($this->getKey())
+            ->applicableTo($user)
+            ->exists();
+    }
+
+    /**
+     * Valeurs d'audience couvrant ce membre (`all` + audiences de ses rôles).
+     * Même règle que Announcement::audiencesFor (2e occurrence — à extraire
+     * sur l'enum Audience si un 3e usage apparaît).
+     *
+     * @return list<string>
+     */
+    private static function audiencesFor(User $user): array
+    {
+        $audiences = [Audience::All->value];
+
+        foreach ([Audience::Residents, Audience::Additional, Audience::BillingContact] as $audience) {
+            if ($user->hasAnyRole($audience->roleValues())) {
+                $audiences[] = $audience->value;
+            }
+        }
+
+        return $audiences;
+    }
 }

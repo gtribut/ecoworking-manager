@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { DashboardAnnouncements } from '@/features/announcements/DashboardAnnouncements'
 import { useAuth } from '@/features/auth/useAuth'
 import { usePermissions } from '@/features/auth/usePermissions'
+import { DashboardDocumentsToValidate } from '@/features/documents/DashboardDocumentsToValidate'
 import { usePageTitle } from '@/lib/usePageTitle'
 
 interface Tile {
@@ -68,6 +69,10 @@ export function DashboardPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold">Bonjour {user?.first_name} 👋</h1>
+
+      {/* C12.4 — Bloc « Documents à valider » (PRD §3.3.2/§5.3, non bloquant),
+          en tête comme le préconise l'ordre mobile du PRD §3.3.3. */}
+      <DashboardDocumentsToValidate />
 
       <ul className="grid gap-4 sm:grid-cols-2">
         {tiles.map((tile) => (

@@ -1436,9 +1436,11 @@ Exemples :
 - Génération PDF factures (sans Factur-X)
 - Numérotation chronologique
 - Statuts paiement manuels
-- Auth portail (Sanctum SPA + Fortify)
+- Auth portail (Sanctum SPA + Fortify) + magic link membre (usage unique, jamais admin — ADR-0011)
 - SPA portail React : login, profil, mes factures, réserver salle, acheter ticket, déclarer présence nomade
-- Sync Google Calendar (push only)
+- SPA portail — modules C12 (livrés 2026-07-03) : annonces & événements (RSVP), documents internes à valider + administratifs, annuaire opt-in + plan SVG des étages (alternative accessible), serving prod (build Vite → `public/portal/` + catch-all)
+- Back-office — modules C12 : tickets (crédit/consommation manuels), dashboard KPIs/alertes + « Occupation du jour », audit log UI (lecture seule) + matrice rôles→permissions, anonymisation RGPD (action admin). Settings : dé-scopé (décision 2026-07-03, PRD §4.15)
+- Sync Google Calendar (push only) → **déplacé V1.5** (décision 2026-06-07, cf. SUIVI C9.1)
 - Emails transactionnels (confirmation résa, facture émise)
 - Sentry + Better Stack + Pulse + Healthchecks
 

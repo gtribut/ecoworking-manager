@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-07-02 — ouverture du chantier C12 « Modules MVP restants » (review `docs/review_fable/07`, arbitrages tranchés, 49 bureaux actés). C2→C10 ✅. Prochaines étapes : C12 lot par lot, puis C11.3/C11.4 (e2e + a11y), puis V1.5.**
+> **Dernière mise à jour : 2026-07-03 — chantier C12 « Modules MVP restants » TERMINÉ ✅ (10 lots, 442 tests Pest + 71 Vitest verts). Le périmètre MVP « papier » (BRIEF §2 + PRD) est intégralement codé. Prochaines étapes : C11.3/C11.4 (e2e Playwright + a11y axe-core, y compris sur les nouveaux écrans), puis V1.5 (déploiement).**
 
 ---
 
@@ -40,7 +40,12 @@
 > C9.1 push Google → V1.5). **C10 ✅** observabilité (Sentry back+front, Pulse `/pulse` admin-only, ping Healthchecks sur les
 > crons, `/up` ; comptes/DSN = `todo_guillaume.md`).
 > Suite complète **232 tests Pest verts** (+ 32 Vitest SPA). **C0.4 ✅ CI GitHub Actions** (Pint/Biome/Pest/Vitest/build).
-> Prochaines étapes : **C12** — modules MVP restants (serving SPA prod, tickets admin, annonces, documents, annuaire + plan SVG, dashboard admin, RGPD, magic link, audit/rôles/settings), puis **C11.3/C11.4** (tests e2e Playwright, a11y axe-core), puis **V1.5** (déploiement Clever Cloud, import Cosoft).
+> **C12 ✅ complet (2026-07-03)** : serving SPA prod (C12.1), tickets admin (C12.2), annonces portail (C12.3),
+> documents portail (C12.4), annuaire + plan SVG 49 bureaux (C12.5), dashboard admin + occupation (C12.6),
+> anonymisation RGPD (C12.7), magic link (C12.8a), audit log/rôles UI + Settings dé-scopé (C12.8b),
+> décision D email admin-only (C12.9). Suite complète **442 Pest + 71 Vitest verts**.
+> Prochaines étapes : **C11.3/C11.4** (tests e2e Playwright, a11y axe-core — y compris nouveaux écrans),
+> corrections review restantes à intercaler avant prod (cf. `review_fable/README` top 12), puis **V1.5** (déploiement Clever Cloud, import Cosoft).
 
 ---
 

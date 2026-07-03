@@ -170,6 +170,17 @@
 
 ---
 
+## Passe P2 review (2026-07-03) — ⚠️ `.env.example` modifié
+
+> Deux changements dans `.env.example` (à répercuter dans ton `.env` local si tu utilises
+> le disque S3 en dev — sinon aucun impact, ces variables sont inertes tant que
+> `FILESYSTEM_DISK=local`) :
+
+- [ ] 🟡 `AWS_DEFAULT_REGION` : `us-east-1` → **`eu-west-1`** (aligné BRIEF §13 / Cellar)
+- [ ] 🟡 `AWS_ENDPOINT=` **ajouté** (vide) — à remplir en prod avec l'endpoint Cellar (`$CELLAR_ADDON_HOST`) ; penser à l'entrée LastPass prod
+
+---
+
 ## Plus tard / hors MVP (pour mémoire)
 
 - [ ] 🟡 (V1.5) Provisioning **Clever Cloud** : app, Postgres 18, Cellar, FS Bucket, DNS, env vars prod (cf. BRIEF §11, SUIVI D1-D2)

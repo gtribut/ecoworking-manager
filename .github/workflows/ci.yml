@@ -114,11 +114,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Non bloquant : 1 advisory high subsiste (form-data via axios, en
-      # attente d'un bump axios). Repasser bloquant une fois l'arbre propre.
+      # Bloquant depuis le 2026-07-03 (arbre propre : form-data ≥ 4.0.6 via
+      # bump transitif) — même politique que composer audit côté PHP.
       - name: Audit dependencies (pnpm audit)
         run: pnpm audit --prod
-        continue-on-error: true
 
       - name: Lint (Biome)
         run: pnpm lint

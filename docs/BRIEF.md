@@ -157,27 +157,30 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 - Composer 2.x
 
 **Packages essentiels**
-| Package | Usage |
-|---|---|
-| `laravel/fortify` | Auth scaffolding (login, register, 2FA TOTP) |
-| `laravel/sanctum` | Auth SPA + tokens API |
-| `laravel/socialite` | OAuth Google pour admins |
-| `filament/filament` ^5 | Panel admin |
-| `spatie/laravel-permission` | Rôles & permissions |
-| `spatie/laravel-activitylog` | Audit log automatique |
-| `spatie/laravel-backup` | Backups DB + storage |
-| `spatie/laravel-settings` | Settings typés |
-| `spatie/laravel-data` | DTOs typés |
-| `intervention/image` | Redimensionnement des images à l'upload (photos profil, couvertures annonces → tailles fixes stockées sur Cellar) |
-| `barryvdh/laravel-dompdf` | Génération PDF facture (MVP — retenu, cf. PRD §7.4) |
-| `spatie/browsershot` | PDF haute qualité via Chrome headless (V2) |
-| `google/apiclient` | Sync Google Calendar |
-| `sentry/sentry-laravel` | Monitoring erreurs |
-| `laravel/pulse` | Métriques perf interne |
-| `laravel/telescope` | Debug local (dev only) |
-| `atgp/factur-x` | Génération Factur-X (V2) — à valider lib selon évolution |
-| `pestphp/pest` | Tests |
-| `pestphp/pest-plugin-laravel` | Helpers Laravel pour Pest |
+
+> Colonne **Statut** ajoutée le 2026-07-03 (passe P2 review, doc 01 incohérence #7) : ce
+> tableau liste le périmètre *envisagé* — le statut dit ce qui est réellement installé.
+
+| Package | Usage | Statut |
+|---|---|---|
+| `laravel/fortify` | Auth scaffolding (login, register, 2FA TOTP membres) | ✅ installé |
+| `laravel/sanctum` | Auth SPA + tokens API | ✅ installé |
+| `laravel/socialite` | OAuth Google pour admins | ✅ installé |
+| `filament/filament` ^5 | Panel admin (+ MFA natif admin) | ✅ installé |
+| `spatie/laravel-permission` | Rôles & permissions | ✅ installé |
+| `spatie/laravel-activitylog` | Audit log automatique | ✅ installé |
+| `spatie/laravel-backup` | Backups DB + storage | 🔮 V1.5 (SUIVI D3) |
+| `spatie/laravel-settings` | Settings typés | ❌ abandonné (décision 2026-07-03, PRD §4.15 — pas de settings runtime) |
+| `spatie/laravel-data` | DTOs typés | ⏸️ si besoin (aucun usage à ce jour) |
+| `intervention/image` | Redimensionnement des images à l'upload (photos profil, couvertures annonces → tailles fixes stockées sur Cellar) | ⏸️ différé (pas de serving d'images portail en MVP) |
+| `barryvdh/laravel-dompdf` | Génération PDF facture (MVP — retenu, cf. PRD §7.4) | ✅ installé |
+| `spatie/browsershot` | PDF haute qualité via Chrome headless (V2) | 🔮 V2 |
+| `google/apiclient` | Sync Google Calendar | 🔮 V1.5 (C9.1) |
+| `sentry/sentry-laravel` | Monitoring erreurs | ✅ installé |
+| `laravel/pulse` | Métriques perf interne | ✅ installé |
+| `laravel/telescope` | Debug local (dev only) | ⏸️ non installé (Pulse couvre le besoin) |
+| `atgp/factur-x` | Génération Factur-X (V2) — à valider lib selon évolution | 🔮 V2 |
+| `pestphp/pest` (+ `pest-plugin-laravel`, `pest-plugin-browser`) | Tests (dont e2e admin C11.3) | ✅ installés |
 
 **Stockage**
 - Disk `s3` configuré sur Cellar Clever Cloud
@@ -186,7 +189,7 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 **Queues**
 - Driver `database` (table `jobs` dans Postgres, géré par Laravel 13 nativement)
 - Workers via `php artisan queue:work` (process Clever Cloud dédié en prod)
-- Monitoring via Laravel Pulse (intégré) et Telescope (en dev)
+- Monitoring via Laravel Pulse (intégré) — Telescope non installé (Pulse couvre le besoin, cf. §5.1)
 - Jobs typés : `SendInvoiceEmailJob`, `SyncBookingToGoogleCalendarJob`, `GenerateMonthlyInvoicesJob`, etc.
 
 ### 5.2 Frontend admin — Filament 5
@@ -482,8 +485,8 @@ Relations clés (vue d'ensemble) :
 ### Auth admin (Filament)
 
 - Login email + password via Fortify
-- 2FA TOTP obligatoire (Fortify built-in)
-- Device memory 30 jours (cookie signé)
+- **MFA TOTP obligatoire via le MFA natif Filament** (colonnes `app_authentication_*`, challenge à chaque connexion) — corrigé le 2026-07-03 (review doc 01 §1.4) : le 2FA **Fortify** reste le mécanisme des **membres** (optionnel), les deux coexistent volontairement (SUIVI C3.1)
+- ~~Device memory 30 jours (cookie signé)~~ — non implémenté : challenge à chaque login
 - OAuth Google additionnel via Socialite (si admin a un compte Google d'entreprise)
 - Sessions Laravel classiques (cookies)
 - Logout détruit la session
@@ -498,7 +501,7 @@ Relations clés (vue d'ensemble) :
   4. Toutes les requêtes `/api/*` envoient automatiquement le cookie
   5. Middleware `auth:sanctum` valide
 - **2FA optionnel** pour les membres (recommandé mais non-bloquant)
-- Magic link email envisagé pour V1.5 (UX++)
+- **Magic link email : livré au MVP** (C12.8a, ADR-0011 — jeton hashé usage unique 15 min + URL signée, jamais pour les admins)
 - Reset password standard Fortify
 
 ### Autorisation
@@ -668,15 +671,16 @@ clever login          # ouvre un navigateur, valide → token sauvegardé locale
 #### 11.3 Créer les add-ons (avant l'app, qui aura besoin de leurs credentials)
 
 ```bash
-# PostgreSQL 18 — plan XS (~7€/mois, 512 MB RAM, 10 Go)
+# PostgreSQL 18 — plan S (~15€/mois, aligné §21 ; vérifier le slug exact du
+# plan au provisioning — un XS ~7€ suffirait sans doute vu la volumétrie §3)
 clever addon create postgresql-addon ecoworking-pg \
-    --plan xs_sml --region par --version 16
+    --plan s_sml --region par --version 18
 
 # Cellar (S3-compatible) — gratuit jusqu'à 25 Go, puis ~1€/100Go/mois
 clever addon create cellar-addon ecoworking-cellar --region par
 ```
 
-Postgres XS est largement dimensionné pour la volumétrie (cf. §3 : ~100 comptes, ~75 entités, ~800 factures/an). Récupérer les credentials :
+Même un Postgres XS serait largement dimensionné pour la volumétrie (cf. §3 : ~100 comptes, ~75 entités, ~800 factures/an) — le plan S du budget §21 laisse de la marge ; à trancher au provisioning. Récupérer les credentials :
 
 ```bash
 clever addon env ecoworking-pg        # POSTGRESQL_ADDON_*
@@ -744,7 +748,7 @@ clever env set CC_RUN_COMMAND "php artisan migrate --force && php-fpm"
 
 > ⚠️ Les `'$POSTGRESQL_ADDON_HOST'` (quotes simples) sont des **références** résolues au runtime par Clever Cloud — ne pas mettre la valeur en dur.
 
-> **À compléter** : le bloc ci-dessus ne couvre que les variables liées aux add-ons + runtime. Il faut **aussi** positionner les variables applicatives restantes documentées en **§13** : `APP_NAME`, `APP_TIMEZONE`, `APP_LOCALE`, `ADMIN_DOMAIN` / `PORTAL_DOMAIN` / `FILAMENT_DOMAIN`, `SESSION_LIFETIME`, mail prod (`MAIL_*` Brevo / `BREVO_API_KEY`), `SENTRY_LARAVEL_DSN` + `SENTRY_TRACES_SAMPLE_RATE`, et les `GOOGLE_*` (OAuth admin + Calendar). Les `CC_*` (`CC_PHP_VERSION`, `CC_NODE_VERSION`, `CC_POST_BUILD_HOOK`, `CC_RUN_COMMAND`) sont **spécifiques Clever Cloud** et n'ont donc pas leur place dans `.env.example`.
+> **À compléter** : le bloc ci-dessus ne couvre que les variables liées aux add-ons + runtime. Il faut **aussi** positionner les variables applicatives restantes documentées en **§13** : `APP_NAME`, `APP_TIMEZONE`, `APP_LOCALE`, `ADMIN_DOMAIN` / `PORTAL_DOMAIN` (pas de `FILAMENT_DOMAIN` : le code lit `config('domains.admin')` ← `ADMIN_DOMAIN`), `SESSION_LIFETIME`, mail prod (`MAIL_*` Brevo / `BREVO_API_KEY`), `SENTRY_LARAVEL_DSN` + `SENTRY_TRACES_SAMPLE_RATE`, et les `GOOGLE_*` (OAuth admin + Calendar). Les `CC_*` (`CC_PHP_VERSION`, `CC_NODE_VERSION`, `CC_POST_BUILD_HOOK`, `CC_RUN_COMMAND`) sont **spécifiques Clever Cloud** et n'ont donc pas leur place dans `.env.example`.
 
 **Créer le bucket Cellar** (console web) : Add-ons → `ecoworking-cellar` → onglet "Buckets" → "New bucket" → nom `ecoworking-storage`, ACL `private`.
 
@@ -872,7 +876,7 @@ Option 2 (V2 si besoin de contrôle) : **Docker image**
 - Hot reload Vite pour SPA + portal
 - Hot reload Laravel via `php artisan serve` ou Sail
 - Postgres + Mailpit (mailcatcher) dans des containers
-- Logs en stdout + Laravel Telescope pour le debug
+- Logs en stdout (Telescope non installé — Pulse pour les métriques, cf. §5.1)
 
 ### Production
 
@@ -933,7 +937,7 @@ AWS_ENDPOINT=                          # endpoint Cellar Clever
 # Note : SESSION_DOMAIN est laissé NULL pour scoper le cookie au host courant
 # (chaque sous-domaine a ses propres cookies, pas de partage)
 SESSION_DOMAIN=                        # NULL pour isolation par host
-SESSION_LIFETIME=240                   # 4h pour admin ; configurable par contexte
+SESSION_LIFETIME=120                   # 2h d'inactivité (aligné .env.example, tous contextes)
 
 # Sanctum (uniquement le portail consomme l'API par cookie)
 SANCTUM_STATEFUL_DOMAINS=portail.ecoworking.fr,portail.ecoworking.test:5173,localhost:5173
@@ -1327,7 +1331,7 @@ Exemples :
 ### Better Stack (uptime)
 
 - Free tier suffit (3 monitors, 1 min interval)
-- Monitor sur `https://app.ecoworking.fr/up` (endpoint dédié dans Laravel)
+- Monitor sur `https://portail.ecoworking.fr/up` (endpoint dédié dans Laravel — le sous-domaine `app.` n'existe pas)
 - Alerts email + (optionnel) Slack/SMS
 
 ### Laravel Pulse (perf interne)
@@ -1383,8 +1387,8 @@ Exemples :
 - Argon2id ou bcrypt pour passwords
 - 2FA TOTP obligatoire admin, optionnel membres
 - Rate limiting login/2FA/forgot-password
-- Session timeout admin : 4h inactivité, déconnexion auto
-- Session timeout membre : 7j (cookie remember_me)
+- Session : 120 min d'inactivité (`SESSION_LIFETIME`, commun admin/portail — pas de timeout différencié par contexte à ce jour)
+- Membre : « Se souvenir de moi » au login (cookie remember Fortify, durée longue Laravel par défaut)
 
 ### Validation
 

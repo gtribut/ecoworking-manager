@@ -84,18 +84,18 @@ mineurs backend (dont M7 XOR rôles — **avec réparation du Select rôles, cas
 facturation, UNIQUE liaison, mentions PDF art. 289, challenge 2FA), advisories composer
 corrigées (audit propre, step CI bloquant).
 
-**Mise à jour du 03/07** : le chantier **C12 est terminé** ([07](./07-chantier-mvp-restant.md),
-10 lots committés — dont Settings dé-scopé par décision, PRD §4.15) et la question
-48 vs 49 bureaux est **tranchée : 49** (étage 1 = 29, étage 2 = 20, propagé seeder/PRD/
-data_model/BRIEF). **Restent** : C11.3/C11.4 (e2e Playwright + axe-core, y compris les
-nouveaux écrans C12 — ✅ fait le 03/07, 6 tests admin + 14 SPA), ~~1 décision ouverte
-(jours ouvrés des bureaux nomades)~~ → **tranchée le 03/07** : jours ouvrés pour tous les
-tickets external, bureaux alignés sur les salles (finding #17 du doc [04](./04-backend-php.md), corrigé),
-l'advisory npm `form-data` (via axios, pnpm audit non bloquant en CI), les points « dérive
-documentaire » P2 du doc [01](./01-architecture-et-documentation.md), et un piège
-transverse découvert pendant C12 : timestamps frais relus +2 h (Paris→UTC) — les
-`isFuture()/isPast()` PHP mentent sur des lignes récentes, comparer côté SQL
-(suspect connu : `BookingPolicy`).
+**Mise à jour du 03/07 — tout est soldé sauf C11.4.** Dans l'ordre :
+- ✅ **C12 terminé** ([07](./07-chantier-mvp-restant.md), 10 lots committés — dont Settings dé-scopé par décision, PRD §4.15) ; 48 vs 49 bureaux **tranché : 49** (étage 1 = 29, étage 2 = 20, propagé seeder/PRD/data_model/BRIEF) ;
+- ✅ **C11.3 fait** (e2e : 6 tests admin Pest browser + 14 tests SPA Playwright, parcours C12 inclus, hook `checkA11y` prêt pour C11.4) ;
+- ✅ **Jours ouvrés bureaux nomades tranché** : jours ouvrés pour tous les tickets external, bureaux alignés sur les salles (finding #17 du doc [04](./04-backend-php.md), corrigé) ;
+- ✅ **Advisory npm `form-data` soldée** (≥ 4.0.6 via bump transitif, `pnpm audit` repassé **bloquant** en CI) ;
+- ✅ **P2 « dérive documentaire » soldés** (passe BRIEF complète, ADR-0001 renommé, politique ADR clarifiée — détail au doc [01](./01-architecture-et-documentation.md) §P2).
+
+**Reste** : **C11.4** (brancher axe-core sur le hook `checkA11y`), les P3 « opportunités » du
+doc 01 (backup + headers sécurité en V1.5, fusion des résumés SUIVI, ADR facturation par
+entité), et un piège transverse découvert pendant C12 : timestamps frais relus +2 h
+(Paris→UTC) — les `isFuture()/isPast()` PHP mentent sur des lignes récentes, comparer côté
+SQL (suspect connu : `BookingPolicy`).
 
 ## Ce qui est remarquablement bien fait
 

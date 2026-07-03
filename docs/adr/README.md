@@ -12,7 +12,7 @@ Format inspiré de la convention popularisée par Michael Nygard.
 
 | N° | Titre | Statut | Date |
 |---|---|---|---|
-| [0001](./0001-choix-laravel-11.md) | Choix de Laravel (initialement 11, mis à jour vers 13) comme backend | Accepté | 2026-05 |
+| [0001](./0001-choix-laravel.md) | Choix de Laravel (initialement 11, mis à jour vers 13) comme backend | Accepté | 2026-05 |
 | [0002](./0002-architecture-hybride-filament-spa.md) | Architecture hybride Filament admin + SPA React portail | Accepté | 2026-05 |
 | [0003](./0003-auth-portail-sanctum-spa-mode.md) | Sanctum mode SPA pour l'auth du portail membre | Accepté | 2026-05 |
 | [0004](./0004-sous-domaines-admin-portail.md) | Deux sous-domaines `admin` et `portail` sur un seul déploiement | Accepté | 2026-05 |
@@ -61,6 +61,16 @@ Pour les **décisions difficiles à inverser** ou **non évidentes**. Exemples :
 
 **Pas pour** : ajout d'un endpoint, choix d'un naming local, refactoring tactique.
 
-### Maintenance
+### Maintenance (politique clarifiée le 2026-07-03 — review doc 01, P2-8)
 
-Un ADR accepté est **immuable**. Si la décision doit évoluer, créer un nouvel ADR qui supersède l'ancien. C'est volontaire : l'historique des décisions est aussi précieux que la décision actuelle.
+La règle « un ADR accepté est immuable » s'applique au **sens de la décision**, pas à sa
+lettre. En pratique, deux régimes — c'est ce qui a réellement été fait jusqu'ici (ADR-0001
+Laravel 11→13, ADR-0008 réévalué au démarrage) :
+
+- **Ajustement dans la même intention** (montée de version, périmètre précisé) : l'ADR est
+  **amendé en place avec une note datée** expliquant l'évolution. Le nom de fichier doit
+  rester agnostique des valeurs volatiles (d'où le renommage `0001-choix-laravel-11.md` →
+  `0001-choix-laravel.md`) ;
+- **Revirement** (la décision change de sens) : **nouvel ADR** qui supersède l'ancien,
+  lequel passe au statut « Remplacé par ADR-NNNN » sans être réécrit — l'historique des
+  décisions est aussi précieux que la décision actuelle.

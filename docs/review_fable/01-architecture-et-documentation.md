@@ -123,11 +123,11 @@ plutôt que par omission**.
 3. Trancher `APP_URL` prod (impact direct liens emails membres).
 4. Acter la stratégie de réception e-factures avant le 01/09/2026.
 
-### P2 — dette documentaire
-5. Passe de correction BRIEF : Postgres 16→18, prix, `app.ecoworking.fr`, `FILAMENT_DOMAIN`, `SESSION_LIFETIME`, `AWS_*`, 2FA admin §8, colonne statut sur les packages §5.1.
-6. `composer.json` → `"php": "^8.5"` (ou amender l'ADR si `^8.3` est volontaire).
-7. Retirer la table `settings` de data_model §4.6 (ou installer le package avec le module Settings).
-8. Renommer `0001-choix-laravel-11.md` et clarifier la politique d'évolution des ADRs.
+### P2 — dette documentaire — ✅ soldée le 2026-07-03
+5. ✅ Passe de correction BRIEF faite : runbook §11.3 Postgres 18 + plan aligné §21 (prix), `app.` → `portail.` (§16), `FILAMENT_DOMAIN` retiré (§13), `SESSION_LIFETIME` 240→120 + §17 sessions réalignés (remember Fortify, pas de « 7 j »), `.env.example` AWS aligné (`eu-west-1` + `AWS_ENDPOINT`), 2FA admin §8 = MFA natif Filament, colonne **Statut** sur les packages §5.1 (+ mentions Telescope corrigées, magic link §8 acté livré).
+6. ✅ `composer.json` `"php": "^8.5"` (fait en 2e passe le 02/07).
+7. ✅ Table `settings` retirée de data_model §4.6 (décision C12.8b du 03/07).
+8. ✅ `0001-choix-laravel-11.md` → `0001-choix-laravel.md` + politique d'évolution des ADRs clarifiée dans `adr/README.md` §Maintenance (amendement daté vs supersession).
 
 ### P3 — opportunités
 9. C11.3/C11.4 (e2e + axe-core) : seuls ⬜ du MVP alors que « RGAA AA » est revendiqué (C5.8 ✅) — outiller avant toute annonce de conformité.

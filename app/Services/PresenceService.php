@@ -78,6 +78,20 @@ final class PresenceService
     }
 
     /**
+     * Variante « bulk » d'isPresent : statut présent/absent calculé à partir
+     * d'absences DÉJÀ chargées par l'appelant, sans AUCUNE requête SQL.
+     * Utilisée par la vue « Occupation du jour » qui itère sur ~49 bureaux —
+     * l'appelant charge les absences de tous les résidents en UNE requête
+     * (même famille que le finding perf M8 : jamais 1 requête par bureau).
+     *
+     * @param  Collection<int, DeskAbsence>  $absences  absences candidates du membre
+     */
+    public function presentGivenAbsences(Collection $absences, CarbonInterface $date, Period $period = Period::FullDay): bool
+    {
+        return $this->presentOn($absences, $date, $period);
+    }
+
+    /**
      * Calendrier de présence d'un membre sur une plage (jours ouvrés) :
      * liste des jours présents au format Y-m-d.
      *

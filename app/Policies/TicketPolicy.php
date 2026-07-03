@@ -13,9 +13,14 @@ use App\Models\User;
  */
 final class TicketPolicy
 {
+    /**
+     * Liste de TOUS les tickets = back-office uniquement (TicketResource C12.2).
+     * Le membre voit les siens via l'API portail auto-scopée (TicketController),
+     * qui ne passe pas par viewAny.
+     */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->isAdmin();
     }
 
     public function view(User $user, Ticket $ticket): bool

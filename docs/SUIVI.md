@@ -176,7 +176,7 @@
 | Code | Tâche | Statut | Note |
 |---|---|---|---|
 | C12.1 | Serving SPA en production (build → `public/portal/`, Blade + catch-all, CSRF Sanctum) | ✅ | Vite `base:/portal/` + manifest → `PortalSpaController` (503 si build absent) ; catch-all domaine portail déclaré en dernier (exclusions api/sanctum/up/pulse/portal/auth/calendar) ; welcome supprimée ; fix 500→401 invités API (`redirectGuestsTo(null)`) ; assets gitignorés (build = déploiement → hook Clever Cloud dans `todo_guillaume.md`) ; `PortalSpaServingTest` (9) |
-| C12.2 | Tickets côté admin (`TicketResource` + action crédit manuel `PurchaseService::creditManual()`) | ⬜ | PRD §4.8.1 |
+| C12.2 | Tickets côté admin (`TicketResource` + action crédit manuel `PurchaseService::creditManual()`) | ✅ | Resource lecture seule + filtres ; crédit manuel (trace `credited_by`/`credit_reason`) ; consommation manuelle (PRD §4.8.1) via `ManualTicketConsumptionService` (lockForUpdate, bureau/salle, matin/après-midi) ; `TicketPolicy::viewAny` → admin-only ; 13 tests. Hors périmètre noté : annulation d'occupation bureau external / restitution geste commercial (lot ultérieur si besoin) |
 | C12.3 | Annonces & événements côté portail (API + RSVP + feature SPA + bloc dashboard) | ⬜ | PRD §3.3.2, §4.11 — exercer `AnnouncementRegistrationPolicy` (tests A/B) |
 | C12.4 | Documents internes à valider + administratifs côté portail | ⬜ | PRD §3.3.2, §3.6.3, §5.3 — téléchargements disque privé + Gate |
 | C12.5 | Annuaire coworkers (opt-in) + plan SVG des étages (alternative accessible) | ⬜ | PRD §3.7, §4.12 — SVG prégénéré `docs/plan/etages.svg`, cibler `#desk-N`/`data-desk` uniquement ; 49 bureaux (aligner seeder + PRD) |

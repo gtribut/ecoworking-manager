@@ -41,5 +41,8 @@ export default defineConfig(({ command }) => ({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    // Les specs Playwright (e2e/*.spec.ts) ne sont PAS des tests Vitest :
+    // restreint la découverte au code source (cf. docs/testing-e2e.md).
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 }))

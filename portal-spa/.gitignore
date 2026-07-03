@@ -14,3 +14,7 @@ coverage
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Sorties Playwright e2e (traces, rapports HTML) — cf. docs/testing-e2e.md
+test-results
+playwright-report

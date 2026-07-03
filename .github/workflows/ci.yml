@@ -131,3 +131,137 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # --- E2E : Pest browser (admin Filament) + Playwright (SPA membre) --------
+  # Suites C11.3 (cf. docs/testing-e2e.md). Contrairement au local (conteneur
+  # Sail), tout tourne directement sur le runner : PHP 8.5 + Postgres +
+  # Mailpit en services, serveur Laravel lancé par Playwright (webServer).
+  #
+  # NON BLOQUANT pour l'instant (`continue-on-error: true`) : suite navigateur
+  # toute jeune — la retirer (et rendre le job bloquant) après quelques
+  # semaines de runs stables sur main, comme pour tout job e2e néonatal.
+  e2e:
+    name: E2E — Pest browser + Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: sail
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sail -d testing"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1025:1025
+          - 8025:8025
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USERNAME: sail
+      DB_PASSWORD: password
+      # Suite admin : base `testing` (phpunit.e2e.xml). Suite SPA : base `e2e`
+      # (forcée par portal-spa/e2e/serve.sh, jamais la base par défaut).
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.5
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_pgsql, pgsql, mbstring, bcmath, intl, gd, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: portal-spa/pnpm-lock.yaml
+
+      - name: Install SPA dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: portal-spa
+
+      # CLI `playwright` à la racine : requis par pest-plugin-browser
+      # (il lance ./node_modules/.bin/playwright run-server).
+      - name: Install root npm dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('portal-spa/pnpm-lock.yaml') }}
+          restore-keys: playwright-${{ runner.os }}-
+
+      - name: Install Playwright Chromium (+ deps système)
+        run: npx playwright install --with-deps chromium
+
+      - name: Build SPA (production, servie par Laravel)
+        run: |
+          ./node_modules/.bin/tsc -b
+          ./node_modules/.bin/vite build
+        working-directory: portal-spa
+
+      - name: Create dedicated e2e database
+        run: PGPASSWORD=password psql -h 127.0.0.1 -U sail -d testing -c 'CREATE DATABASE e2e'
+
+      - name: E2E admin (Pest 4 + browser plugin)
+        run: vendor/bin/pest -c phpunit.e2e.xml --colors=always
+
+      - name: E2E SPA membre (Playwright)
+        run: node_modules/.bin/playwright test
+        working-directory: portal-spa
+        env:
+          E2E_MAIL_HOST: 127.0.0.1
+          E2E_MAILPIT_URL: http://127.0.0.1:8025
+
+      - name: Upload artifacts on failure (traces, screenshots)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: |
+            portal-spa/test-results/
+            portal-spa/playwright-report/
+            tests/Browser/Screenshots/
+          retention-days: 7

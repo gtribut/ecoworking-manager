@@ -18,6 +18,13 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
 
+// Tests e2e navigateur (C11.3, ADR-0008) — pest-plugin-browser. Le dossier
+// Browser n'appartient à AUCUNE testsuite de phpunit.xml : il n'est découvert
+// que via phpunit.e2e.xml (scripts/e2e/admin.sh), `sail test` reste inchangé.
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->in('Browser');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

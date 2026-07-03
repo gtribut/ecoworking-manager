@@ -3,6 +3,13 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
+# Navigateurs Playwright (e2e C11.3) — binaires téléchargés localement
+# (PLAYWRIGHT_BROWSERS_PATH partagé hôte/conteneur), jamais commités.
+# Les sorties Playwright (traces, rapports) sont dans portal-spa/.gitignore.
+/.playwright-browsers
+# Captures d'écran des échecs Pest browser (suite e2e admin)
+/tests/Browser/Screenshots/
+
 # Laravel 4 specific
 bootstrap/compiled.php
 app/storage/

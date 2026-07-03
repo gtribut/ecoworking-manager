@@ -161,6 +161,15 @@
 
 ---
 
+## C11.3 — Tests e2e (2026-07-03)
+
+> Rien à installer côté hôte (pas de sudo requis) : Chromium et ses libs vivent dans le
+> conteneur Sail. Runbook complet : `docs/testing-e2e.md`.
+
+- [ ] 🟡 (récurrent) Après chaque `sail build` (rebuild de l'image), relancer `scripts/e2e/install.sh` — les libs système Chromium du conteneur ne survivent pas au rebuild
+
+---
+
 ## Plus tard / hors MVP (pour mémoire)
 
 - [ ] 🟡 (V1.5) Provisioning **Clever Cloud** : app, Postgres 18, Cellar, FS Bucket, DNS, env vars prod (cf. BRIEF §11, SUIVI D1-D2)

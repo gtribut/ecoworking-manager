@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Configuration PHPUnit dédiée aux tests e2e navigateur de l'admin Filament
+    (Pest 4 + pest-plugin-browser, cf. ADR-0008 et docs/testing-e2e.md).
+
+    Séparée de phpunit.xml pour que `sail test` / `php artisan test` ne
+    découvre JAMAIS tests/Browser (suite classique inchangée). Lancer via :
+        scripts/e2e/admin.sh          (hôte → conteneur Sail)
+        vendor/bin/pest -c phpunit.e2e.xml   (dans le conteneur)
+
+    Écarts volontaires vs phpunit.xml :
+    - SESSION_DRIVER=file : le navigateur réel fait plusieurs requêtes HTTP ;
+      le driver `array` (mémoire par requête) perdrait la session de login.
+    - CACHE_STORE=file : le rate limiter du login Filament doit persister
+      entre les requêtes du navigateur (même raison).
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Browser">
+            <directory>tests/Browser</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_URL" value="http://localhost"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <!-- Domaines forcés nuls comme en phpunit.xml : panel admin servi sur
+             /admin, routes portail sans contrainte de domaine (ADR-0004). -->
+        <env name="ADMIN_DOMAIN" value=""/>
+        <env name="PORTAL_DOMAIN" value=""/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="file"/>
+        <env name="DB_DATABASE" value="testing"/>
+        <env name="DB_URL" value=""/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="file"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+    </php>
+</phpunit>

@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\Purchase;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Policies\ActivityPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Activitylog\Models\Activity;
 use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoApiTransport;
 
 class AppServiceProvider extends ServiceProvider
@@ -55,6 +57,11 @@ class AppServiceProvider extends ServiceProvider
             'invoice' => Invoice::class,
             'payment' => Payment::class,
         ]);
+
+        // Audit log (C12.8b, PRD §4.14) : le modèle Activity vit chez Spatie,
+        // hors auto-discovery des Policies → enregistrement manuel. Lecture
+        // admin-only, écriture/suppression interdites à tous (lecture seule).
+        Gate::policy(Activity::class, ActivityPolicy::class);
 
         // Dashboard Laravel Pulse (/pulse) réservé aux admins (C10.3, BRIEF §16).
         // Sans ce gate, Pulse refuse l'accès hors environnement local.

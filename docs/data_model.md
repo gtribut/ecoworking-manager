@@ -724,7 +724,7 @@ Tables non métier, fournies par le framework / les paquets — **ne pas réécr
 | `migrations` | Laravel | |
 | `roles`, `permissions`, `model_has_roles`, `model_has_permissions`, `role_has_permissions` | `spatie/laravel-permission` | Rôles : `admin`, `resident`, `additional`, `external`, `staff`, `billing_contact` |
 | `activity_log` | `spatie/laravel-activitylog` | Audit log auto (User, Company, Invoice, Subscription, Booking, Payment…) |
-| `settings` | `spatie/laravel-settings` | Settings typés (préfixe factures, mentions, credentials…) |
+| ~~`settings`~~ | — | **Abandonnée (décision 2026-07-03, C12.8b)** : périmètre runtime-éditable vide en mono-tenant — mentions/identité via `config/company.php` (env), horaires par ressource via `resources.opening_hours`, préfixe de numérotation figé (CGI art. 289), credentials JAMAIS en DB (CLAUDE.md §3.3). Cf. PRD §4.15 |
 
 > **Audit log** : activer le trait `LogsActivity` sur les modèles sensibles listés en CLAUDE.md §3.4.
 > **PII redaction** : ne jamais logger d'IBAN complet, mot de passe, secret 2FA.

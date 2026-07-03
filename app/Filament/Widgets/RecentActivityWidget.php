@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Resources\ActivityLog\ActivityResource;
 use App\Models\User;
 use App\Services\AdminDashboardService;
+use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -13,8 +15,8 @@ use Spatie\Activitylog\Models\Activity;
 
 /**
  * « Activité récente » : 10 dernières entrées de l'audit log (C12.6,
- * PRD §4.1.2). Lecture seule — la Resource complète d'audit log est prévue
- * en C12.8b. Widget MINCE : requête dans AdminDashboardService.
+ * PRD §4.1.2). Lecture seule — le lien renvoie vers la Resource complète
+ * d'audit log (C12.8b). Widget MINCE : requête dans AdminDashboardService.
  */
 class RecentActivityWidget extends TableWidget
 {
@@ -29,6 +31,13 @@ class RecentActivityWidget extends TableWidget
     {
         return $table
             ->heading('Activité récente')
+            // Lien PRD §4.1.2 « Voir tout l'audit log → » (câblé post-C12.8b).
+            ->headerActions([
+                Action::make('viewAll')
+                    ->label('Voir tout l\'audit log')
+                    ->link()
+                    ->url(ActivityResource::getUrl('index')),
+            ])
             ->query(fn () => app(AdminDashboardService::class)->recentActivityQuery())
             ->paginated(false)
             ->emptyStateHeading('Aucune activité enregistrée')

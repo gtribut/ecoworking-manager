@@ -1441,9 +1441,14 @@ Page de référence quotidienne pour l'admin, accessible en un clic depuis le da
 
 ### 4.15 Settings
 
-- Configuration globale : nom du site, email contact, paramètres horaires salles, paramètres factures (préfixe numérotation, mentions légales, etc.)
-- Gestion des credentials externes (Brevo API key, Google Calendar credentials, Sentry DSN)
-- 🟡 Via `spatie/laravel-settings` ou pages Filament dédiées
+> ✅ **Décision 2026-07-03 (C12.8b) : PAS d'UI Settings ni de table `settings` au MVP.** Périmètre
+> runtime-éditable réellement vide en mono-tenant :
+> - Nom du site / email contact / mentions légales factures → `APP_NAME` + `config/company.php` (env `COMPANY_*`), changent ~jamais ;
+> - Horaires des salles → **par ressource** via `resources.opening_hours` (jsonb), éditable dans `ResourceForm` ;
+> - Préfixe de numérotation factures → **figé** dans `InvoiceNumberingService` (`EW-YYYY-NNNNN`) : l'éditer à chaud casserait la séquence chronologique sans trou (CGI art. 289) ;
+> - Credentials externes (Brevo, Google, Sentry) → **jamais en DB** (CLAUDE.md §3.3, non négociable) : `.env` + `config/services.php` uniquement.
+>
+> À réévaluer seulement si un vrai réglage runtime apparaît (V2+).
 
 ---
 

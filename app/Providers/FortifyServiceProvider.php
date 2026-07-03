@@ -49,5 +49,13 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
+
+        // Rate limiting magic link (C12.8a, PRD §3.2) : même clé que le login
+        // (email|IP) — limite le spam d'emails et le harcèlement d'un compte.
+        RateLimiter::for('magic-link', function (Request $request) {
+            $throttleKey = Str::transliterate(Str::lower((string) $request->input('email')).'|'.$request->ip());
+
+            return Limit::perMinute(5)->by($throttleKey);
+        });
     }
 }

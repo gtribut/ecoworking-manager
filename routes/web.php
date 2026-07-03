@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\GoogleOAuthController;
+use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\PortalSpaController;
 use Illuminate\Support\Facades\Route;
@@ -57,6 +58,33 @@ if ($adminDomain = config('domains.admin')) {
     Route::domain($adminDomain)->group($adminAuthRoutes);
 } else {
     $adminAuthRoutes();
+}
+
+/*
+|--------------------------------------------------------------------------
+| Magic link — connexion membre par email (C12.8a, PRD §3.2 / ADR-0011)
+|--------------------------------------------------------------------------
+|
+| Domaine portail uniquement (prod `.fr` + dev `.test`) via
+| config('domains.portal') ; sans contrainte en test. La demande est invitée
+| (`guest`) et rate-limitée (anti-abus, réponse générique anti-énumération).
+| La consommation (GET) est déclarée AVANT le catch-all SPA — les routes
+| enregistrées en premier priment.
+|
+*/
+$magicLinkRoutes = function (): void {
+    Route::post('magic-link', [MagicLinkController::class, 'store'])
+        ->middleware(['guest', 'throttle:magic-link'])
+        ->name('magic-link.store');
+
+    Route::get('magic-link/{token}', [MagicLinkController::class, 'consume'])
+        ->name('magic-link.consume');
+};
+
+if ($portalDomain = config('domains.portal')) {
+    Route::domain($portalDomain)->group($magicLinkRoutes);
+} else {
+    $magicLinkRoutes();
 }
 
 /*

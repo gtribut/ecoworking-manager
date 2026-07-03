@@ -102,6 +102,56 @@ describe('LoginPage', () => {
     expect(await screen.findByLabelText('Mot de passe')).toBeInTheDocument()
   })
 
+  it('envoie la demande de magic link et affiche la confirmation générique', async () => {
+    const user = userEvent.setup()
+    withUnauthenticated()
+    const magicLinkSpy = vi.fn()
+    server.use(
+      http.post('/magic-link', async ({ request }) => {
+        magicLinkSpy(await request.json())
+        return HttpResponse.json({ message: 'ok' })
+      }),
+    )
+
+    renderWithProviders(<LoginPage />, { withAuth: true })
+
+    await user.click(
+      screen.getByRole('button', { name: /recevoir un lien de connexion par email/i }),
+    )
+    await user.type(screen.getByLabelText('Email'), 'membre@ecoworking.fr')
+    await user.click(screen.getByRole('button', { name: /recevoir le lien de connexion/i }))
+
+    // Message volontairement générique (anti-énumération) + annonce screen reader.
+    const confirmation = await screen.findByRole('status')
+    expect(confirmation).toHaveTextContent(/si un compte correspond à cette adresse/i)
+    expect(magicLinkSpy).toHaveBeenCalledWith({ email: 'membre@ecoworking.fr' })
+  })
+
+  it('valide l’email requis du formulaire magic link sans appeler l’API', async () => {
+    const user = userEvent.setup()
+    withUnauthenticated()
+
+    renderWithProviders(<LoginPage />, { withAuth: true })
+
+    await user.click(
+      screen.getByRole('button', { name: /recevoir un lien de connexion par email/i }),
+    )
+    await user.click(screen.getByRole('button', { name: /recevoir le lien de connexion/i }))
+
+    expect(await screen.findByText('L’email est requis.')).toBeInTheDocument()
+  })
+
+  it('affiche l’erreur générique au retour d’un lien refusé (?magic_link=invalid)', async () => {
+    withUnauthenticated()
+
+    renderWithProviders(<LoginPage />, { withAuth: true, route: '/login?magic_link=invalid' })
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/invalide, déjà utilisé ou expiré/i)
+    // Le formulaire de connexion reste disponible.
+    expect(screen.getByLabelText('Mot de passe')).toBeInTheDocument()
+  })
+
   it('envoie remember quand « Se souvenir de moi » est cochée', async () => {
     const user = userEvent.setup()
     withUnauthenticated()

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useLocation, useNavigate } from 'react-router'
+import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
-import { login, twoFactorChallenge } from './api'
+import { login, requestMagicLink, twoFactorChallenge } from './api'
 import { useAuth } from './useAuth'
 
 const loginSchema = z.object({
@@ -29,7 +29,12 @@ const recoverySchema = z.object({
 })
 type RecoveryValues = z.infer<typeof recoverySchema>
 
-type Step = 'login' | 'totp' | 'recovery'
+const magicLinkSchema = z.object({
+  email: z.string().min(1, 'L’email est requis.').email('Email invalide.'),
+})
+type MagicLinkValues = z.infer<typeof magicLinkSchema>
+
+type Step = 'login' | 'totp' | 'recovery' | 'magic-link'
 
 interface LocationState {
   from?: { pathname?: string }
@@ -41,8 +46,16 @@ export function LoginPage() {
   const { refetchUser } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const [step, setStep] = useState<Step>('login')
-  const [formError, setFormError] = useState<string | null>(null)
+  // Retour d'un magic link refusé (invalide, déjà utilisé ou expiré) : le back
+  // redirige vers /login?magic_link=invalid sans détail exploitable.
+  const [formError, setFormError] = useState<string | null>(() =>
+    searchParams.get('magic_link') === 'invalid'
+      ? 'Ce lien de connexion est invalide, déjà utilisé ou expiré. Vous pouvez en demander un nouveau.'
+      : null,
+  )
+  const [magicLinkSent, setMagicLinkSent] = useState(false)
 
   const target = (location.state as LocationState | null)?.from?.pathname ?? '/'
 
@@ -66,10 +79,17 @@ export function LoginPage() {
     defaultValues: { recovery_code: '' },
   })
 
+  const magicLinkForm = useForm<MagicLinkValues>({
+    resolver: zodResolver(magicLinkSchema),
+    defaultValues: { email: '' },
+  })
+
   function goTo(nextStep: Step) {
     setFormError(null)
     challengeForm.reset()
     recoveryForm.reset()
+    magicLinkForm.reset()
+    setMagicLinkSent(false)
     setStep(nextStep)
   }
 
@@ -104,6 +124,18 @@ export function LoginPage() {
       await finishLogin()
     } catch (error) {
       setFormError(getApiErrorMessage(error, 'Code de récupération invalide.'))
+    }
+  })
+
+  const onMagicLink = magicLinkForm.handleSubmit(async (values) => {
+    setFormError(null)
+    try {
+      await requestMagicLink(values.email)
+      setMagicLinkSent(true)
+    } catch (error) {
+      setFormError(
+        getApiErrorMessage(error, 'Envoi impossible pour le moment. Réessayez dans un instant.'),
+      )
     }
   })
 
@@ -233,8 +265,68 @@ export function LoginPage() {
             <Button type="submit" className="w-full" disabled={loginForm.formState.isSubmitting}>
               Se connecter
             </Button>
+            <div className="text-center text-sm">
+              <button
+                type="button"
+                className="text-brand-700 underline dark:text-brand-50"
+                onClick={() => goTo('magic-link')}
+              >
+                Recevoir un lien de connexion par email
+              </button>
+            </div>
           </form>
         )}
+
+        {step === 'magic-link' &&
+          (magicLinkSent ? (
+            <div className="space-y-4">
+              {/* Message volontairement générique : ne révèle pas si l'email
+                  correspond à un compte (anti-énumération, PRD §3.2). */}
+              <Alert variant="success">
+                Si un compte correspond à cette adresse, un lien de connexion vient de vous être
+                envoyé par email. Il est valable 15 minutes et ne peut servir qu’une seule fois.
+              </Alert>
+              <div className="text-center text-sm">
+                <button type="button" className="underline" onClick={() => goTo('login')}>
+                  Retour à la connexion
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={onMagicLink} className="space-y-4" noValidate>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                Recevez par email un lien de connexion à usage unique, sans saisir votre mot de
+                passe.
+              </p>
+              <div>
+                <Label htmlFor="magic-link-email">Email</Label>
+                <Input
+                  id="magic-link-email"
+                  type="email"
+                  autoComplete="email"
+                  aria-invalid={Boolean(magicLinkForm.formState.errors.email)}
+                  {...magicLinkForm.register('email')}
+                />
+                {magicLinkForm.formState.errors.email && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {magicLinkForm.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={magicLinkForm.formState.isSubmitting}
+              >
+                Recevoir le lien de connexion
+              </Button>
+              <div className="text-center text-sm">
+                <button type="button" className="underline" onClick={() => goTo('login')}>
+                  Retour à la connexion
+                </button>
+              </div>
+            </form>
+          ))}
       </div>
     </main>
   )

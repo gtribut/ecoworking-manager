@@ -8,6 +8,7 @@ namespace App\Models;
 use App\Enums\ContactRole;
 use App\Enums\Role;
 use App\Models\Concerns\Auditable;
+use App\Observers\UserObserver;
 use Database\Factories\UserFactory;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
@@ -16,6 +17,7 @@ use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -31,6 +33,8 @@ use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['first_name', 'last_name', 'email', 'password', 'calendar_token', 'notify_email', 'notify_in_app', 'theme'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'app_authentication_secret', 'app_authentication_recovery_codes'])]
+// Invalidation des magic links à tout changement de mot de passe (C12.8a).
+#[ObservedBy(UserObserver::class)]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasName
 {
     /** @use HasFactory<UserFactory> */

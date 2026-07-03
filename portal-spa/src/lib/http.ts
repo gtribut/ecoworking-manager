@@ -42,7 +42,7 @@ export function setSessionExpiredHandler(handler: (() => void) | null): void {
  * identifiants, session déjà absente…) et est géré par l'appelant — on ne
  * déclenche pas la déconnexion globale pour elles.
  */
-const AUTH_FLOW_URLS = ['/api/user', '/login', '/two-factor-challenge', '/logout']
+const AUTH_FLOW_URLS = ['/api/user', '/login', '/two-factor-challenge', '/logout', '/magic-link']
 
 function isAuthFlowRequest(url: string | undefined): boolean {
   if (!url) return false

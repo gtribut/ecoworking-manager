@@ -20,6 +20,9 @@ Format inspiré de la convention popularisée par Michael Nygard.
 | [0006](./0006-routing-et-data-fetching-portail.md) | Stack data fetching et routing du portail (React Router + TanStack Query) | Accepté | 2026-05 |
 | [0007](./0007-pas-de-redis-en-mvp.md) | Pas de Redis en MVP — cache, sessions et queues sur Postgres | Accepté | 2026-05 |
 | [0008](./0008-versions-runtime-modernes.md) | Versions runtime modernes (PHP 8.5, Node 26, Laravel 13, Filament 5) | Accepté | 2026-05 |
+| [0009](./0009-google-oauth-admin-only.md) | Google OAuth réservé aux admins (match par email, pas d'auto-provisioning) | Accepté | 2026-06 |
+| [0010](./0010-timezone-europe-paris.md) | Timezone applicative Europe/Paris | Accepté | 2026-07 |
+| [0011](./0011-magic-link-jetons-en-table.md) | Magic link — jetons à usage unique hashés en table dédiée | Accepté | 2026-07 |
 
 ## Conventions
 

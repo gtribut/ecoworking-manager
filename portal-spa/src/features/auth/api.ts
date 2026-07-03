@@ -29,6 +29,16 @@ export async function twoFactorChallenge(payload: {
   await http.post('/two-factor-challenge', payload)
 }
 
+/**
+ * Demande l'envoi d'un lien de connexion par email (magic link, PRD §3.2).
+ * La réponse du back est volontairement générique, que l'email corresponde ou
+ * non à un compte (anti-énumération) — ne rien déduire d'un 200.
+ */
+export async function requestMagicLink(email: string): Promise<void> {
+  await ensureCsrfCookie()
+  await http.post('/magic-link', { email })
+}
+
 export async function logout(): Promise<void> {
   await http.post('/logout')
 }

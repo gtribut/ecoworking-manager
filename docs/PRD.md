@@ -505,7 +505,7 @@ Trois types de ressources, chacun avec des règles d'utilisation et d'affichage 
 
 | Type | Quantité | Visualisation | Mode de "réservation" |
 |---|---|---|---|
-| **Bureau** | **48 au total** : 1-2 attitrés au personnel Ecoworking + ~40-50 attitrés aux résidents + reste libre pour external | Module **Annuaire > Plan des étages** (§3.7) | Occupation, pas de "résa" classique |
+| **Bureau** | **49 au total** (29 à l'étage 1, 20 à l'étage 2) : 1-2 attitrés au personnel Ecoworking + ~40-50 attitrés aux résidents + reste libre pour external | Module **Annuaire > Plan des étages** (§3.7) | Occupation, pas de "résa" classique |
 | **Salle de réunion** | 3 | Module **Réservation ressources > Calendrier** (cette section) | Résa créneau libre (resident/additional gratuit, external via ticket) |
 | **Salle event** | 1 | Module **Réservation ressources > Calendrier** (lecture seule pour membres) | Réservable **uniquement par les admins** |
 
@@ -1086,7 +1086,7 @@ Trois types principaux gérés par l'admin (cf. §3.5.1) :
 
 | Type code | Description | Quantité prévue | Réservable par |
 |---|---|---|---|
-| `desk` | Bureau (attitré résident, attitré staff, ou libre) | **48 au total** (1-2 staff + ~40-50 résidents + reste libre) | Mécaniques différentes selon attribution (cf. §4.7 et §4.8) |
+| `desk` | Bureau (attitré résident, attitré staff, ou libre) | **49 au total** (29 à l'étage 1, 20 à l'étage 2 ; 1-2 staff + ~40-50 résidents + reste libre) | Mécaniques différentes selon attribution (cf. §4.7 et §4.8) |
 | `meeting_room` | Salle de réunion | 3 | resident / additional (gratuit) + external (via ticket) |
 | `event_room` | Salle événement | 1 | **Admin uniquement** |
 
@@ -1110,7 +1110,7 @@ Formulaire avec champs adaptés au type :
 - Couleur calendrier Google
 - Actif Y/N, ordre d'affichage
 
-**Spécifique `desk`** (48 unités au total)
+**Spécifique `desk`** (49 unités au total : 29 à l'étage 1, 20 à l'étage 2)
 - ID unique pour mapping au plan des étages SVG
 - Champ `assignment` :
   - `assigned_resident` : attitré à un membre `resident` (~40-50 bureaux)
@@ -1640,12 +1640,12 @@ Où :
 - Plage horaire libre 24/24 7/7
 - Tarification : variable selon le contexte (interne Ecoworking gratuit, sinon facturé selon devis admin)
 
-#### Bureaux (48 unités au total)
+#### Bureaux (49 unités au total — 29 à l'étage 1, 20 à l'étage 2)
 
 Répartition :
 - 1-2 bureaux attitrés au personnel Ecoworking (manageuse + stagiaire/alternant éventuel) — type `assigned_staff`
 - ~40-50 bureaux attitrés aux résidents — type `assigned_resident`
-- Les bureaux restants (= 48 - staff - résidents avec abonnement) sont libres — type `unassigned`
+- Les bureaux restants (= 49 - staff - résidents avec abonnement) sont libres — type `unassigned`
 
 Pas de "réservation" classique — gestion par **occupation** et **absence** :
 

@@ -19,6 +19,8 @@ export function usePermissions() {
     has,
     canCreateOwnBooking: has('create-own-booking'),
     canCreatePaidBooking: has('create-paid-booking'),
+    /** Annuaire + plan des étages (C12.5) : resident/additional/staff, jamais external. */
+    canViewDirectory: has('view-annuaire'),
     /** Résident = dispose d'un bureau attitré (peut déclarer ses absences). */
     isResident: has('create-own-booking'),
     /** External = pas de bureau attitré, paie ses réservations. */

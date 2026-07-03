@@ -23,14 +23,36 @@ it('seede le catalogue MVP (8 SKU) avec les prix figés du PRD', function () {
         ->and(Offer::where('billing_period', 'one_time')->count())->toBe(5);
 });
 
-it('seede l\'inventaire : 48 bureaux + 3 salles réunion + 1 salle event', function () {
+it('seede l\'inventaire : 49 bureaux (29 + 20) + 3 salles réunion + 1 salle event', function () {
     $this->seed(ResourceSeeder::class);
 
-    expect(Resource::where('type', 'desk')->count())->toBe(48)
+    expect(Resource::where('type', 'desk')->count())->toBe(49)
+        // Décision Guillaume 2026-07-03 : étage 1 = 29 bureaux, étage 2 = 20.
+        ->and(Resource::where('type', 'desk')->where('floor', 1)->count())->toBe(29)
+        ->and(Resource::where('type', 'desk')->where('floor', 2)->count())->toBe(20)
+        // Correspondance plan ↔ DB : ids identiques à ceux du SVG (non paddés).
+        ->and(Resource::where('svg_desk_id', 'desk-1')->value('floor'))->toBe(1)
+        ->and(Resource::where('svg_desk_id', 'desk-29')->value('floor'))->toBe(1)
+        ->and(Resource::where('svg_desk_id', 'desk-30')->value('floor'))->toBe(2)
+        ->and(Resource::where('svg_desk_id', 'desk-49')->value('floor'))->toBe(2)
         ->and(Resource::where('type', 'meeting_room')->count())->toBe(3)
         ->and(Resource::where('type', 'event_room')->count())->toBe(1)
         ->and(Resource::where('type', 'event_room')->value('requires_admin'))->toBeTrue()
         ->and(Resource::where('type', 'meeting_room')->value('external_half_day_price_ht'))->toBe('71.00');
+});
+
+it('migre les svg_desk_id historiques zéro-paddés sans créer de doublon', function () {
+    Resource::factory()->create([
+        'type' => 'desk',
+        'svg_desk_id' => 'desk-03',
+        'name' => 'Bureau 3',
+    ]);
+
+    $this->seed(ResourceSeeder::class);
+
+    expect(Resource::where('type', 'desk')->count())->toBe(49)
+        ->and(Resource::where('svg_desk_id', 'desk-03')->exists())->toBeFalse()
+        ->and(Resource::where('svg_desk_id', 'desk-3')->count())->toBe(1);
 });
 
 it('est idempotent : rejouable sans doublon', function () {
@@ -40,7 +62,7 @@ it('est idempotent : rejouable sans doublon', function () {
     $this->seed(ResourceSeeder::class);
 
     expect(Offer::count())->toBe(8)
-        ->and(Resource::count())->toBe(52);
+        ->and(Resource::count())->toBe(53);
 });
 
 it('rend le DatabaseSeeder rejouable : un seul compte admin (review 06 M6)', function () {

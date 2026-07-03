@@ -97,7 +97,7 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 | Externals **actifs** (avec consommation mensuelle) | ~10-15 | ~15-25 |
 | Total comptes portail membres | ~95-110 | ~150-200 |
 | Entreprises / entités juridiques | ~75 | ~120 |
-| Bureaux (desks) | **48 total** (1-2 staff + ~40-50 résidents + reste libre pour external) | identique |
+| Bureaux (desks) | **49 total** — étage 1 = 29, étage 2 = 20 (décision 2026-07-02 ; 1-2 staff + ~40-50 résidents + reste libre pour external) | identique |
 | Salles de réunion | 3 | 3 |
 | Salle event | 1 | 1 |
 | Tickets consommés / mois (bureaux + salles, externals) | **10-30** | doubler |

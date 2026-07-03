@@ -1,0 +1,62 @@
+/** Entrée de l'annuaire (GET /api/directory) — profils opt-in uniquement. */
+export interface DirectoryEntry {
+  id: number
+  first_name: string
+  last_name: string
+  photo_path: string | null
+  job_title: string | null
+  bio: string | null
+  interests: string | null
+  linkedin_url: string | null
+  website_url: string | null
+  company: string | null
+  desk?: {
+    svg_desk_id: string | null
+    name: string
+    floor: number | null
+  } | null
+}
+
+/** Fiche occupant d'un bureau — détails seulement si opt-in annuaire. */
+export interface PlanOccupantVisible {
+  visible: true
+  member_profile_id: number
+  first_name: string
+  last_name: string
+  photo_path: string | null
+  job_title: string | null
+  bio: string | null
+  interests: string | null
+  linkedin_url: string | null
+  website_url: string | null
+  company: string | null
+}
+
+/** Occupant opt-out : présence connue, identité masquée (PRD §3.7.5). */
+export interface PlanOccupantHidden {
+  visible: false
+}
+
+export type PlanOccupant = PlanOccupantVisible | PlanOccupantHidden
+
+export type DeskStatus = 'present' | 'partial' | 'absent' | 'free' | 'out_of_service'
+
+export type DeskAssignment = 'assigned_resident' | 'assigned_staff' | 'unassigned'
+
+/** État d'un bureau sur le plan (GET /api/directory/floor-plan). */
+export interface PlanDesk {
+  resource_id: number
+  svg_desk_id: string | null
+  name: string
+  floor: number | null
+  assignment: DeskAssignment | null
+  is_own: boolean
+  status: DeskStatus
+  occupant: PlanOccupant | null
+}
+
+export interface FloorPlan {
+  date: string
+  is_working_day: boolean
+  desks: PlanDesk[]
+}

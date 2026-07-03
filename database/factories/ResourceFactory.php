@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /**
  * @extends Factory<resource>
  *
- * Par défaut : un bureau (type le plus nombreux, 48). États dédiés pour les
+ * Par défaut : un bureau (type le plus nombreux, 49). États dédiés pour les
  * salles. `assignment` n'a de sens que pour les bureaux (NULL sinon).
  */
 class ResourceFactory extends Factory

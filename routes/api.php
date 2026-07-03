@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\AdministrativeDocumentController;
 use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AnnouncementRegistrationController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\CalendarSubscriptionController;
 use App\Http\Controllers\Api\CurrentUserController;
 use App\Http\Controllers\Api\DeskController;
+use App\Http\Controllers\Api\DirectoryController;
+use App\Http\Controllers\Api\InternalDocumentController;
+use App\Http\Controllers\Api\InternalDocumentValidationController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PresenceController;
@@ -69,6 +73,18 @@ $register = function (): void {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
         Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('api.notifications.read-all');
         Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('api.notifications.read');
+
+        // C12.4 — Documents : internes à valider (audience) + administratifs d'entité (billing).
+        Route::get('/documents/internal', [InternalDocumentController::class, 'index'])->name('api.documents.internal.index');
+        Route::get('/documents/internal/{document}/pdf', [InternalDocumentController::class, 'downloadPdf'])->whereNumber('document')->name('api.documents.internal.pdf');
+        Route::post('/documents/internal/{document}/validation', InternalDocumentValidationController::class)->whereNumber('document')->name('api.documents.internal.validate');
+        Route::get('/documents/administrative', [AdministrativeDocumentController::class, 'index'])->name('api.documents.administrative.index');
+        Route::get('/documents/administrative/{document}/pdf', [AdministrativeDocumentController::class, 'downloadPdf'])->whereNumber('document')->name('api.documents.administrative.pdf');
+
+        // C12.5 — Annuaire des coworkers + plan des étages (profils opt-in,
+        // permission view-annuaire : les external n'y accèdent pas, PRD §3.7.1).
+        Route::get('/directory', [DirectoryController::class, 'index'])->name('api.directory.index');
+        Route::get('/directory/floor-plan', [DirectoryController::class, 'floorPlan'])->name('api.directory.floor-plan');
 
         // C9.2 — Abonnement iCal (URLs de flux, régénération/révocation du token).
         Route::get('/calendar', [CalendarSubscriptionController::class, 'show'])->name('api.calendar.show');

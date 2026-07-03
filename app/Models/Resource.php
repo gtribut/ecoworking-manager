@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Espace réservable : bureau (48), salle de réunion (3) ou salle event (1).
+ * Espace réservable : bureau (49), salle de réunion (3) ou salle event (1).
  * Champs adaptés au `type`. data_model §4.3.
  */
 #[Fillable([

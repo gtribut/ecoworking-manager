@@ -23,7 +23,7 @@ interface NavEntry {
 
 export function Layout() {
   const { user, logout } = useAuth()
-  const { isResident, isExternal } = usePermissions()
+  const { isResident, isExternal, canViewDirectory } = usePermissions()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
@@ -44,6 +44,9 @@ export function Layout() {
     { to: '/announcements', label: 'Actualités' },
     ...(isExternal ? [{ to: '/tickets', label: 'Tickets' }] : []),
     ...(isResident ? [{ to: '/presence', label: 'Présence' }] : []),
+    // C12.5 — Annuaire (masqué aux external : pas de view-annuaire)
+    ...(canViewDirectory ? [{ to: '/directory', label: 'Annuaire' }] : []),
+    { to: '/documents', label: 'Documents' },
     { to: '/profile', label: 'Profil' },
     { to: '/invoices', label: 'Factures' },
   ]

@@ -10,8 +10,13 @@ use App\Models\Resource;
 use Illuminate\Database\Seeder;
 
 /**
- * Inventaire physique MVP (PRD §4.6) : 48 bureaux (étages 1 & 2) + 3 salles de
- * réunion + 1 salle événementielle (admin only).
+ * Inventaire physique MVP (PRD §4.6, décision Guillaume 2026-07-03) :
+ * 49 bureaux (étage 1 = 29, desk-1 à desk-29 ; étage 2 = 20, desk-30 à desk-49)
+ * + 3 salles de réunion + 1 salle événementielle (admin only).
+ *
+ * `svg_desk_id` est la table de correspondance plan ↔ DB : il vaut exactement
+ * l'id de l'élément du SVG versionné (`docs/plan/etages.svg`, ids `desk-N`
+ * NON zéro-paddés) — le front cible `#desk-N` / `data-desk`, jamais les ids DB.
  *
  * Les bureaux sont seedés `unassigned` (inventaire physique). L'affectation
  * réelle à un membre (`assignment` + `member_profiles.desk_id`) est posée à
@@ -20,7 +25,9 @@ use Illuminate\Database\Seeder;
  */
 class ResourceSeeder extends Seeder
 {
-    private const DESK_COUNT = 48;
+    private const DESK_COUNT = 49;
+
+    private const FLOOR_ONE_DESK_COUNT = 29;
 
     public function run(): void
     {
@@ -31,14 +38,19 @@ class ResourceSeeder extends Seeder
 
     private function seedDesks(): void
     {
-        for ($n = 1; $n <= self::DESK_COUNT; $n++) {
-            $svgId = sprintf('desk-%02d', $n);
+        // Migration douce des ids historiques zéro-paddés (`desk-01`…`desk-09`)
+        // vers le format des ids du SVG (`desk-1`…`desk-9`) — idempotent.
+        for ($n = 1; $n <= 9; $n++) {
+            Resource::where('svg_desk_id', sprintf('desk-%02d', $n))
+                ->update(['svg_desk_id' => "desk-{$n}"]);
+        }
 
-            Resource::updateOrCreate(['svg_desk_id' => $svgId], [
+        for ($n = 1; $n <= self::DESK_COUNT; $n++) {
+            Resource::updateOrCreate(['svg_desk_id' => "desk-{$n}"], [
                 'type' => ResourceType::Desk->value,
                 'name' => "Bureau {$n}",
                 'assignment' => ResourceAssignment::Unassigned->value,
-                'floor' => $n <= 24 ? 1 : 2,
+                'floor' => $n <= self::FLOOR_ONE_DESK_COUNT ? 1 : 2,
                 'is_active' => true,
                 'display_order' => $n,
             ]);

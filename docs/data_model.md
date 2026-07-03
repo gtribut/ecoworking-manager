@@ -397,7 +397,7 @@ Index : `purchase_id`, `user_id`, `type`, `status`, `(user_id, type, status)` (c
 ### 4.3 Ressources & occupation
 
 #### `resources`
-Bureaux (48) + salles de réunion (3) + salle event (1). Champs adaptés au `type`.
+Bureaux (49 : 29 à l'étage 1, 20 à l'étage 2) + salles de réunion (3) + salle event (1). Champs adaptés au `type`.
 
 | Colonne | Type | NULL | Défaut | Note |
 |---|---|---|---|---|

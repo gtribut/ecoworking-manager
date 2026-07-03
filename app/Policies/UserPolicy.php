@@ -46,6 +46,16 @@ final class UserPolicy
         return $user->isAdmin();
     }
 
+    /**
+     * Anonymisation RGPD (PRD §5.6) : admin uniquement, jamais soi-même
+     * (garde-fou lock-out, comme delete), et une seule fois — l'opération
+     * est irréversible.
+     */
+    public function anonymize(User $user, User $model): bool
+    {
+        return $user->isAdmin() && $user->isNot($model) && $model->anonymized_at === null;
+    }
+
     public function forceDelete(User $user, User $model): bool
     {
         // Suppression définitive interdite (factures conservées 10 ans, §3.4) :

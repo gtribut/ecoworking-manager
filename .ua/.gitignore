@@ -1,0 +1,7 @@
+# Fichiers transitoires régénérables — ne pas versionner
+.trash-*/
+tmp/
+*.log
+# Artefacts intermédiaires (sauf l'inventaire de scan réutilisé en incrémental)
+intermediate/*
+!intermediate/scan-result.json

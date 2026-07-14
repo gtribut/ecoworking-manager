@@ -1,0 +1,118 @@
+# .understandignore — patterns for files/dirs to exclude from analysis
+# Syntax: same as .gitignore (globs, # comments, ! negation, trailing / for dirs)
+# Lines below are suggestions — uncomment to activate.
+# Use ! prefix to force-include something excluded by defaults.
+#
+# Built-in defaults (always excluded unless negated):
+#   node_modules/, .git/, dist/, build/, obj/, *.lock, *.min.js, etc.
+#
+
+# --- Active exclusions (dependencies + built/generated artifacts) ---
+# Composer deps (NOT a built-in default — must be excluded explicitly)
+/vendor/
+# Built SPA + Filament assets (compiled output, not source)
+/public/build
+/public/portal
+/public/css/filament
+/public/js/filament
+/public/fonts/filament
+/public/fonts-manifest.dev.json
+# Local DB / caches / keys
+/database/*.sqlite
+/database/*.sqlite-journal
+/bootstrap/cache/*.php
+bootstrap/compiled.php
+/storage/pail
+storage/*.key
+_ide_helper.php
+.phpstorm.meta.php
+# Obsidian vault (not project code)
+.obsidian/
+
+# --- From .gitignore (uncomment to exclude) ---
+
+# /vendor/
+# npm-debug.log
+# yarn-error.log
+# /.playwright-browsers
+# /tests/Browser/Screenshots/
+# bootstrap/compiled.php
+# app/storage/
+# /bootstrap/cache/*.php
+# /database/*.sqlite
+# /database/*.sqlite-journal
+# public/storage
+# public/hot
+# public_html/storage
+# public_html/hot
+# storage/*.key
+# .env
+# .env.*
+# !.env.example
+# Homestead.yaml
+# Homestead.json
+# /.vagrant
+# .phpunit.result.cache
+# /public/build
+# /public/portal
+# /public/css/filament
+# /public/js/filament
+# /public/fonts/filament
+# /storage/pail
+# .phpactor.json
+# auth.json
+# .vscode/*.log
+# .vscode/*.local.json
+# .foam/
+# *.py[cod]
+# .DS_Store
+# Thumbs.db
+# _ide_helper.php
+# /.phpunit.cache
+# /public/fonts-manifest.dev.json
+# /.idea
+# /.nova
+# /.zed
+# /.cursor/
+# /.codex
+
+# --- Detected directories (uncomment to exclude) ---
+
+# docs/
+# scripts/
+# tests/
+
+# --- Test file patterns (uncomment to exclude) ---
+
+# JS / TS
+# *.test.*
+# *.spec.*
+# *.snap
+# C# / .NET
+# **/*Tests.cs
+# **/*Test.cs
+# **/*Fixture.cs
+# **/*.Tests.csproj
+# Java / Kotlin
+# **/src/test/**
+# **/*Test.java
+# **/*IT.java
+# **/*Spec.kt
+# Go
+# **/*_test.go
+# C++
+# **/*_test.cc
+# **/*_test.cpp
+# **/*_test.cxx
+# **/*Test.cc
+# **/*Test.cpp
+# **/*_unittest.cc
+# **/*_unittest.cpp
+# **/*_browsertest.cc
+# **/*_benchmark.cc
+# **/*Benchmark.cpp
+# Python
+# **/test_*.py
+# **/*_test.py
+# **/tests.py
+# **/conftest.py

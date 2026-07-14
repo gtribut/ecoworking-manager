@@ -26,7 +26,9 @@
       "Sanctum",
       "Pest"
     ],
-    "description": "Outil de gestion sur-mesure pour l’espace de coworking Ecoworking (Lyon, SARL, ~50 membres, ~75 entreprises). Remplace Cosoft. Mono-tenant. Back-office admin Filament + portail membre SPA React, facturation conforme (numérotation chronologique, TVA), réservations de ressources, RGPD et audit log."
+    "description": "Outil de gestion sur-mesure pour l’espace de coworking Ecoworking (Lyon, SARL, ~50 membres, ~75 entreprises). Remplace Cosoft. Mono-tenant. Back-office admin Filament + portail membre SPA React, facturation conforme (numérotation chronologique, TVA), réservations de ressources, RGPD et audit log.",
+    "analyzedAt": "2026-07-14T17:00:56Z",
+    "gitCommitHash": "ee76842dc790ffd5941057faf60327ad07a0e49e"
   },
   "nodes": [
     {

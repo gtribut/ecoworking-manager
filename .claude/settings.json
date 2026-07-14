@@ -2,5 +2,19 @@
   "enabledPlugins": {
     "andrej-karpathy-skills@karpathy-skills": true,
     "understand-anything@understand-anything": true
+  },
+  "extraKnownMarketplaces": {
+    "karpathy-skills": {
+      "source": {
+        "source": "github",
+        "repo": "forrestchang/andrej-karpathy-skills"
+      }
+    },
+    "understand-anything": {
+      "source": {
+        "source": "github",
+        "repo": "Egonex-AI/Understand-Anything"
+      }
+    }
   }
 }

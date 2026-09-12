@@ -76,3 +76,6 @@ _ide_helper.php
 /.zed
 /.cursor/
 /.codex
+
+# Claude Code — réglages locaux (non partagés avec l'équipe)
+.claude/settings.local.json

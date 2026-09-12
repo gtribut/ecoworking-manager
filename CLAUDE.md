@@ -27,7 +27,7 @@ Outil de gestion sur-mesure pour Ecoworking (coworking lyonnais, SARL, ~50 membr
 
 ---
 
-## 2. Stack & arborescence rapide
+## 2. Stack
 
 - **Backend** : PHP 8.5+, Laravel 13, PostgreSQL 18 (cache, sessions et queues sur Postgres — pas de Redis en MVP, cf. ADR-0007)
 - **Admin** : Filament 5, servi sur `admin.ecoworking.fr` exclusivement
@@ -37,21 +37,6 @@ Outil de gestion sur-mesure pour Ecoworking (coworking lyonnais, SARL, ~50 membr
 - **Tests** : Pest (PHP) + Playwright (e2e)
 - **Lint** : Pint (PHP) + Biome (TS/React)
 - **Dev local** : Laravel Sail (Docker Compose) sous WSL2 Ubuntu
-
-Arborescence repo :
-```
-ecoworking-manager/
-├── app/            # Code Laravel (Models, Controllers, Filament, Services, Jobs)
-├── config/         # Configuration Laravel
-├── database/       # Migrations, seeders, factories
-├── portal-spa/     # Projet SPA React Vite (autonome)
-├── public/         # Assets publics (build SPA exposé via public/portal/)
-├── resources/      # Vues Blade (minimales), CSS/JS admin Filament
-├── routes/         # api.php, web.php (routes par domaine)
-├── tests/          # Pest (Feature, Unit), Playwright (e2e)
-├── docs/           # BRIEF.md, PRD.md, adr/, data_model.md
-└── CLAUDE.md       # ce fichier
-```
 
 ---
 
@@ -169,36 +154,7 @@ ecoworking-manager/
 
 ### 4.2 TypeScript / React
 
-**Strict mode** :
-- `"strict": true` dans `tsconfig.json`
-- `noUncheckedIndexedAccess: true`
-- Pas de `any` (utiliser `unknown` + narrowing si vraiment besoin)
-- Pas de `// @ts-ignore` (`// @ts-expect-error` toléré ponctuellement avec commentaire)
-
-**Composants** :
-- Functional components uniquement, hooks
-- Naming : `PascalCase` pour composants, `useCamelCase` pour hooks, `camelCase` pour utilitaires
-- 1 composant principal par fichier, nom de fichier = nom du composant
-- Pas de default export pour les composants (named exports facilitent le refactoring)
-
-**Imports** :
-- Alias absolus via `@/*` (configuré dans `vite.config.ts` et `tsconfig.json`)
-- Ordre : externals → alias internes → relatifs
-- Auto-tri via Biome
-
-**État** :
-- État serveur (données API) : **TanStack Query exclusivement** (jamais `useState` + `useEffect` pour ça)
-- État UI local : `useState` ou `useReducer`
-- État global UI cross-composants : Context API en MVP, Zustand seulement si vrai besoin (peu probable)
-
-**Forms** :
-- React Hook Form + Zod schema partagé via resolver
-- Schema Zod côté front, **toujours doublé** d'un Form Request côté back
-
-**Organisation** :
-- Par feature : `src/features/bookings/`, `src/features/invoices/`
-- Dans chaque feature : `components/`, `hooks/`, `api/` (fonctions de fetch), `types.ts`
-- Pas de dossier `src/components/` global (sauf pour composants vraiment cross-feature : `Button`, `Layout`)
+Voir `portal-spa/CLAUDE.md` (chargé automatiquement lors du travail sur le portail).
 
 ---
 
@@ -234,85 +190,6 @@ Si TDD pas adapté (Filament Resource rapide par exemple) : tests post-implémen
 
 ---
 
-## 6. Patterns recommandés
-
-### 6.1 Form Request type
-
-```php
-final class StoreBookingRequest extends FormRequest
-{
-    public function authorize(): bool
-    {
-        return $this->user()->can('create', Booking::class);
-    }
-
-    public function rules(): array
-    {
-        return [
-            'resource_id' => ['required', 'integer', 'exists:resources,id'],
-            'starts_at' => ['required', 'date', 'after:now'],
-            'ends_at' => ['required', 'date', 'after:starts_at'],
-            'title' => ['nullable', 'string', 'max:255'],
-            'attendees_count' => ['nullable', 'integer', 'min:1', 'max:50'],
-        ];
-    }
-}
-```
-
-### 6.2 Service métier type
-
-```php
-final class InvoiceNumberingService
-{
-    public function __construct(private DatabaseManager $db) {}
-
-    public function nextNumber(): string
-    {
-        return $this->db->transaction(function () {
-            $year = now()->year;
-            $counter = InvoiceCounter::lockForUpdate()->firstOrCreate(['year' => $year]);
-            $counter->increment('value');
-            return sprintf('EW-%d-%05d', $year, $counter->value);
-        });
-    }
-}
-```
-
-### 6.3 Policy type
-
-```php
-final class BookingPolicy
-{
-    public function view(User $user, Booking $booking): bool
-    {
-        return $user->id === $booking->user_id || $user->hasRole('admin');
-    }
-
-    public function update(User $user, Booking $booking): bool
-    {
-        return $user->id === $booking->user_id 
-            && $booking->starts_at->isFuture()
-            && $booking->status !== 'cancelled';
-    }
-}
-```
-
-### 6.4 Test Pest type (Feature)
-
-```php
-it('refuse à un membre de voir la résa d\'un autre membre', function () {
-    $member1 = User::factory()->member()->create();
-    $member2 = User::factory()->member()->create();
-    $booking = Booking::factory()->for($member1)->create();
-
-    $this->actingAs($member2)
-        ->getJson("/api/bookings/{$booking->id}")
-        ->assertForbidden();
-});
-```
-
----
-
 ## 7. Anti-patterns interdits
 
 | Interdit | Pourquoi | Alternative |
@@ -333,42 +210,6 @@ it('refuse à un membre de voir la résa d\'un autre membre', function () {
 ## 8. Commandes courantes
 
 Sail alias : `alias sail='[ -f sail ] && sh sail || sh vendor/bin/sail'`
-
-```bash
-# Démarrage env
-sail up -d
-
-# Tests
-sail test                                # tous les tests Pest
-sail test --filter=BookingTest           # un test spécifique
-sail test --parallel                     # en parallèle
-
-# Lint & format
-sail pint                                # PHP format/lint
-sail pint --test                         # check sans modifier
-pnpm --filter portal-spa biome check     # TS/React
-pnpm --filter portal-spa biome format    # TS/React format
-
-# Artisan
-sail artisan migrate
-sail artisan migrate:fresh --seed        # reset DB complète + seed
-sail artisan make:model Booking -mfrs    # model + migration + factory + request + seeder
-sail artisan make:filament-resource Booking
-sail artisan tinker
-
-# SPA
-cd portal-spa && pnpm dev                # dev server :5173
-cd portal-spa && pnpm build              # build production
-cd portal-spa && pnpm test               # tests Vitest (si configurés)
-
-# Queues
-sail artisan queue:work                  # démarrer un worker en dev
-
-# Cache
-sail artisan optimize:clear              # vider tous les caches
-sail artisan config:cache                # cacher la config (prod)
-sail artisan route:cache                 # cacher les routes (prod)
-```
 
 ---
 

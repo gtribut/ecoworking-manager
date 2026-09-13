@@ -26,11 +26,6 @@ export function usePermissions() {
     /** Calendrier des salles et réservations : tous les rôles d'usage, jamais un billing pur. */
     canViewBookings: has('view-bookings-calendar'),
     /**
-     * Actualités & événements : la permission la plus proche de la matrice
-     * PRD §2.5 (« S'inscrire aux events : billing_contact pur ❌ »).
-     */
-    canViewAnnouncements: has('register-event'),
-    /**
      * Résident = dispose d'un bureau attitré (PRD §2.5), seul à pouvoir déclarer
      * ses absences. Vient du serveur (`has_desk`) : la permission
      * `create-own-booking` ne discrimine pas (un `additional` l'a aussi).

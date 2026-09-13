@@ -3,40 +3,14 @@ import { HttpResponse, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import type { AuthUser } from '@/features/auth/types'
 import { server } from '@/test/server'
-import { renderWithProviders } from '@/test/utils'
+import {
+  BILLING_PERMISSIONS,
+  EXTERNAL_PERMISSIONS,
+  MEMBER_PERMISSIONS,
+  makeAuthUser,
+  renderWithProviders,
+} from '@/test/utils'
 import { Layout } from './Layout'
-
-/** Permissions du tronc commun « rôle d'usage » (PermissionSeeder, PRD §2.5). */
-const MEMBER_PERMISSIONS = [
-  'view-own-bookings',
-  'view-bookings-calendar',
-  'create-own-booking',
-  'manage-own-booking',
-  'register-event',
-  'validate-internal-document',
-]
-
-const BILLING_PERMISSIONS = [
-  'view-billing-section',
-  'view-entity-invoices',
-  'view-entity-admin-documents',
-  'request-entity-modification',
-]
-
-function user(overrides: Partial<AuthUser> = {}): AuthUser {
-  return {
-    id: 1,
-    first_name: 'Alex',
-    last_name: 'Martin',
-    email: 'alex@ex.fr',
-    theme: null,
-    has_desk: false,
-    two_factor_enabled: false,
-    roles: [],
-    permissions: [],
-    ...overrides,
-  }
-}
 
 /** Rend le Layout connecté en tant que `authUser`, cloche de notifications muette. */
 async function renderNav(authUser: AuthUser): Promise<void> {
@@ -68,7 +42,7 @@ function navLabels(): string[] {
 
 describe('Layout — navigation filtrée par rôle (PRD §2.5)', () => {
   it('résident avec bureau attitré : tous les modules sauf factures et tickets', async () => {
-    await renderNav(user({ has_desk: true, permissions: [...MEMBER_PERMISSIONS, 'view-annuaire'] }))
+    await renderNav(makeAuthUser({ has_desk: true, permissions: MEMBER_PERMISSIONS }))
 
     expect(navLabels()).toEqual([
       'Accueil',
@@ -82,9 +56,7 @@ describe('Layout — navigation filtrée par rôle (PRD §2.5)', () => {
   })
 
   it('membre additionnel (sans bureau attitré) : pas de « Présence »', async () => {
-    await renderNav(
-      user({ has_desk: false, permissions: [...MEMBER_PERMISSIONS, 'view-annuaire'] }),
-    )
+    await renderNav(makeAuthUser({ has_desk: false, permissions: MEMBER_PERMISSIONS }))
 
     expect(navLabels()).not.toContain('Présence')
     expect(navLabels()).toContain('Réservations')
@@ -92,35 +64,24 @@ describe('Layout — navigation filtrée par rôle (PRD §2.5)', () => {
   })
 
   it('external : ni « Présence » ni « Annuaire », mais « Tickets »', async () => {
-    await renderNav(
-      user({
-        permissions: [
-          'view-own-bookings',
-          'view-bookings-calendar',
-          'create-paid-booking',
-          'manage-own-booking',
-          'register-event',
-          'validate-internal-document',
-        ],
-      }),
-    )
+    await renderNav(makeAuthUser({ permissions: EXTERNAL_PERMISSIONS }))
 
     expect(navLabels()).toContain('Tickets')
     expect(navLabels()).not.toContain('Présence')
     expect(navLabels()).not.toContain('Annuaire')
   })
 
-  it('contact facturation pur : accueil, profil, factures et documents seulement', async () => {
-    await renderNav(user({ permissions: BILLING_PERMISSIONS }))
+  it('contact facturation pur : accueil, actualités, documents, profil et factures', async () => {
+    await renderNav(makeAuthUser({ permissions: BILLING_PERMISSIONS }))
 
-    expect(navLabels()).toEqual(['Accueil', 'Documents', 'Profil', 'Factures'])
+    expect(navLabels()).toEqual(['Accueil', 'Actualités', 'Documents', 'Profil', 'Factures'])
   })
 
   it('résident contact facturation : les factures s’ajoutent à ses modules', async () => {
     await renderNav(
-      user({
+      makeAuthUser({
         has_desk: true,
-        permissions: [...MEMBER_PERMISSIONS, 'view-annuaire', ...BILLING_PERMISSIONS],
+        permissions: [...MEMBER_PERMISSIONS, ...BILLING_PERMISSIONS],
       }),
     )
 

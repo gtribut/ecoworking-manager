@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Navigate } from 'react-router'
+import { Forbidden } from '@/components/Forbidden'
 import { usePermissions } from './usePermissions'
 
 interface RequireAccessProps {
@@ -12,11 +12,12 @@ interface RequireAccessProps {
 
 /**
  * Garde de route par rôle (PRD §2.5) : un module masqué de la navigation ne
- * doit pas non plus être atteignable par URL directe. Renvoie à l'accueil
- * plutôt qu'une impasse — le serveur reste l'autorité (403 côté API).
+ * doit pas non plus être atteignable par URL directe. Affiche « Accès refusé »
+ * (PRD §3.8.2) plutôt qu'une redirection silencieuse — le serveur reste
+ * l'autorité (403 côté API).
  *
- * Toujours rendue SOUS `RequireAuth` : l'utilisateur est déjà chargé, aucune
- * redirection ne peut se déclencher pendant la résolution de la session.
+ * Toujours rendue SOUS `RequireAuth` : l'utilisateur est déjà chargé, aucun
+ * refus ne peut s'afficher pendant la résolution de la session.
  */
 export function RequireAccess({ permission, requiresDesk, children }: RequireAccessProps) {
   const { has, isResident } = usePermissions()
@@ -25,7 +26,7 @@ export function RequireAccess({ permission, requiresDesk, children }: RequireAcc
     (permission === undefined || has(permission)) && (requiresDesk !== true || isResident)
 
   if (!allowed) {
-    return <Navigate to="/" replace />
+    return <Forbidden />
   }
 
   return <>{children}</>

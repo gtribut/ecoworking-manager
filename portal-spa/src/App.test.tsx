@@ -3,39 +3,14 @@ import { HttpResponse, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import type { AuthUser } from '@/features/auth/types'
 import { server } from '@/test/server'
-import { renderWithProviders } from '@/test/utils'
+import {
+  BILLING_PERMISSIONS,
+  EXTERNAL_PERMISSIONS,
+  MEMBER_PERMISSIONS,
+  makeAuthUser,
+  renderWithProviders,
+} from '@/test/utils'
 import { App } from './App'
-
-const MEMBER_PERMISSIONS = [
-  'view-own-bookings',
-  'view-bookings-calendar',
-  'create-own-booking',
-  'manage-own-booking',
-  'register-event',
-  'validate-internal-document',
-  'view-annuaire',
-]
-
-const BILLING_PERMISSIONS = [
-  'view-billing-section',
-  'view-entity-invoices',
-  'view-entity-admin-documents',
-]
-
-function user(overrides: Partial<AuthUser> = {}): AuthUser {
-  return {
-    id: 1,
-    first_name: 'Alex',
-    last_name: 'Martin',
-    email: 'alex@ex.fr',
-    theme: null,
-    has_desk: false,
-    two_factor_enabled: false,
-    roles: [],
-    permissions: [],
-    ...overrides,
-  }
-}
 
 const emptyPage = {
   data: [],
@@ -59,58 +34,65 @@ function mockPortal(authUser: AuthUser): void {
 }
 
 describe('App — gardes de route par rôle (PRD §2.5)', () => {
-  it('renvoie un contact facturation pur à l’accueil depuis /bookings et /announcements', async () => {
-    mockPortal(user({ permissions: BILLING_PERMISSIONS }))
+  it('refuse /bookings à un contact facturation pur, avec un écran « Accès refusé »', async () => {
+    mockPortal(makeAuthUser({ permissions: BILLING_PERMISSIONS }))
 
     renderWithProviders(<App />, { route: '/bookings', withAuth: true })
 
-    expect(await screen.findByRole('heading', { level: 1, name: /Bonjour Alex/ })).toBeVisible()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Accès refusé' })).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Retour à l’accueil' })).toBeVisible()
     expect(screen.queryByRole('heading', { level: 1, name: 'Réservations' })).toBeNull()
   })
 
+  it('laisse un contact facturation pur lire les actualités', async () => {
+    mockPortal(makeAuthUser({ permissions: BILLING_PERMISSIONS }))
+
+    renderWithProviders(<App />, { route: '/announcements', withAuth: true })
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Actualités Ecoworking' }),
+    ).toBeVisible()
+  })
+
   it('laisse un contact facturation accéder à ses factures', async () => {
-    mockPortal(user({ permissions: BILLING_PERMISSIONS }))
+    mockPortal(makeAuthUser({ permissions: BILLING_PERMISSIONS }))
 
     renderWithProviders(<App />, { route: '/invoices', withAuth: true })
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Mes factures' })).toBeVisible()
   })
 
-  it('renvoie un membre sans rôle billing à l’accueil depuis /invoices', async () => {
-    mockPortal(user({ has_desk: true, permissions: MEMBER_PERMISSIONS }))
+  it('refuse /invoices à un membre sans rôle billing', async () => {
+    mockPortal(makeAuthUser({ has_desk: true, permissions: MEMBER_PERMISSIONS }))
 
     renderWithProviders(<App />, { route: '/invoices', withAuth: true })
 
-    expect(await screen.findByRole('heading', { level: 1, name: /Bonjour Alex/ })).toBeVisible()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Accès refusé' })).toBeVisible()
     expect(screen.queryByRole('heading', { level: 1, name: 'Mes factures' })).toBeNull()
   })
 
-  it('renvoie un membre sans bureau attitré à l’accueil depuis /presence', async () => {
-    mockPortal(user({ has_desk: false, permissions: MEMBER_PERMISSIONS }))
+  it('refuse /presence à un membre sans bureau attitré', async () => {
+    mockPortal(makeAuthUser({ has_desk: false, permissions: MEMBER_PERMISSIONS }))
 
     renderWithProviders(<App />, { route: '/presence', withAuth: true })
 
-    expect(await screen.findByRole('heading', { level: 1, name: /Bonjour Alex/ })).toBeVisible()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Accès refusé' })).toBeVisible()
     expect(screen.queryByRole('heading', { level: 1, name: 'Ma présence' })).toBeNull()
   })
 
   it('laisse un résident avec bureau attitré accéder à sa présence', async () => {
-    mockPortal(user({ has_desk: true, permissions: MEMBER_PERMISSIONS }))
+    mockPortal(makeAuthUser({ has_desk: true, permissions: MEMBER_PERMISSIONS }))
 
     renderWithProviders(<App />, { route: '/presence', withAuth: true })
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Ma présence' })).toBeVisible()
   })
 
-  it('renvoie un external à l’accueil depuis l’annuaire', async () => {
-    mockPortal(
-      user({
-        permissions: ['view-own-bookings', 'view-bookings-calendar', 'create-paid-booking'],
-      }),
-    )
+  it('refuse l’annuaire à un external', async () => {
+    mockPortal(makeAuthUser({ permissions: EXTERNAL_PERMISSIONS }))
 
     renderWithProviders(<App />, { route: '/directory', withAuth: true })
 
-    expect(await screen.findByRole('heading', { level: 1, name: /Bonjour Alex/ })).toBeVisible()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Accès refusé' })).toBeVisible()
   })
 })

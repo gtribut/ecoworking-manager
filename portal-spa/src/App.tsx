@@ -52,22 +52,10 @@ export function App() {
             </RequireAccess>
           }
         />
-        <Route
-          path="announcements"
-          element={
-            <RequireAccess permission="register-event">
-              <AnnouncementsPage />
-            </RequireAccess>
-          }
-        />
-        <Route
-          path="announcements/:id"
-          element={
-            <RequireAccess permission="register-event">
-              <AnnouncementDetailPage />
-            </RequireAccess>
-          }
-        />
+        {/* Actualités : aucune permission de module (cf. Layout) — l'inscription
+            à un événement est gardée dans RsvpButton. */}
+        <Route path="announcements" element={<AnnouncementsPage />} />
+        <Route path="announcements/:id" element={<AnnouncementDetailPage />} />
         <Route path="tickets" element={<TicketsPage />} />
         <Route
           path="presence"

@@ -4,38 +4,15 @@ import { HttpResponse, http } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import type { AuthUser } from '@/features/auth/types'
 import { server } from '@/test/server'
-import { renderWithProviders } from '@/test/utils'
+import { MEMBER_PERMISSIONS, makeAuthUser, renderWithProviders } from '@/test/utils'
 import { PresencePage } from './PresencePage'
 
+/** Résident doté d'un bureau attitré : seul profil autorisé sur cette page. */
 function resident(): AuthUser {
-  return {
-    id: 1,
-    first_name: 'Alex',
-    last_name: 'Martin',
-    email: 'alex@ex.fr',
-    theme: null,
-    has_desk: true,
-    two_factor_enabled: false,
-    roles: [],
-    permissions: ['create-own-booking'],
-  }
+  return makeAuthUser({ has_desk: true, permissions: MEMBER_PERMISSIONS })
 }
 
 describe('PresencePage', () => {
-  it('refuse l’accès aux non-résidents avec un message explicatif', async () => {
-    server.use(
-      http.get('/api/user', () =>
-        HttpResponse.json({ ...resident(), has_desk: false, permissions: ['create-paid-booking'] }),
-      ),
-    )
-
-    renderWithProviders(<PresencePage />, { withAuth: true })
-
-    expect(
-      await screen.findByText(/réservée aux résidents disposant d’un bureau attitré/i),
-    ).toBeInTheDocument()
-  })
-
   it('liste les absences existantes', async () => {
     server.use(
       http.get('/api/user', () => HttpResponse.json(resident())),

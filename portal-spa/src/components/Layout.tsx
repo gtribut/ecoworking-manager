@@ -23,14 +23,8 @@ interface NavEntry {
 
 export function Layout() {
   const { user, logout } = useAuth()
-  const {
-    isResident,
-    isExternal,
-    canViewDirectory,
-    canViewBilling,
-    canViewBookings,
-    canViewAnnouncements,
-  } = usePermissions()
+  const { isResident, isExternal, canViewDirectory, canViewBilling, canViewBookings } =
+    usePermissions()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
@@ -51,8 +45,10 @@ export function Layout() {
     { to: '/', label: 'Accueil', end: true },
     // Calendrier des salles : jamais pour un contact facturation pur.
     ...(canViewBookings ? [{ to: '/bookings', label: 'Réservations' }] : []),
-    // Actualités & événements : idem (permission `register-event`).
-    ...(canViewAnnouncements ? [{ to: '/announcements', label: 'Actualités' }] : []),
+    // Actualités : lisibles par tous les rôles, y compris un contact facturation
+    // pur (il fait partie des audiences) — seule l'INSCRIPTION à un événement
+    // demande `register-event`, côté RsvpButton.
+    { to: '/announcements', label: 'Actualités' },
     ...(isExternal ? [{ to: '/tickets', label: 'Tickets' }] : []),
     // Présence/absences : seulement avec un bureau attitré (pas les `additional`).
     ...(isResident ? [{ to: '/presence', label: 'Présence' }] : []),

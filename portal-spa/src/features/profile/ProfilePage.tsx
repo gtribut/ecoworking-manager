@@ -179,12 +179,9 @@ export function ProfilePage() {
               <Textarea
                 id="bio"
                 rows={4}
-                aria-invalid={Boolean(form.formState.errors.bio)}
+                error={form.formState.errors.bio?.message}
                 {...form.register('bio')}
               />
-              {form.formState.errors.bio && (
-                <p className="mt-1 text-sm text-red-600">{form.formState.errors.bio.message}</p>
-              )}
             </div>
             <div>
               <Label htmlFor="interests">Centres d’intérêt</Label>
@@ -197,14 +194,9 @@ export function ProfilePage() {
                   id="linkedin_url"
                   type="url"
                   placeholder="https://…"
-                  aria-invalid={Boolean(form.formState.errors.linkedin_url)}
+                  error={form.formState.errors.linkedin_url?.message}
                   {...form.register('linkedin_url')}
                 />
-                {form.formState.errors.linkedin_url && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {form.formState.errors.linkedin_url.message}
-                  </p>
-                )}
               </div>
               <div>
                 <Label htmlFor="website_url">Site web</Label>
@@ -212,14 +204,9 @@ export function ProfilePage() {
                   id="website_url"
                   type="url"
                   placeholder="https://…"
-                  aria-invalid={Boolean(form.formState.errors.website_url)}
+                  error={form.formState.errors.website_url?.message}
                   {...form.register('website_url')}
                 />
-                {form.formState.errors.website_url && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {form.formState.errors.website_url.message}
-                  </p>
-                )}
               </div>
             </div>
             <div>

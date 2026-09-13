@@ -24,6 +24,18 @@ use Illuminate\Queue\SerializesModels;
  *
  * Chaque notification concrète déclare `$emailable` (doublage email ou non) et
  * implémente `toDatabase()` ; `toMail()` n'est requis que si `$emailable`.
+ *
+ * Types émis (PRD §3.8.4) : facture émise / en retard et document interne à
+ * valider (critiques → email), annonce publiée, réservation et absence
+ * touchées par le back-office (in-app seul).
+ *
+ * Une notification qui porte un modèle SUPPRIMABLE (réservation annulée,
+ * absence retirée) doit figer son contenu à la construction plutôt que
+ * s'appuyer sur `SerializesModels` : la ligne peut avoir disparu quand le
+ * worker traite la queue (cf. BookingChangedNotification).
+ *
+ * Rétention : l'historique de la table `notifications` est purgé au-delà de
+ * `config('notifications.retention_days')` (commande `notifications:purge`).
  */
 abstract class PortalNotification extends Notification implements ShouldQueue
 {

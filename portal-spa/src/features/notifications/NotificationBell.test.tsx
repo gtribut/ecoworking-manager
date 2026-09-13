@@ -114,6 +114,44 @@ describe('NotificationBell', () => {
     expect(screen.getByRole('region', { name: 'Notifications' })).toBeInTheDocument()
   })
 
+  it('conserve le focus sur la ligne après un marquage lu (review — bouton démonté, focus perdu sur <body>)', async () => {
+    const user = userEvent.setup()
+    // Handler à état : le marquage lu doit se refléter au refetch, sinon le
+    // bouton « Marquer comme lu » resterait actif indéfiniment dans ce test.
+    let isRead = false
+    server.use(
+      http.get('/api/notifications', () => {
+        const payload = response({ unread_count: isRead ? 0 : 1 })
+        const [first] = payload.data
+        if (first) first.is_read = isRead
+        return HttpResponse.json(payload)
+      }),
+      http.post('/api/notifications/:id/read', () => {
+        isRead = true
+        return HttpResponse.json({ message: 'ok' })
+      }),
+    )
+
+    renderWithProviders(<NotificationBell />)
+
+    await user.click(await screen.findByRole('button', { name: /1 non lue/i }))
+    const markAsReadButton = screen.getByRole('button', { name: 'Marquer comme lu' })
+    await user.click(markAsReadButton)
+
+    // Le bouton se désactive (au lieu de disparaître) et le focus reste dans
+    // le panneau — sur la ligne, jamais sur <body>.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Notification déjà lue' })).toBeDisabled(),
+    )
+    expect(document.activeElement).not.toBe(document.body)
+    expect(screen.getByRole('region', { name: 'Notifications' })).toContainElement(
+      document.activeElement as HTMLElement,
+    )
+
+    // Confirmation annoncée par la région live.
+    expect(await screen.findByText(/marquée comme lue/i)).toBeInTheDocument()
+  })
+
   it('affiche une erreur de chargement avec un bouton Réessayer', async () => {
     const user = userEvent.setup()
     let calls = 0

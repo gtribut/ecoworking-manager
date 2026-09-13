@@ -31,6 +31,11 @@ export function NotificationBell() {
   const items = data?.pages.flatMap((page) => page.data) ?? []
   const unread = data?.pages[0]?.meta.unread_count ?? 0
 
+  // Confirmation annoncée par une région live (review) : le bouton « Marquer
+  // comme lu » de l'item concerné se désactive juste après, et déplacer le
+  // focus suffit rarement à faire annoncer l'action par un lecteur d'écran.
+  const [liveMessage, setLiveMessage] = useState('')
+
   useEffect(() => {
     if (open) panelRef.current?.focus()
   }, [open])
@@ -65,9 +70,23 @@ export function NotificationBell() {
     if (item.data.url) navigate(item.data.url)
   }
 
-  /** Marquer lu manuellement (PRD §3.8.4, lot G) : sans naviguer, panneau ouvert. */
-  const handleMarkAsRead = (item: NotificationItem) => {
-    markAsRead.mutate(item.id)
+  /**
+   * Marquer lu manuellement (PRD §3.8.4, lot G) : sans naviguer, panneau
+   * ouvert. Le bouton passe ensuite `disabled` (review — il ne disparaît
+   * plus du DOM) : on déplace nous-mêmes le focus sur la ligne AVANT ce
+   * changement d'état, sans quoi désactiver l'élément focalisé le fait
+   * retomber sur `<body>` (comportement natif des boutons désactivés).
+   */
+  const handleMarkAsRead = (item: NotificationItem, row: HTMLLIElement | null) => {
+    markAsRead.mutate(item.id, {
+      onSuccess: () => {
+        row?.focus()
+        setLiveMessage(`Notification marquée comme lue : ${item.data.message}`)
+      },
+      onError: (error) => {
+        toast.error(getApiErrorMessage(error))
+      },
+    })
   }
 
   return (
@@ -137,7 +156,7 @@ export function NotificationBell() {
           {!isError && items.length > 0 && (
             <ul className="max-h-96 divide-y divide-neutral-100 overflow-y-auto dark:divide-neutral-800">
               {items.map((item) => (
-                <li key={item.id} className="flex items-stretch">
+                <li key={item.id} tabIndex={-1} className="flex items-stretch focus:outline-none">
                   <button
                     type="button"
                     onClick={() => handleSelect(item)}
@@ -168,21 +187,33 @@ export function NotificationBell() {
                   </button>
                   {/* Marquer lu manuellement, sans naviguer (PRD §3.8.4) : bouton
                       dédié, à côté (pas dans) le bouton principal — jamais de
-                      bouton imbriqué dans un bouton. */}
-                  {!item.is_read && (
-                    <button
-                      type="button"
-                      onClick={() => handleMarkAsRead(item)}
-                      aria-label="Marquer comme lu"
-                      className="flex shrink-0 items-center px-3 text-neutral-400 hover:bg-neutral-50 hover:text-brand-700 dark:hover:bg-neutral-800 dark:hover:text-brand-300"
-                    >
-                      <Check className="size-4" aria-hidden="true" />
-                    </button>
-                  )}
+                      bouton imbriqué dans un bouton. Toujours monté (review) :
+                      un démontage au passage à `is_read` ferait retomber le
+                      focus sur <body> ; il se désactive à la place. */}
+                  <button
+                    type="button"
+                    onClick={(event) => handleMarkAsRead(item, event.currentTarget.closest('li'))}
+                    disabled={item.is_read}
+                    aria-label={item.is_read ? 'Notification déjà lue' : 'Marquer comme lu'}
+                    className={cn(
+                      'flex shrink-0 items-center px-3',
+                      item.is_read
+                        ? 'text-neutral-300 dark:text-neutral-700'
+                        : 'text-neutral-400 hover:bg-neutral-50 hover:text-brand-700 dark:hover:bg-neutral-800 dark:hover:text-brand-300',
+                    )}
+                  >
+                    <Check className="size-4" aria-hidden="true" />
+                  </button>
                 </li>
               ))}
             </ul>
           )}
+
+          {/* Confirmation « marqué comme lu » (review) : le déplacement du
+              focus ne suffit pas toujours à faire annoncer l'action. */}
+          <div aria-live="polite" className="sr-only">
+            {liveMessage}
+          </div>
 
           {hasNextPage && (
             <div className="border-t border-neutral-100 px-4 py-2 text-center dark:border-neutral-800">

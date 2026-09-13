@@ -96,7 +96,16 @@ final class PresenceController extends Controller
     /** Modification bornée au début de l'absence (DeskAbsencePolicy::update). */
     public function update(UpdateAbsenceRequest $request, DeskAbsence $absence, PresenceService $presence): JsonResponse
     {
-        $updated = $presence->updateAbsence($absence, $this->absenceAttributes($request->validated()));
+        $attributes = $this->absenceAttributes($request->validated());
+
+        // Une note interne saisie par l'accueil n'est PAS renvoyée au membre
+        // (cf. DeskAbsenceResource) : il ne peut donc pas l'écraser en
+        // renvoyant le formulaire, sans quoi elle disparaîtrait en silence.
+        if ($absence->created_by !== $absence->user_id) {
+            $attributes['notes'] = $absence->notes;
+        }
+
+        $updated = $presence->updateAbsence($absence, $attributes);
 
         $this->markEditability(new Collection([$updated]));
 
@@ -131,9 +140,11 @@ final class PresenceController extends Controller
     }
 
     /**
-     * Renseigne `can_edit` / `can_delete` en DEUX requêtes pour toute la page :
+     * Renseigne `can_edit` / `can_delete` en UNE requête pour toute la page :
      * « l'absence a-t-elle commencé ? » se compare CÔTÉ SQL sur les colonnes
-     * DATE (une ligne fraîchement écrite est relue décalée du fuseau).
+     * DATE (une ligne fraîchement écrite est relue décalée du fuseau). Les deux
+     * fenêtres sont identiques (jour de début inclus, cf. DeskAbsencePolicy),
+     * mais restent deux drapeaux distincts dans le contrat d'API.
      *
      * @param  Collection<int, DeskAbsence>  $absences
      */
@@ -143,13 +154,16 @@ final class PresenceController extends Controller
             return;
         }
 
-        $keys = $absences->modelKeys();
-        $editableIds = DeskAbsence::query()->whereKey($keys)->startsLater()->pluck('id')->all();
-        $deletableIds = DeskAbsence::query()->whereKey($keys)->notStartedBefore()->pluck('id')->all();
+        $openIds = DeskAbsence::query()
+            ->whereKey($absences->modelKeys())
+            ->notStartedBefore()
+            ->pluck('id')
+            ->all();
 
         foreach ($absences as $absence) {
-            $absence->canEdit = in_array($absence->id, $editableIds, true);
-            $absence->canDelete = in_array($absence->id, $deletableIds, true);
+            $open = in_array($absence->id, $openIds, true);
+            $absence->canEdit = $open;
+            $absence->canDelete = $open;
         }
     }
 }

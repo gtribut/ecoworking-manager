@@ -68,6 +68,11 @@ class DeskAbsence extends Model
      * une ligne fraîche : piège fuseau du dépôt). Trois cas : plage/récurrence
      * bornée non terminée, jour unique à venir, récurrence hebdo sans fin.
      *
+     * Chaque clause est NULL-SAFE (`whereNotNull` explicite) : sans cela une
+     * ligne à `date_end` NULL rendrait la disjonction NULL, et sa NÉGATION
+     * (`whereNot(upcoming)`, filtre « Terminées » du back-office) resterait
+     * NULL → la ligne disparaîtrait des DEUX filtres.
+     *
      * @param  Builder<DeskAbsence>  $query
      */
     public function scopeUpcoming(Builder $query): void
@@ -75,7 +80,9 @@ class DeskAbsence extends Model
         $today = today()->toDateString();
 
         $query->where(function (Builder $scoped) use ($today): void {
-            $scoped->where('date_end', '>=', $today)
+            $scoped->where(fn (Builder $bounded) => $bounded
+                ->whereNotNull('date_end')
+                ->where('date_end', '>=', $today))
                 ->orWhere(fn (Builder $single) => $single
                     ->whereNull('date_end')
                     ->where('date_start', '>=', $today))
@@ -86,18 +93,10 @@ class DeskAbsence extends Model
     }
 
     /**
-     * Absence pas encore commencée (modifiable par son auteur).
-     *
-     * @param  Builder<DeskAbsence>  $query
-     */
-    public function scopeStartsLater(Builder $query): void
-    {
-        $query->where('date_start', '>', today()->toDateString());
-    }
-
-    /**
-     * Absence dont le jour de début n'est pas dépassé (supprimable par son
-     * auteur « jusqu'au début », jour de début inclus).
+     * Absence dont le jour de début n'est pas dépassé : fenêtre d'action du
+     * membre (PRD §3.4.6, « possible jusqu'au début »), jour de début inclus —
+     * même borne pour la modification et la suppression, sans quoi supprimer
+     * puis re-déclarer contournerait la borne d'édition.
      *
      * @param  Builder<DeskAbsence>  $query
      */

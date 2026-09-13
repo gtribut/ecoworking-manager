@@ -11,6 +11,12 @@ use Illuminate\Foundation\Http\FormRequest;
  * Modification d'une absence depuis le portail (PRD §3.4.6). Mêmes règles que
  * la déclaration : la fenêtre d'édition (propriétaire + absence pas encore
  * commencée) est portée par `DeskAbsencePolicy::update`, comparée côté SQL.
+ *
+ * Sémantique assumée : REMPLACEMENT COMPLET, pas une fusion partielle. Un
+ * champ omis retombe à sa valeur par défaut (note vidée, récurrence remise à
+ * `none`, fin effacée) — le portail renvoie toujours le formulaire entier.
+ * Volontairement pas de règles `sometimes` : une mise à jour partielle
+ * silencieuse serait plus piégeuse qu'un remplacement explicite.
  */
 final class UpdateAbsenceRequest extends FormRequest
 {

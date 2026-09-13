@@ -37,9 +37,11 @@ final class DeskAbsencePolicy
     }
 
     /**
-     * Modification possible « jusqu'au début de l'absence » (PRD §3.4.6) :
-     * strictement avant le jour de début. Une absence en cours ou passée n'est
-     * plus modifiable côté portail — l'admin, lui, corrige depuis le back-office
+     * Modification possible « jusqu'au début de l'absence » (PRD §3.4.6), jour
+     * de début INCLUS — même borne que la suppression : une borne d'édition
+     * plus stricte se contournerait par suppression + re-déclaration (la
+     * création accepte `today`). Une absence commencée la veille ou avant n'est
+     * plus touchable côté portail : l'admin corrige depuis le back-office
      * (tracé par l'audit log).
      */
     public function update(User $user, DeskAbsence $absence): bool
@@ -48,13 +50,10 @@ final class DeskAbsencePolicy
             return true;
         }
 
-        return $user->id === $absence->user_id && $this->startsLater($absence);
+        return $user->id === $absence->user_id && $this->notStartedBefore($absence);
     }
 
-    /**
-     * Suppression possible jusqu'au jour de début INCLUS (le membre peut encore
-     * annuler son absence le matin même). Au-delà : refus côté portail.
-     */
+    /** Même fenêtre que la modification (jusqu'au jour de début inclus). */
     public function delete(User $user, DeskAbsence $absence): bool
     {
         if ($this->managesForOthers($user)) {
@@ -71,14 +70,9 @@ final class DeskAbsencePolicy
     }
 
     /**
-     * Comparaisons de dates CÔTÉ SQL (colonnes DATE) : une ligne fraîchement
+     * Comparaison de dates CÔTÉ SQL (colonnes DATE) : une ligne fraîchement
      * écrite est relue décalée du fuseau, `isPast()` en PHP mentirait.
      */
-    private function startsLater(DeskAbsence $absence): bool
-    {
-        return DeskAbsence::query()->whereKey($absence->getKey())->startsLater()->exists();
-    }
-
     private function notStartedBefore(DeskAbsence $absence): bool
     {
         return DeskAbsence::query()->whereKey($absence->getKey())->notStartedBefore()->exists();

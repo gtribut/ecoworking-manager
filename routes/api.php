@@ -63,6 +63,9 @@ $register = function (): void {
         Route::delete('/desk-occupations/{deskOccupation}', [DeskController::class, 'destroy'])->name('api.desk-occupations.destroy');
         Route::get('/presence', [PresenceController::class, 'index'])->name('api.presence.index');
         Route::post('/absences', [PresenceController::class, 'store'])->name('api.absences.store');
+        // PATCH = REMPLACEMENT COMPLET de l'absence (le portail renvoie
+        // toujours le formulaire entier ; un champ omis retombe à sa valeur par
+        // défaut, cf. UpdateAbsenceRequest).
         Route::patch('/absences/{absence}', [PresenceController::class, 'update'])->whereNumber('absence')->name('api.absences.update');
         Route::delete('/absences/{absence}', [PresenceController::class, 'destroy'])->whereNumber('absence')->name('api.absences.destroy');
 

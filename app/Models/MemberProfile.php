@@ -28,6 +28,18 @@ class MemberProfile extends Model
     use Auditable, HasFactory;
 
     /**
+     * Défauts EXPLICITES pour les booléens audités : sans eux, une création
+     * sans valeur laisse l'attribut absent du modèle, et la première écriture
+     * est journalisée `null → false` (faux positif documenté du trait Auditable).
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'show_in_directory' => false,
+        'newsletter_opt_in' => false,
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

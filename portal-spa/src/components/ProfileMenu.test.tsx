@@ -11,6 +11,16 @@ function mockUser(overrides: Parameters<typeof makeAuthUser>[0] = {}) {
 }
 
 describe('ProfileMenu', () => {
+  it('porte un nom accessible avec le nom du membre (review — bouton sans texte visible < 640px)', async () => {
+    mockUser()
+
+    renderWithProviders(<ProfileMenu />, { withAuth: true })
+
+    expect(
+      await screen.findByRole('button', { name: 'Menu profil de Alex Martin' }),
+    ).toBeInTheDocument()
+  })
+
   it('ouvre le menu au clic et affiche les entrées attendues', async () => {
     const user = userEvent.setup()
     mockUser()
@@ -78,6 +88,48 @@ describe('ProfileMenu', () => {
 
     expect(document.documentElement.classList.contains('dark')).toBe(true)
     await waitFor(() => expect(patchedTheme).toBe('dark'))
+  })
+
+  it('ferme le menu sur Tab en rendant le focus au déclencheur (review — focus perdu sur <body>)', async () => {
+    const user = userEvent.setup()
+    mockUser()
+
+    renderWithProviders(<ProfileMenu />, { withAuth: true })
+
+    const trigger = await screen.findByRole('button', { name: /Alex Martin/ })
+    await user.click(trigger)
+    expect(screen.getByRole('menuitem', { name: /Mon profil/ })).toHaveFocus()
+
+    await user.keyboard('{Tab}')
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+    expect(document.activeElement).not.toBe(document.body)
+  })
+
+  it('annule le changement de thème si le serveur refuse (review — pas de rollback ni de message)', async () => {
+    const user = userEvent.setup()
+    mockUser()
+    server.use(http.patch('/api/profile', () => new HttpResponse(null, { status: 500 })))
+    document.documentElement.classList.remove('dark')
+
+    renderWithProviders(<ProfileMenu />, { withAuth: true })
+
+    await user.click(await screen.findByRole('button', { name: /Alex Martin/ }))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Sombre' }))
+
+    // Appliqué en optimiste puis annulé (classe ET état du menu) dès que le
+    // serveur répond en erreur (résolution MSW quasi immédiate ici : on
+    // n'observe que l'état final, pas l'intermédiaire).
+    // `makeAuthUser()` a `theme: null` (Système) : c'est la valeur de repli.
+    await waitFor(() => expect(document.documentElement.classList.contains('dark')).toBe(false))
+    await waitFor(() =>
+      expect(screen.getByRole('menuitemradio', { name: 'Système' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      ),
+    )
+    expect(await screen.findByText(/Impossible d’enregistrer le thème/)).toBeInTheDocument()
   })
 
   it('se déconnecte depuis le menu', async () => {

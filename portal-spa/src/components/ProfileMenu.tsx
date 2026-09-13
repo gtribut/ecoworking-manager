@@ -1,8 +1,10 @@
 import { LogOut, Monitor, Moon, Sun, User } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
+import { toast } from 'sonner'
 import { useAuth } from '@/features/auth/useAuth'
-import { useUpdateProfile } from '@/features/profile/useProfile'
+import { useUpdateTheme } from '@/features/profile/useProfile'
+import { getApiErrorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 
 type Theme = 'light' | 'dark' | null
@@ -36,7 +38,7 @@ function initials(firstName: string, lastName: string): string {
  */
 export function ProfileMenu() {
   const { user, logout } = useAuth()
-  const updateProfile = useUpdateProfile()
+  const updateTheme = useUpdateTheme()
 
   const [open, setOpen] = useState(false)
   const [optimisticTheme, setOptimisticTheme] = useState<Theme>(user?.theme ?? null)
@@ -106,8 +108,14 @@ export function ProfileMenu() {
         close()
         break
       case 'Tab':
-        // Un menu déroulant ne doit pas garder le focus au Tab (WAI-ARIA APG).
-        setOpen(false)
+        // Sans preventDefault, le Tab natif calcule le prochain élément
+        // focusable AVANT que React ne démonte le menu (fermé par
+        // `setOpen(false)`) : l'élément de référence disparaît pendant le
+        // calcul et le focus retombe sur <body>, silencieusement (review).
+        // On ferme nous-mêmes (focus rendu au bouton déclencheur) et on
+        // laisse un Tab *suivant* repartir de là.
+        event.preventDefault()
+        close()
         break
       default:
         break
@@ -115,9 +123,18 @@ export function ProfileMenu() {
   }
 
   function selectTheme(theme: Theme) {
+    const previous = optimisticTheme
     applyThemeClass(theme)
     setOptimisticTheme(theme)
-    updateProfile.mutate({ theme })
+    updateTheme.mutate(theme, {
+      onError: (error) => {
+        // Pas de rollback → l'UI reste en thème sombre alors que le serveur
+        // est resté en clair, sans qu'aucun message ne le signale (review).
+        applyThemeClass(previous)
+        setOptimisticTheme(previous)
+        toast.error(getApiErrorMessage(error, 'Impossible d’enregistrer le thème.'))
+      },
+    })
   }
 
   if (!user) return null
@@ -135,6 +152,10 @@ export function ProfileMenu() {
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
+        // Sous 640 px le nom est masqué (`hidden sm:inline`) et les initiales
+        // sont `aria-hidden` : sans ceci, le bouton n'a plus de nom accessible
+        // en mobile (review).
+        aria-label={`Menu profil de ${user.first_name} ${user.last_name}`}
         onClick={() => setOpen((value) => !value)}
         className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
       >

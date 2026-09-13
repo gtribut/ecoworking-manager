@@ -67,9 +67,17 @@ export function ProfilePage() {
   })
 
   const { reset } = form
+  // Lu ici (pas seulement dans l'effet) : c'est cet accès, pendant le rendu,
+  // qui abonne react-hook-form à `isDirty` (proxy de `formState`).
+  const { isDirty } = form.formState
 
   useEffect(() => {
     if (!data) return
+    // Défense en profondeur (review) : le thème change désormais par une
+    // mutation dédiée qui ne touche plus ce cache (cf. useUpdateTheme), mais
+    // toute autre invalidation de `profileQueryKey` ne doit jamais écraser
+    // une saisie en cours (bio, etc.) pendant que l'utilisateur édite.
+    if (isDirty) return
     reset({
       theme: data.user.theme ?? '',
       job_title: data.profile?.job_title ?? '',
@@ -83,7 +91,7 @@ export function ProfilePage() {
       notify_email: data.user.notify_email,
       notify_in_app: data.user.notify_in_app,
     })
-  }, [data, reset])
+  }, [data, reset, isDirty])
 
   if (isLoading) {
     return <Spinner label="Chargement du profil…" />

@@ -10,31 +10,35 @@
 > Chaque item décrit le **résultat attendu** ; si l'écran fait autre chose, c'est une anomalie
 > (ou un écart PRD à trancher — le signaler comme tel).
 >
-> Démarrée le : ______ · Terminée le : ______ · Testeur : Guillaume
+> Démarrée le : 13/09/2026 · Terminée le : ______ · Testeur : Guillaume
 
 ---
 
 ## 0. Préparation de l'environnement
 
-- [ ] Docker Desktop lancé, intégration WSL2 active (`docker ps` répond dans WSL)
-- [ ] `sail up -d` → conteneurs `laravel.test`, `pgsql`, `mailpit` up
-- [ ] Suites vertes avant de commencer (référence) :
+- [x] Docker Desktop lancé, intégration WSL2 active (`docker ps` répond dans WSL)
+- [x] `sail up -d` → conteneurs `laravel.test`, `pgsql`, `mailpit` up
+- [x] Suites vertes avant de commencer (référence) :
   ```bash
   sail test
   sail pint --test
   cd portal-spa && ./node_modules/.bin/biome check . && ./node_modules/.bin/vitest run
   ```
-- [ ] `.env` local synchronisé (cf. `todo_guillaume.md` §Synchronisation) : `APP_TIMEZONE=Europe/Paris`, variables Redis retirées
-- [ ] `SEED_ADMIN_PASSWORD` renseigné dans `.env` (sinon le mot de passe admin est affiché une seule fois au seed)
-- [ ] **Base de démo chargée** (efface la base de dev) :
+- [x] `.env` local synchronisé (cf. `todo_guillaume.md` §Synchronisation) : `APP_TIMEZONE=Europe/Paris`, variables Redis retirées
+- [x] `SEED_ADMIN_PASSWORD` renseigné dans `.env` (sinon le mot de passe admin est affiché une seule fois au seed)
+- [x] **Base de démo chargée** (efface la base de dev) :
   ```bash
   sail artisan migrate:fresh --seed --seeder=DemoSeeder
   ```
   Attendu : tableau des comptes en fin de run, aucune erreur. PDF factures et notifications générés immédiatement (queue forcée en `sync` par le seeder). Les emails d'émission partent dans Mailpit.
-- [ ] `/etc/hosts` Windows : `127.0.0.1 admin.ecoworking.test` et `127.0.0.1 portail.ecoworking.test` (BRIEF §14)
-- [ ] Portail servi, au choix :
-  - **mode prod-like** (recommandé pour la recette) : `cd portal-spa && pnpm build` puis http://portail.ecoworking.test
-  - **mode dev** (HMR) : `cd portal-spa && pnpm dev` puis http://portail.ecoworking.test:5173
+- [x] `/etc/hosts` Windows : `127.0.0.1 admin.ecoworking.test` et `127.0.0.1 portail.ecoworking.test` (BRIEF §14)
+- [ ] Portail servi, au choix (⚠️ toujours via `./node_modules/.bin/*` : `pnpm <script>` échoue sur le dep-check `msw`) :
+  - **mode prod-like** (recommandé pour la recette) :
+    ```bash
+    cd portal-spa && ./node_modules/.bin/tsc -b && ./node_modules/.bin/vite build
+    ```
+    puis http://portail.ecoworking.test (à relancer après chaque modification SPA)
+  - **mode dev** (HMR) : `cd portal-spa && ./node_modules/.bin/vite` puis http://portail.ecoworking.test:5173
 - [ ] Back-office : http://admin.ecoworking.test
 - [ ] Mailpit : http://localhost:8025 (vider la boîte avant de commencer)
 - [ ] Worker de queue **non requis** pour la démo ; pour tester les jobs « comme en prod » (§7) : `sail artisan queue:work --stop-when-empty`
@@ -47,19 +51,19 @@
 
 Mot de passe commun : **`demo-password`** (sauf admin).
 
-| Email | Rôle(s) | Ce que le compte permet de tester |
-|---|---|---|
-| `admin@ecoworking.fr` | admin | Back-office complet. Mot de passe = `SEED_ADMIN_PASSWORD`. 2FA TOTP obligatoire au 1er login |
-| `claire.fontaine@atelier-lumiere.demo` | resident + billing_contact | Bureau 1 · factures Atelier Lumière (payées, remise 10 %, avoir) · docs admin (contrat + domiciliation) · charte v2 **à revalider** · inscrite à l'apéro |
-| `marc.delorme@atelier-lumiere.demo` | resident | Bureau 2 · **opt-out annuaire** · docs à jour · pas d'accès factures |
-| `ines.rahmani@atelier-lumiere.demo` | resident | Bureau 3 · absences : **tous les vendredis** (3 mois) + **congés semaine prochaine** |
-| `julien.petit@atelier-lumiere.demo` | additional | Sans bureau · sans factures · résa salle gratuite possible |
-| `sophie.verger@studio-verger.demo` | resident + billing_contact | Bureau 30 (étage 2) · factures Studio Verger : M-1 **en retard**, M-2 **en retard avec acompte 50 %** · absence demi-journée saisie par l'admin |
-| `karim.haddad@studio-verger.demo` | resident (profil en pause) | Bureau 31 · abonnement en **pause** |
-| `thomas.bernard@demo.fr` | external + billing_contact | Particulier · **6 tickets bureau + 1 ticket salle** dispo (4 + 1 utilisés) · résa salle et bureau nomade à venir · facture tickets **partiellement payée** (acompte CB 100 €) |
-| `lea.moreau@nova-conseil.demo` | external | **Aucun ticket** → tous les états vides / messages « contactez-nous » |
-| `camille.roux@ecoworking.fr` | staff | Bureau 29 attitré staff · « Équipe Ecoworking » dans l'annuaire |
-| `paul.ancien@studio-verger.demo` | (anonymisé) | Connexion **impossible** · factures passées Studio Verger conservées · entrée audit `anonymized` |
+| Email                                  | Rôle(s)                    | Ce que le compte permet de tester                                                                                                                                             |
+| -------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `admin@ecoworking.fr`                  | admin                      | Back-office complet. Mot de passe = `SEED_ADMIN_PASSWORD`. 2FA TOTP obligatoire au 1er login                                                                                  |
+| `claire.fontaine@atelier-lumiere.demo` | resident + billing_contact | Bureau 1 · factures Atelier Lumière (payées, remise 10 %, avoir) · docs admin (contrat + domiciliation) · charte v2 **à revalider** · inscrite à l'apéro                      |
+| `marc.delorme@atelier-lumiere.demo`    | resident                   | Bureau 2 · **opt-out annuaire** · docs à jour · pas d'accès factures                                                                                                          |
+| `ines.rahmani@atelier-lumiere.demo`    | resident                   | Bureau 3 · absences : **tous les vendredis** (3 mois) + **congés semaine prochaine**                                                                                          |
+| `julien.petit@atelier-lumiere.demo`    | additional                 | Sans bureau · sans factures · résa salle gratuite possible                                                                                                                    |
+| `sophie.verger@studio-verger.demo`     | resident + billing_contact | Bureau 30 (étage 2) · factures Studio Verger : M-1 **en retard**, M-2 **en retard avec acompte 50 %** · absence demi-journée saisie par l'admin                               |
+| `karim.haddad@studio-verger.demo`      | resident (profil en pause) | Bureau 31 · abonnement en **pause**                                                                                                                                           |
+| `thomas.bernard@demo.fr`               | external + billing_contact | Particulier · **6 tickets bureau + 1 ticket salle** dispo (4 + 1 utilisés) · résa salle et bureau nomade à venir · facture tickets **partiellement payée** (acompte CB 100 €) |
+| `lea.moreau@nova-conseil.demo`         | external                   | **Aucun ticket** → tous les états vides / messages « contactez-nous »                                                                                                         |
+| `camille.roux@ecoworking.fr`           | staff                      | Bureau 29 attitré staff · « Équipe Ecoworking » dans l'annuaire                                                                                                               |
+| `paul.ancien@studio-verger.demo`       | (anonymisé)                | Connexion **impossible** · factures passées Studio Verger conservées · entrée audit `anonymized`                                                                              |
 
 Données de cadre : catalogue 8 offres (prix PRD), 49 bureaux (29 + 20), 3 salles de réunion (71 € HT la demi-journée external), 1 salle événementielle (admin only). Factures récurrentes émises sur M-3, M-2, M-1 ; brouillons du mois courant non émis.
 
@@ -436,16 +440,16 @@ Compte : `admin@ecoworking.fr`.
 
 ## 6. Emails (Mailpit) — récapitulatif attendu
 
-| Déclencheur | Destinataire(s) | Attendu |
-|---|---|---|
-| Émission facture (§4.10) | contacts facturation de l'entité (Claire / Sophie / Thomas) | sujet + numéro + PDF joint ou lien, pas de mail à Marc |
-| Seed de démo | Claire, Sophie, Thomas | mails « facture émise » (M-3, M-2, M-1, tickets) + « en retard » (Sophie ×2) déjà présents dans Mailpit après le seed |
-| Facture en retard (`invoices:update-overdue`) | idem | 1 seul mail par facture (`overdue_notified_at`) même si la commande est relancée |
-| Magic link | le membre | lien signé, expiration 15 min mentionnée |
-| Mot de passe oublié | le membre | lien reset 1 h |
-| Reset par l'admin | le membre | lien reset |
-| Absence déclarée | **aucun mail** (in-app admin uniquement, Q25) | — |
-| Annonce publiée | **aucun mail** (in-app) | — |
+| Déclencheur                                   | Destinataire(s)                                             | Attendu                                                                                                               |
+| --------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Émission facture (§4.10)                      | contacts facturation de l'entité (Claire / Sophie / Thomas) | sujet + numéro + PDF joint ou lien, pas de mail à Marc                                                                |
+| Seed de démo                                  | Claire, Sophie, Thomas                                      | mails « facture émise » (M-3, M-2, M-1, tickets) + « en retard » (Sophie ×2) déjà présents dans Mailpit après le seed |
+| Facture en retard (`invoices:update-overdue`) | idem                                                        | 1 seul mail par facture (`overdue_notified_at`) même si la commande est relancée                                      |
+| Magic link                                    | le membre                                                   | lien signé, expiration 15 min mentionnée                                                                              |
+| Mot de passe oublié                           | le membre                                                   | lien reset 1 h                                                                                                        |
+| Reset par l'admin                             | le membre                                                   | lien reset                                                                                                            |
+| Absence déclarée                              | **aucun mail** (in-app admin uniquement, Q25)               | —                                                                                                                     |
+| Annonce publiée                               | **aucun mail** (in-app)                                     | —                                                                                                                     |
 
 - [ ] Tous les mails : FR, expéditeur `MAIL_FROM_ADDRESS`, aucune donnée d'un autre membre, liens pointant vers `portail.ecoworking.test`
 - [ ] Préférence `notify_email` désactivée → aucun mail pour cet événement, in-app conservé
@@ -485,10 +489,10 @@ sail artisan queue:work --stop-when-empty               # vider la queue databas
 
 ## 9. Journal des anomalies
 
-| ID | Écran / § | Compte | Constaté | Attendu (PRD) | Gravité | Statut |
-|---|---|---|---|---|---|---|
-| R-01 | | | | | 🔴 bloquant / 🟠 majeur / 🟡 mineur / 💡 UX | à corriger |
-| R-02 | | | | | | |
+| ID   | Écran / § | Compte | Constaté | Attendu (PRD) | Gravité                                 | Statut     |
+| ---- | --------- | ------ | -------- | ------------- | --------------------------------------- | ---------- |
+| R-01 |           |        |          |               | 🔴 bloquant / 🟠 majeur / 🟡 mineur / 💡 UX | à corriger |
+| R-02 |           |        |          |               |                                         |            |
 
 Gravité : 🔴 = donnée d'autrui visible, argent faux, perte de données · 🟠 = parcours impossible · 🟡 = gênant mais contournable · 💡 = amélioration / écart PRD à trancher.
 

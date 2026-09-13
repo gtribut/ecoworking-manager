@@ -118,7 +118,9 @@ it('expose l’occupant d’une résa d’un autre membre (prénom, nom, entité
     $other = User::factory()->resident()->create([
         'first_name' => 'Hugo', 'last_name' => 'Discret', 'email' => 'hugo.prive@example.test',
     ]);
-    MemberProfile::factory()->for($other)->create(['company_id' => $company->id]);
+    // `inDirectory()` explicite : la factory tire `show_in_directory` au hasard
+    // et l'opt-out masquerait le nom (cf. test dédié plus bas).
+    MemberProfile::factory()->for($other)->inDirectory()->create(['company_id' => $company->id]);
     $room = Resource::factory()->meetingRoom()->create();
     $day = calendarDay();
 
@@ -137,6 +139,7 @@ it('expose l’occupant d’une résa d’un autre membre (prénom, nom, entité
         ->and($slot['booking_id'])->toBeNull() // pas la résa du membre : aucun id exploitable
         ->and($slot['label'])->toBe('Comité produit')
         ->and($slot['occupant'])->toBe([
+            'kind' => 'member',
             'first_name' => 'Hugo',
             'last_name' => 'Discret',
             'company_name' => 'Atelier Numérique',
@@ -165,6 +168,7 @@ it('affiche l’entité comme occupant d’une résa sans membre (résa admin)',
         ->json('rooms.0.slots.0');
 
     expect($slot['occupant'])->toBe([
+        'kind' => 'entity',
         'first_name' => null,
         'last_name' => null,
         'company_name' => 'Cabinet Rhône',
@@ -209,4 +213,108 @@ it('interdit le calendrier au contact facturation pur (403) et aux anonymes (401
     $this->actingAs($billingOnly)
         ->getJson("/api/rooms/availability?from={$day->toDateString()}&to={$day->toDateString()}")
         ->assertForbidden();
+});
+
+it('masque occupant et libellé à un external (aucune information d’identité, Q16)', function () {
+    // L'external voit le calendrier pour choisir un créneau libre, mais jamais
+    // l'identité des coworkers (PRD §3.5.9 — il n'a pas non plus l'annuaire).
+    $external = User::factory()->external()->create();
+    $company = Company::factory()->create(['legal_name' => 'Atelier Numérique']);
+    $other = User::factory()->resident()->create(['first_name' => 'Hugo', 'last_name' => 'Discret']);
+    MemberProfile::factory()->for($other)->inDirectory()->create(['company_id' => $company->id]);
+    $room = Resource::factory()->meetingRoom()->create();
+    $day = calendarDay();
+
+    Booking::factory()->create([
+        'user_id' => $other->id, 'resource_id' => $room->id, 'title' => 'Comité produit',
+        'starts_at' => $day->setTime(9, 0), 'ends_at' => $day->setTime(10, 0),
+    ]);
+
+    $response = $this->actingAs($external)
+        ->getJson("/api/rooms/availability?from={$day->toDateString()}&to={$day->toDateString()}")
+        ->assertOk();
+
+    $slot = $response->json('rooms.0.slots.0');
+    expect($slot['occupant'])->toBeNull()
+        ->and($slot['label'])->toBeNull()
+        ->and($slot['is_mine'])->toBeFalse();
+
+    $response->assertDontSee('Hugo')->assertDontSee('Atelier Numérique');
+});
+
+it('laisse l’external identifier ses PROPRES réservations', function () {
+    $external = User::factory()->external()->create();
+    $room = Resource::factory()->meetingRoom()->create();
+    $day = calendarDay();
+    $mine = Booking::factory()->create([
+        'user_id' => $external->id, 'resource_id' => $room->id, 'title' => 'Mon point client',
+        'starts_at' => $day->setTime(9, 0), 'ends_at' => $day->setTime(13, 0),
+    ]);
+
+    $slot = $this->actingAs($external)
+        ->getJson("/api/rooms/availability?from={$day->toDateString()}&to={$day->toDateString()}")
+        ->assertOk()
+        ->json('rooms.0.slots.0');
+
+    expect($slot['is_mine'])->toBeTrue()
+        ->and($slot['booking_id'])->toBe($mine->id)
+        ->and($slot['label'])->toBe('Mon point client');
+});
+
+it('respecte l’opt-out annuaire : entité conservée, nom masqué', function () {
+    $viewer = User::factory()->resident()->create();
+    $company = Company::factory()->create(['legal_name' => 'Atelier Numérique']);
+    $discreet = User::factory()->resident()->create([
+        'first_name' => 'Hugo', 'last_name' => 'Discret',
+    ]);
+    MemberProfile::factory()->for($discreet)->create([
+        'company_id' => $company->id,
+        'show_in_directory' => false,
+    ]);
+    $room = Resource::factory()->meetingRoom()->create();
+    $day = calendarDay();
+
+    Booking::factory()->create([
+        'user_id' => $discreet->id, 'resource_id' => $room->id, 'title' => 'Comité produit',
+        'starts_at' => $day->setTime(9, 0), 'ends_at' => $day->setTime(10, 0),
+    ]);
+
+    $response = $this->actingAs($viewer)
+        ->getJson("/api/rooms/availability?from={$day->toDateString()}&to={$day->toDateString()}")
+        ->assertOk();
+
+    expect($response->json('rooms.0.slots.0.occupant'))->toBe([
+        'kind' => 'member',
+        'first_name' => null,
+        'last_name' => null,
+        'company_name' => 'Atelier Numérique',
+    ]);
+
+    $response->assertDontSee('Discret');
+});
+
+it('marque modifiables ses seules réservations à venir (comparaison SQL)', function () {
+    $viewer = User::factory()->resident()->create();
+    $room = Resource::factory()->meetingRoom()->create();
+    $other = Resource::factory()->meetingRoom()->create();
+    $day = CarbonImmutable::today();
+
+    // En cours : commencée il y a 30 min — `isFuture()` en PHP la croirait à venir.
+    Booking::factory()->create([
+        'user_id' => $viewer->id, 'resource_id' => $room->id,
+        'starts_at' => now()->subMinutes(30), 'ends_at' => now()->addMinutes(30),
+    ]);
+    Booking::factory()->create([
+        'user_id' => $viewer->id, 'resource_id' => $other->id,
+        'starts_at' => now()->addDay()->setTime(10, 0), 'ends_at' => now()->addDay()->setTime(11, 0),
+    ]);
+
+    $rooms = collect($this->actingAs($viewer)
+        ->getJson("/api/rooms/availability?from={$day->toDateString()}&to={$day->addDay()->toDateString()}")
+        ->assertOk()
+        ->json('rooms'));
+
+    expect($rooms->firstWhere('id', $room->id)['slots'][0]['cancellable'])->toBeFalse()
+        ->and($rooms->firstWhere('id', $room->id)['slots'][0]['is_mine'])->toBeTrue()
+        ->and($rooms->firstWhere('id', $other->id)['slots'][0]['cancellable'])->toBeTrue();
 });

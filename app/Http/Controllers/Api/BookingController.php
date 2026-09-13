@@ -6,13 +6,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\BookingStatus;
 use App\Enums\Period;
-use App\Enums\ResourceType;
 use App\Enums\TicketType;
 use App\Exceptions\DomainActionException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreBookingRequest;
 use App\Http\Requests\Api\UpdateBookingRequest;
 use App\Http\Resources\BookingResource;
+use App\Http\Resources\RoomResource;
 use App\Models\Booking;
 use App\Models\Resource;
 use App\Models\Ticket;
@@ -80,7 +80,7 @@ final class BookingController extends Controller
         $user = $request->user();
         $room = Resource::query()->findOrFail($request->integer('resource_id'));
 
-        if (! $this->isMemberBookable($room)) {
+        if (! RoomResource::isBookableByMember($room)) {
             throw new DomainActionException("Cette salle n'est pas réservable.");
         }
 
@@ -110,7 +110,9 @@ final class BookingController extends Controller
         // Salle événementielle : lecture seule côté portail (PRD §3.5.4) — ni
         // comme salle d'origine, ni comme destination.
         abort_unless(
-            $this->isMemberBookable($room) && $this->isMemberBookable($booking->resource),
+            RoomResource::isBookableByMember($room)
+                && $booking->resource !== null
+                && RoomResource::isBookableByMember($booking->resource),
             403,
             'Cette salle n’est pas réservable depuis le portail : contactez Ecoworking.',
         );
@@ -185,6 +187,9 @@ final class BookingController extends Controller
      * Déplacement d'une demi-journée external. Si la demi-journée change, le
      * ticket consommé est restitué puis un ticket disponible re-consommé dans
      * la MÊME transaction (solde inchangé ; 422 si aucun ticket disponible).
+     *
+     * Une résa posée gratuitement par l'admin (`ticket_id` null) reste gratuite :
+     * la déplacer ne débite aucun ticket — déplacer n'est pas acheter.
      */
     private function updateExternal(
         UpdateBookingRequest $request,
@@ -215,11 +220,10 @@ final class BookingController extends Controller
 
         return DB::transaction(function () use ($booking, $room, $bounds, $title, $sameSlot, $user, $bookings, $tickets): Booking {
             $ticket = $booking->loadMissing('ticket')->ticket;
+            $wasPaid = $ticket instanceof Ticket;
 
-            if (! $sameSlot) {
-                if ($ticket instanceof Ticket) {
-                    $tickets->restitute($ticket);
-                }
+            if (! $sameSlot && $wasPaid) {
+                $tickets->restitute($ticket);
                 $ticket = $tickets->lockFirstAvailable($user, TicketType::MeetingRoomHalfDay);
             }
 
@@ -231,21 +235,12 @@ final class BookingController extends Controller
                 'ticket_id' => $ticket?->id,
             ]);
 
-            if (! $sameSlot && $ticket instanceof Ticket) {
+            if (! $sameSlot && $wasPaid && $ticket instanceof Ticket) {
                 $tickets->consume($ticket, $updated);
             }
 
             return $updated;
         });
-    }
-
-    /** Salle réservable par un membre : salle de réunion active et en service. */
-    private function isMemberBookable(?Resource $room): bool
-    {
-        return $room !== null
-            && $room->type === ResourceType::MeetingRoom
-            && $room->is_active
-            && ! $room->is_out_of_service;
     }
 
     private function respondWith(Booking $booking, int $status): JsonResponse

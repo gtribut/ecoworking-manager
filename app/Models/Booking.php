@@ -68,7 +68,7 @@ class Booking extends Model
      */
     protected function auditLogAttributes(): array
     {
-        return ['status', 'resource_id', 'starts_at', 'ends_at', 'price_ht', 'cancelled_at', 'cancel_reason'];
+        return ['status', 'resource_id', 'starts_at', 'ends_at', 'price_ht', 'ticket_id', 'cancelled_at', 'cancel_reason'];
     }
 
     /** @return BelongsTo<User, $this> */

@@ -199,11 +199,13 @@ it('restitue puis re-consomme un ticket quand l\'external change de demi-journé
         ->and(Ticket::whereKey($booking->ticket_id)->value('status'))->toBe(TicketStatus::Used);
 });
 
-it('refuse 422 le changement de demi-journée d\'un external sans ticket disponible', function () {
-    // Résa créée par l'admin sans ticket : le déplacement en exige un.
+it('déplace sans débiter de ticket une résa external posée gratuitement par l\'admin', function () {
+    // Déplacer n'est pas acheter : une résa offerte (`ticket_id` null) le reste,
+    // même si le membre possède des tickets par ailleurs.
     $user = User::factory()->external()->create();
     $room = Resource::factory()->meetingRoom()->create();
     $day = updateNextWorkingDay();
+    Ticket::factory()->for($user)->create(['type' => TicketType::MeetingRoomHalfDay->value]);
     $booking = Booking::factory()->create([
         'user_id' => $user->id,
         'resource_id' => $room->id,
@@ -216,9 +218,70 @@ it('refuse 422 le changement de demi-journée d\'un external sans ticket disponi
         'resource_id' => $room->id,
         'date' => $day->toDateString(),
         'period' => 'afternoon',
+    ])->assertOk()
+        ->assertJsonPath('data.is_paid', false);
+
+    $booking->refresh();
+    expect($booking->starts_at->format('H:i'))->toBe('14:00')
+        ->and($booking->ticket_id)->toBeNull()
+        ->and(Ticket::where('user_id', $user->id)->where('status', TicketStatus::Available->value)->count())->toBe(1);
+});
+
+it('refuse 422 le changement de demi-journée d\'un external dont le ticket a été repris', function () {
+    // Le ticket consommé a été annulé/restitué par l'admin entre-temps : plus
+    // aucun ticket disponible pour couvrir la nouvelle demi-journée.
+    $user = User::factory()->external()->create();
+    $room = Resource::factory()->meetingRoom()->create();
+    $day = updateNextWorkingDay();
+    $ticket = Ticket::factory()->for($user)->create(['type' => TicketType::MeetingRoomHalfDay->value]);
+
+    $this->actingAs($user)->postJson('/api/bookings', [
+        'resource_id' => $room->id,
+        'date' => $day->toDateString(),
+        'period' => 'morning',
+    ])->assertCreated();
+
+    $booking = Booking::where('user_id', $user->id)->firstOrFail();
+    $ticket->update(['status' => TicketStatus::Cancelled->value]);
+
+    $this->actingAs($user)->patchJson("/api/bookings/{$booking->id}", [
+        'resource_id' => $room->id,
+        'date' => $day->toDateString(),
+        'period' => 'afternoon',
     ])->assertStatus(422);
 
     expect($booking->fresh()->starts_at->format('H:i'))->toBe('09:00');
+});
+
+it('refuse de réserver ou de déplacer vers une salle exigeant un admin (403/422)', function () {
+    // `requires_admin` doit peser à l'écriture comme dans le catalogue
+    // (`RoomResource::isBookableByMember`), sinon le portail accepte une salle
+    // qu'il affiche pourtant comme non réservable.
+    $owner = User::factory()->resident()->create();
+    $room = Resource::factory()->meetingRoom()->create();
+    $adminOnly = Resource::factory()->meetingRoom()->create(['requires_admin' => true]);
+    $day = updateNextWorkingDay();
+
+    $this->actingAs($owner)->postJson('/api/bookings', [
+        'resource_id' => $adminOnly->id,
+        'starts_at' => $day->setTime(10, 0)->toIso8601String(),
+        'ends_at' => $day->setTime(11, 0)->toIso8601String(),
+    ])->assertStatus(422);
+
+    $booking = Booking::factory()->create([
+        'user_id' => $owner->id,
+        'resource_id' => $room->id,
+        'starts_at' => $day->setTime(10, 0),
+        'ends_at' => $day->setTime(11, 0),
+    ]);
+
+    $this->actingAs($owner)->patchJson("/api/bookings/{$booking->id}", [
+        'resource_id' => $adminOnly->id,
+        'starts_at' => $day->setTime(14, 0)->toIso8601String(),
+        'ends_at' => $day->setTime(15, 0)->toIso8601String(),
+    ])->assertForbidden();
+
+    expect(Booking::where('resource_id', $adminOnly->id)->count())->toBe(0);
 });
 
 it('refuse une demi-journée external un jour non ouvré (422)', function () {

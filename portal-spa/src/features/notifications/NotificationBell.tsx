@@ -1,7 +1,9 @@
 import { Bell, Check } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
+import { getApiErrorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 import type { NotificationItem } from './types'
 import { useMarkAllAsRead, useMarkAsRead, useNotifications } from './useNotifications'
@@ -101,7 +103,13 @@ export function NotificationBell() {
             {unread > 0 && (
               <button
                 type="button"
-                onClick={() => markAllAsRead.mutate()}
+                onClick={() =>
+                  markAllAsRead.mutate(undefined, {
+                    onSuccess: () =>
+                      toast.success('Toutes les notifications ont été marquées comme lues.'),
+                    onError: (error) => toast.error(getApiErrorMessage(error)),
+                  })
+                }
                 className="text-xs text-brand-700 hover:underline dark:text-brand-50"
               >
                 Tout marquer comme lu

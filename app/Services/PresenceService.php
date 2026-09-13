@@ -65,6 +65,39 @@ final class PresenceService
     }
 
     /**
+     * Modifie une absence existante (PRD §3.4.6). Le bureau et le déclarant ne
+     * changent jamais : seule la fenêtre, la période, la récurrence et la note
+     * sont éditables. L'autorisation (propriétaire + absence non commencée)
+     * appartient à `DeskAbsencePolicy::update`.
+     *
+     * @param  array{
+     *     date_start: CarbonInterface,
+     *     date_end?: ?CarbonInterface,
+     *     period?: Period,
+     *     recurrence_type?: DeskAbsenceRecurrence,
+     *     recurrence_day_of_week?: ?int,
+     *     notes?: ?string,
+     * }  $data
+     */
+    public function updateAbsence(DeskAbsence $absence, array $data): DeskAbsence
+    {
+        $recurrence = $data['recurrence_type'] ?? DeskAbsenceRecurrence::None;
+
+        $absence->update([
+            'date_start' => $data['date_start']->format('Y-m-d'),
+            'date_end' => isset($data['date_end']) ? $data['date_end']->format('Y-m-d') : null,
+            'period' => ($data['period'] ?? Period::FullDay)->value,
+            'recurrence_type' => $recurrence->value,
+            'recurrence_day_of_week' => $recurrence === DeskAbsenceRecurrence::Weekly
+                ? ($data['recurrence_day_of_week'] ?? null)
+                : null,
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        return $absence->refresh();
+    }
+
+    /**
      * Le membre est-il présent (bureau attitré, jour ouvré, hors absence) sur
      * cette date / demi-journée ?
      */

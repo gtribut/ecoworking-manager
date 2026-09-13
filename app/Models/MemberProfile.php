@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\MemberProfileStatus;
+use App\Models\Concerns\Auditable;
 use Database\Factories\MemberProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +25,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class MemberProfile extends Model
 {
     /** @use HasFactory<MemberProfileFactory> */
-    use HasFactory;
+    use Auditable, HasFactory;
+
+    /**
+     * Défauts EXPLICITES pour les booléens audités : sans eux, une création
+     * sans valeur laisse l'attribut absent du modèle, et la première écriture
+     * est journalisée `null → false` (faux positif documenté du trait Auditable).
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'show_in_directory' => false,
+        'newsletter_opt_in' => false,
+    ];
 
     /**
      * @return array<string, string>
@@ -39,6 +52,18 @@ class MemberProfile extends Model
             'show_in_directory' => 'boolean',
             'newsletter_opt_in' => 'boolean',
         ];
+    }
+
+    /**
+     * Champs sensibles tracés (PRD §3.4.5 : opt-in newsletter, visibilité
+     * annuaire) + rattachements structurants (bureau attitré, entité). Jamais
+     * la bio, la photo ni les notes admin (contenu libre, sans enjeu d'audit).
+     *
+     * @return list<string>
+     */
+    protected function auditLogAttributes(): array
+    {
+        return ['show_in_directory', 'newsletter_opt_in', 'desk_id', 'company_id'];
     }
 
     /** @return BelongsTo<User, $this> */

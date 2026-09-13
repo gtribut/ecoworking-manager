@@ -6,7 +6,9 @@ namespace App\Providers;
 
 use App\Models\Booking;
 use App\Models\Company;
+use App\Models\DeskAbsence;
 use App\Models\Invoice;
+use App\Models\MemberProfile;
 use App\Models\Payment;
 use App\Models\Purchase;
 use App\Models\Subscription;
@@ -56,6 +58,8 @@ class AppServiceProvider extends ServiceProvider
             'booking' => Booking::class,
             'invoice' => Invoice::class,
             'payment' => Payment::class,
+            'desk_absence' => DeskAbsence::class,
+            'member_profile' => MemberProfile::class,
         ]);
 
         // Audit log (C12.8b, PRD §4.14) : le modèle Activity vit chez Spatie,

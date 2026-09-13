@@ -8,16 +8,24 @@ use App\Models\DeskAbsence;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Déclaration d'absence d'un résident sur son bureau attitré (PRD §3.4.6) :
- * jour unique, plage, ou récurrence hebdomadaire BORNÉE (début + fin + jour),
- * la fin restant facultative (récurrence sans terme tolérée). Auto-scopé au
- * membre (le bureau est déduit de son profil, jamais fourni par le client).
+ * Modification d'une absence depuis le portail (PRD §3.4.6). Mêmes règles que
+ * la déclaration : la fenêtre d'édition (propriétaire + absence pas encore
+ * commencée) est portée par `DeskAbsencePolicy::update`, comparée côté SQL.
+ *
+ * Sémantique assumée : REMPLACEMENT COMPLET, pas une fusion partielle. Un
+ * champ omis retombe à sa valeur par défaut (note vidée, récurrence remise à
+ * `none`, fin effacée) — le portail renvoie toujours le formulaire entier.
+ * Volontairement pas de règles `sometimes` : une mise à jour partielle
+ * silencieuse serait plus piégeuse qu'un remplacement explicite.
  */
-final class StoreAbsenceRequest extends FormRequest
+final class UpdateAbsenceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', DeskAbsence::class) === true;
+        $absence = $this->route('absence');
+
+        return $absence instanceof DeskAbsence
+            && $this->user()?->can('update', $absence) === true;
     }
 
     /**

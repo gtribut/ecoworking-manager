@@ -1,54 +1,19 @@
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
+import { useRef, useState } from 'react'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { ConfirmButton } from '@/components/ui/ConfirmButton'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
-import type { Absence, AbsencePeriod, CreateAbsenceInput, RecurrenceType } from './types'
-import { useCreateAbsence, useDeleteAbsence, usePresence } from './usePresence'
+import { AbsenceForm, WEEKDAYS } from './AbsenceForm'
+import type { Absence, AbsencePeriod, CreateAbsenceInput } from './types'
+import { useCreateAbsence, useDeleteAbsence, usePresence, useUpdateAbsence } from './usePresence'
 
 const PERIOD_LABELS: Record<AbsencePeriod, string> = {
   morning: 'Matin',
   afternoon: 'Après-midi',
   full_day: 'Journée complète',
 }
-
-/** Libellés indexés par la valeur back (0 = dimanche … 6 = samedi). */
-const WEEKDAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
-
-/** Ordre d'affichage français (lundi d'abord) — les valeurs 0-6 restent celles du back. */
-const WEEKDAY_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
-
-const schema = z
-  .object({
-    date_start: z.string().min(1, 'La date de début est requise.'),
-    date_end: z.string().optional(),
-    period: z.enum(['morning', 'afternoon', 'full_day']),
-    recurrence_type: z.enum(['none', 'weekly']),
-    recurrence_day_of_week: z.string().optional(),
-  })
-  .refine(
-    (values) =>
-      values.recurrence_type !== 'weekly' ||
-      (values.recurrence_day_of_week !== undefined && values.recurrence_day_of_week !== ''),
-    {
-      message: 'Choisissez un jour de la semaine pour une absence récurrente.',
-      path: ['recurrence_day_of_week'],
-    },
-  )
-  .refine(
-    (values) => !values.date_end || values.date_end === '' || values.date_end >= values.date_start,
-    { message: 'La date de fin doit suivre la date de début.', path: ['date_end'] },
-  )
-
-type FormValues = z.infer<typeof schema>
 
 /** Fenêtre par défaut : du début du mois courant à 3 mois plus tard. */
 function defaultRange(): { from: string; to: string } {
@@ -66,6 +31,19 @@ function formatDate(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString('fr-FR')
 }
 
+/** Résumé lisible d'une absence, réutilisé par les libellés d'action. */
+function absenceSummary(absence: Absence): string {
+  if (absence.recurrence_type === 'weekly' && absence.recurrence_day_of_week !== null) {
+    const day = WEEKDAYS[absence.recurrence_day_of_week]?.toLowerCase() ?? 'semaine'
+    const until = absence.date_end === null ? '' : ` jusqu’au ${formatDate(absence.date_end)}`
+    return `chaque ${day}${until}`
+  }
+  if (absence.date_end !== null && absence.date_end !== absence.date_start) {
+    return `du ${formatDate(absence.date_start)} au ${formatDate(absence.date_end)}`
+  }
+  return `du ${formatDate(absence.date_start)}`
+}
+
 /**
  * Module réservé au membre doté d'un bureau attitré : la garde est portée par
  * la route (<RequireAccess requiresDesk>), pas par la page.
@@ -78,63 +56,76 @@ export function PresencePage() {
 
 function PresenceContent() {
   const [range] = useState(defaultRange)
-  const { data, isLoading, isError } = usePresence(range.from, range.to)
+  const [showHistory, setShowHistory] = useState(false)
+  const { data, isLoading, isError } = usePresence(range.from, range.to, showHistory)
   const createAbsence = useCreateAbsence()
+  const updateAbsence = useUpdateAbsence()
   const deleteAbsence = useDeleteAbsence()
+  // `null` = formulaire fermé ; `{ absence: null }` = déclaration ; sinon édition.
+  const [editing, setEditing] = useState<{ absence: Absence | null } | null>(null)
   const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(
     null,
   )
+  // Élément ayant ouvert le formulaire (« Marquer une absence » ou le bouton
+  // « Modifier » d'une ligne) : le focus lui revient à la fermeture, plutôt
+  // qu'au seul bouton de déclaration (RGAA, retour de contexte).
+  const openerRef = useRef<HTMLElement | null>(null)
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      date_start: '',
-      date_end: '',
-      period: 'full_day',
-      recurrence_type: 'none',
-      recurrence_day_of_week: '',
-    },
-  })
-
-  const recurrenceType = form.watch('recurrence_type') as RecurrenceType
-
-  const onSubmit = form.handleSubmit(async (values) => {
+  function openForm(absence: Absence | null, opener: HTMLElement | null) {
     setFeedback(null)
-    const payload: CreateAbsenceInput = {
-      date_start: values.date_start,
-      period: values.period,
-      recurrence_type: values.recurrence_type,
-    }
-    if (values.recurrence_type === 'weekly') {
-      payload.recurrence_day_of_week = Number(values.recurrence_day_of_week)
-    } else if (values.date_end && values.date_end !== '') {
-      payload.date_end = values.date_end
-    }
+    openerRef.current = opener
+    setEditing({ absence })
+  }
 
+  function closeForm() {
+    setEditing(null)
+    openerRef.current?.focus()
+  }
+
+  async function onSubmit(payload: CreateAbsenceInput) {
+    setFeedback(null)
+    const target = editing?.absence ?? null
     try {
-      await createAbsence.mutateAsync(payload)
-      setFeedback({ type: 'success', message: 'Absence enregistrée.' })
-      form.reset()
+      if (target === null) {
+        await createAbsence.mutateAsync(payload)
+        setFeedback({ type: 'success', message: 'Absence enregistrée.' })
+      } else {
+        await updateAbsence.mutateAsync({ id: target.id, input: payload })
+        setFeedback({ type: 'success', message: 'Absence modifiée.' })
+      }
+      closeForm()
     } catch (error) {
       setFeedback({
         type: 'error',
         message: getApiErrorMessage(error, 'Enregistrement impossible.'),
       })
+      throw error // le formulaire route les erreurs 422 vers ses champs
     }
-  })
+  }
 
   async function onDelete(absence: Absence) {
     setFeedback(null)
     try {
       await deleteAbsence.mutateAsync(absence.id)
+      setFeedback({ type: 'success', message: 'Absence supprimée.' })
     } catch (error) {
       setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Suppression impossible.') })
     }
   }
 
+  const desk = data?.desk ?? null
+
   return (
     <div className="mx-auto max-w-3xl space-y-10">
-      <h1 className="text-2xl font-semibold">Ma présence</h1>
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Ma présence</h1>
+        {desk !== null && (
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">
+            Votre bureau attitré : <strong className="font-medium">{desk.name}</strong>
+            {desk.floor !== null && <> — étage {desk.floor}</>}
+          </p>
+        )}
+      </div>
 
       {feedback && (
         <Alert variant={feedback.type === 'success' ? 'success' : 'error'}>
@@ -144,122 +135,75 @@ function PresenceContent() {
 
       <section aria-labelledby="absence-form-heading" className="space-y-4">
         <h2 id="absence-form-heading" className="text-lg font-medium">
-          Déclarer une absence
+          {editing?.absence ? 'Modifier une absence' : 'Déclarer une absence'}
         </h2>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           Signalez vos jours d’absence pour libérer votre bureau aux membres nomades.
         </p>
 
-        <form onSubmit={onSubmit} className="space-y-4" noValidate>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="date_start">Date de début</Label>
-              <Input
-                id="date_start"
-                type="date"
-                aria-invalid={Boolean(form.formState.errors.date_start)}
-                {...form.register('date_start')}
-              />
-              {form.formState.errors.date_start && (
-                <p className="mt-1 text-sm text-red-600">
-                  {form.formState.errors.date_start.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="date_end">Date de fin (optionnel)</Label>
-              <Input
-                id="date_end"
-                type="date"
-                disabled={recurrenceType === 'weekly'}
-                aria-invalid={Boolean(form.formState.errors.date_end)}
-                {...form.register('date_end')}
-              />
-              {form.formState.errors.date_end && (
-                <p className="mt-1 text-sm text-red-600">
-                  {form.formState.errors.date_end.message}
-                </p>
-              )}
-            </div>
+        <Button
+          // `aria-expanded` ne décrit QUE le formulaire de déclaration : en
+          // modification, ce bouton rouvre une déclaration vierge.
+          aria-expanded={editing !== null && editing.absence === null}
+          aria-controls="absence-form"
+          onClick={(event) => {
+            if (editing !== null && editing.absence === null) {
+              closeForm()
+              return
+            }
+            openForm(null, event.currentTarget)
+          }}
+        >
+          Marquer une absence
+        </Button>
+
+        {editing !== null && (
+          <div id="absence-form">
+            <AbsenceForm
+              absence={editing.absence}
+              submitting={createAbsence.isPending || updateAbsence.isPending}
+              onSubmit={onSubmit}
+              onCancel={() => closeForm()}
+            />
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="period">Période</Label>
-              <Select id="period" {...form.register('period')}>
-                <option value="full_day">Journée complète</option>
-                <option value="morning">Matin</option>
-                <option value="afternoon">Après-midi</option>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="recurrence_type">Récurrence</Label>
-              <Select id="recurrence_type" {...form.register('recurrence_type')}>
-                <option value="none">Ponctuelle</option>
-                <option value="weekly">Hebdomadaire</option>
-              </Select>
-            </div>
-          </div>
-
-          {recurrenceType === 'weekly' && (
-            <div>
-              <Label htmlFor="recurrence_day_of_week">Jour de la semaine</Label>
-              <Select
-                id="recurrence_day_of_week"
-                aria-invalid={Boolean(form.formState.errors.recurrence_day_of_week)}
-                {...form.register('recurrence_day_of_week')}
-              >
-                <option value="">Choisir un jour…</option>
-                {WEEKDAY_DISPLAY_ORDER.map((value) => (
-                  <option key={value} value={value}>
-                    {WEEKDAYS[value]}
-                  </option>
-                ))}
-              </Select>
-              {form.formState.errors.recurrence_day_of_week && (
-                <p className="mt-1 text-sm text-red-600">
-                  {form.formState.errors.recurrence_day_of_week.message}
-                </p>
-              )}
-            </div>
-          )}
-
-          <Button type="submit" disabled={form.formState.isSubmitting || createAbsence.isPending}>
-            Enregistrer l’absence
-          </Button>
-        </form>
+        )}
       </section>
 
       <section aria-labelledby="absence-list-heading" className="space-y-4">
-        <h2 id="absence-list-heading" className="text-lg font-medium">
-          Mes absences déclarées
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="absence-list-heading" className="text-lg font-medium">
+            {showHistory ? 'Toutes mes absences' : 'Mes absences à venir'}
+          </h2>
+          <Button
+            variant="secondary"
+            size="sm"
+            aria-pressed={showHistory}
+            onClick={() => setShowHistory(!showHistory)}
+          >
+            {showHistory ? 'Masquer l’historique' : 'Voir l’historique'}
+          </Button>
+        </div>
 
         {isLoading && <Spinner label="Chargement de vos absences…" />}
         {isError && <Alert variant="error">Impossible de charger vos absences.</Alert>}
 
         {data && data.absences.length === 0 && (
-          <Alert variant="info">Aucune absence déclarée.</Alert>
+          <Alert variant="info">
+            {showHistory ? 'Aucune absence déclarée.' : 'Aucune absence à venir.'}
+          </Alert>
         )}
 
         {data && data.absences.length > 0 && (
           <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
             {data.absences.map((absence) => (
-              <li key={absence.id} className="flex items-center justify-between gap-4 px-4 py-3">
+              <li
+                key={absence.id}
+                className="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
+              >
                 <span className="text-sm">
-                  {absence.recurrence_type === 'weekly' &&
-                  absence.recurrence_day_of_week !== null ? (
-                    <span className="block font-medium">
-                      Chaque {WEEKDAYS[absence.recurrence_day_of_week]?.toLowerCase()}
-                    </span>
-                  ) : (
-                    <span className="block font-medium">
-                      {formatDate(absence.date_start)}
-                      {absence.date_end && absence.date_end !== absence.date_start && (
-                        <> → {formatDate(absence.date_end)}</>
-                      )}
-                    </span>
-                  )}
+                  <span className="block font-medium first-letter:uppercase">
+                    {absenceSummary(absence)}
+                  </span>
                   <span className="text-neutral-500 dark:text-neutral-400">
                     {PERIOD_LABELS[absence.period]}
                   </span>
@@ -268,19 +212,42 @@ function PresenceContent() {
                       {absence.notes}
                     </span>
                   )}
+                  {/* Rappel utile uniquement sur la liste « à venir » : dans
+                      l'historique, toutes les lignes passées sont verrouillées. */}
+                  {!absence.can_edit && !showHistory && (
+                    <span className="block text-xs text-neutral-500 dark:text-neutral-400">
+                      {absence.can_delete
+                        ? 'Absence commencée : vous pouvez encore la supprimer aujourd’hui.'
+                        : 'Absence commencée : contactez l’accueil pour la modifier.'}
+                    </span>
+                  )}
                 </span>
-                <ConfirmButton
-                  variant="danger"
-                  size="sm"
-                  disabled={deleteAbsence.isPending}
-                  confirmMessage="Supprimer cette absence ?"
-                  confirmLabel="Oui, supprimer"
-                  cancelLabel="Non"
-                  onConfirm={() => void onDelete(absence)}
-                >
-                  Supprimer
-                  <span className="sr-only"> l’absence du {formatDate(absence.date_start)}</span>
-                </ConfirmButton>
+                <span className="flex flex-wrap items-center gap-2">
+                  {absence.can_edit && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(event) => openForm(absence, event.currentTarget)}
+                    >
+                      Modifier
+                      <span className="sr-only"> l’absence {absenceSummary(absence)}</span>
+                    </Button>
+                  )}
+                  {absence.can_delete && (
+                    <ConfirmButton
+                      variant="danger"
+                      size="sm"
+                      disabled={deleteAbsence.isPending}
+                      confirmMessage="Supprimer cette absence ?"
+                      confirmLabel="Oui, supprimer"
+                      cancelLabel="Non"
+                      onConfirm={() => void onDelete(absence)}
+                    >
+                      Supprimer
+                      <span className="sr-only"> l’absence {absenceSummary(absence)}</span>
+                    </ConfirmButton>
+                  )}
+                </span>
               </li>
             ))}
           </ul>

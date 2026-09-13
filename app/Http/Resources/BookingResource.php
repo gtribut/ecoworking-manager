@@ -24,7 +24,10 @@ final class BookingResource extends JsonResource
         return [
             'id' => $this->id,
             'resource_id' => $this->resource_id,
-            'resource_name' => $this->whenLoaded('resource', fn () => $this->resource->name),
+            // Bug R-07 : `$this->resource` est la propriété interne de JsonResource
+            // (le Booking encapsulé), PAS la relation Eloquent `resource()` du même
+            // nom — d'où le second `->resource` pour atteindre la salle chargée.
+            'resource_name' => $this->whenLoaded('resource', fn () => $this->resource->resource->name),
             'title' => $this->title,
             'starts_at' => $this->starts_at?->toIso8601String(),
             'ends_at' => $this->ends_at?->toIso8601String(),

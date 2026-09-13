@@ -7,6 +7,11 @@ import { useUpcomingBookings } from './useBookings'
 /**
  * Bloc « Mes prochaines réservations » du dashboard (PRD §3.3.2, recette
  * R-05) : 3 résas confirmées à venir max — libellé, salle, date + créneau.
+ *
+ * Le nom de la ressource (salle) est affiché à droite du libellé sur chaque
+ * ligne (recette R-07) — déjà porté par `booking.resource_name`, couvert par
+ * DashboardUpcomingBookings.test.tsx et par le payload `BookingResource`
+ * (`resource_name`, cf. tests/Feature/Api/BookingUpcomingTest.php).
  */
 export function DashboardUpcomingBookings() {
   const { data: bookings, isLoading, isError } = useUpcomingBookings(3)

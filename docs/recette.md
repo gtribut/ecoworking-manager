@@ -5,11 +5,9 @@
 > Complète les suites automatisées (444 Pest, 72 Vitest, 26 e2e) : ici on juge l'**usage réel**
 > (UX, libellés, cohérence des données, emails reçus), pas la couverture de code.
 >
-> **Comment l'utiliser** : cocher `- [x]` au fil de l'eau, noter les anomalies dans le journal
->
-> [x] testé ET validé, [-] testé ET problèmes/non conforme, [ ] pas testé
->
-> (§9) avec un identifiant `R-nn`, puis me dire « corrige R-03 » (ou coller le journal).
+> **Comment l'utiliser** : cocher au fil de l'eau — `[x]` testé ET validé, `[-]` testé ET problème/non conforme, `[ ]` pas testé.
+> Noter les anomalies dans **[`recette_journal-des-anomalies.md`](./recette_journal-des-anomalies.md)** (fichier séparé,
+> éditable à part) avec un identifiant `R-nn`, puis me dire « corrige R-03 ».
 >
 > Chaque item décrit le **résultat attendu** ; si l'écran fait autre chose, c'est une anomalie (ou un écart PRD à trancher — le signaler comme tel).
 >

@@ -109,27 +109,27 @@ it('renvoie les droits d\'édition calculés en SQL (can_edit / can_delete)', fu
     [$user, $desk] = presenceResident();
     $today = CarbonImmutable::today();
 
+    // Commencée hier : la fenêtre d'action du membre est fermée.
+    $started = DeskAbsence::factory()->create([
+        'user_id' => $user->id, 'desk_id' => $desk->id,
+        'date_start' => $today->subDay()->toDateString(),
+        'date_end' => $today->addDays(3)->toDateString(),
+    ]);
+    // Commence aujourd'hui : encore modifiable ET supprimable (jour inclus).
     $startsToday = DeskAbsence::factory()->create([
         'user_id' => $user->id, 'desk_id' => $desk->id,
         'date_start' => $today->toDateString(),
         'date_end' => $today->addDays(3)->toDateString(),
-    ]);
-    $startsTomorrow = DeskAbsence::factory()->create([
-        'user_id' => $user->id, 'desk_id' => $desk->id,
-        'date_start' => $today->addDay()->toDateString(),
-        'date_end' => null,
     ]);
 
     $absences = collect($this->actingAs($user)->getJson('/api/presence?'.presenceRange())
         ->assertOk()
         ->json('absences'))->keyBy('id');
 
-    // Commencée aujourd'hui : ni modifiable ni supprimable… sauf le jour même
-    // pour la suppression (possible « jusqu'au début », jour inclus).
-    expect($absences[$startsToday->id]['can_edit'])->toBeFalse()
-        ->and($absences[$startsToday->id]['can_delete'])->toBeTrue()
-        ->and($absences[$startsTomorrow->id]['can_edit'])->toBeTrue()
-        ->and($absences[$startsTomorrow->id]['can_delete'])->toBeTrue();
+    expect($absences[$started->id]['can_edit'])->toBeFalse()
+        ->and($absences[$started->id]['can_delete'])->toBeFalse()
+        ->and($absences[$startsToday->id]['can_edit'])->toBeTrue()
+        ->and($absences[$startsToday->id]['can_delete'])->toBeTrue();
 });
 
 it('isole les absences : un membre ne voit jamais celles d\'un autre', function () {
@@ -187,6 +187,7 @@ it('modifie sa propre absence non commencée', function () {
         'date_start' => $today->addDays(5)->toDateString(),
         'date_end' => null,
         'period' => Period::FullDay->value,
+        'created_by' => $user->id,
     ]);
 
     $this->actingAs($user)->patchJson("/api/absences/{$absence->id}", [
@@ -211,13 +212,30 @@ it('refuse la modification d\'une absence déjà commencée (403, comparaison SQ
     $today = CarbonImmutable::today();
     $absence = DeskAbsence::factory()->create([
         'user_id' => $user->id, 'desk_id' => $desk->id,
-        'date_start' => $today->toDateString(), // commence aujourd'hui
+        'date_start' => $today->subDay()->toDateString(), // commencée hier
         'date_end' => $today->addDays(3)->toDateString(),
     ]);
 
     $this->actingAs($user)->patchJson("/api/absences/{$absence->id}", [
         'date_start' => $today->addDays(4)->toDateString(),
     ])->assertForbidden();
+});
+
+it('aligne la fenêtre de modification sur celle de suppression (jour de début inclus)', function () {
+    // Sans cet alignement, une absence commençant aujourd'hui serait
+    // supprimable puis re-déclarable : contournement de la borne d'édition.
+    [$user, $desk] = presenceResident();
+    $today = CarbonImmutable::today();
+    $absence = DeskAbsence::factory()->create([
+        'user_id' => $user->id, 'desk_id' => $desk->id,
+        'date_start' => $today->toDateString(),
+        'date_end' => null,
+    ]);
+
+    $this->actingAs($user)->patchJson("/api/absences/{$absence->id}", [
+        'date_start' => $today->addDay()->toDateString(),
+        'period' => 'morning',
+    ])->assertOk();
 });
 
 it('refuse de modifier l\'absence d\'un autre membre (403)', function () {
@@ -274,4 +292,52 @@ it('refuse au membre la suppression d\'une absence passée (403, audit admin uni
     $this->actingAs($user)->deleteJson("/api/absences/{$absence->id}")->assertForbidden();
 
     expect(DeskAbsence::query()->whereKey($absence->id)->exists())->toBeTrue();
+});
+
+// --- Confidentialité de la note ------------------------------------------
+
+it('ne renvoie au membre que la note qu\'il a écrite lui-même', function () {
+    [$user, $desk] = presenceResident();
+    $admin = User::factory()->admin()->create();
+    $today = CarbonImmutable::today();
+
+    $mine = DeskAbsence::factory()->create([
+        'user_id' => $user->id, 'desk_id' => $desk->id,
+        'date_start' => $today->addDays(2)->toDateString(),
+        'notes' => 'Déplacement client',
+        'created_by' => $user->id,
+    ]);
+    $fromAdmin = DeskAbsence::factory()->create([
+        'user_id' => $user->id, 'desk_id' => $desk->id,
+        'date_start' => $today->addDays(4)->toDateString(),
+        'notes' => 'Absence signalée par téléphone — à confirmer',
+        'created_by' => $admin->id,
+    ]);
+
+    $response = $this->actingAs($user)->getJson('/api/presence?'.presenceRange())->assertOk();
+    $absences = collect($response->json('absences'))->keyBy('id');
+
+    expect($absences[$mine->id]['notes'])->toBe('Déplacement client')
+        ->and($absences[$fromAdmin->id]['notes'])->toBeNull();
+
+    $response->assertJsonMissing(['notes' => 'Absence signalée par téléphone — à confirmer']);
+});
+
+it('préserve la note interne de l\'accueil quand le membre modifie l\'absence', function () {
+    // Le membre ne VOIT pas cette note : il ne doit pas pouvoir l'effacer en
+    // renvoyant le formulaire (le champ lui arrive vide).
+    [$user, $desk] = presenceResident();
+    $admin = User::factory()->admin()->create();
+    $absence = DeskAbsence::factory()->create([
+        'user_id' => $user->id, 'desk_id' => $desk->id,
+        'date_start' => CarbonImmutable::today()->addDays(3)->toDateString(),
+        'notes' => 'Signalée par téléphone',
+        'created_by' => $admin->id,
+    ]);
+
+    $this->actingAs($user)->patchJson("/api/absences/{$absence->id}", [
+        'date_start' => CarbonImmutable::today()->addDays(4)->toDateString(),
+    ])->assertOk()->assertJsonPath('data.notes', null);
+
+    expect($absence->fresh()->notes)->toBe('Signalée par téléphone');
 });

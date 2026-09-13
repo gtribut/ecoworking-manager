@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\DeskAbsenceRecurrence;
 use App\Enums\Period;
+use App\Filament\Resources\DeskAbsences\DeskAbsenceResource;
 use App\Filament\Resources\DeskAbsences\Pages\CreateDeskAbsence;
 use App\Filament\Resources\DeskAbsences\Pages\EditDeskAbsence;
 use App\Filament\Resources\DeskAbsences\Pages\ListDeskAbsences;
@@ -12,6 +13,8 @@ use App\Models\MemberProfile;
 use App\Models\Resource;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Database\Seeders\PermissionSeeder;
+use Filament\Actions\DeleteAction;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
@@ -61,6 +64,17 @@ it('filtre par défaut sur les absences à venir ou en cours', function () {
         'date_start' => $today->subMonth()->toDateString(),
         'date_end' => $today->subWeeks(3)->toDateString(),
     ]);
+    // Jour unique passé : `date_end` NULL — la clause doit rester NULL-safe,
+    // sinon cette ligne disparaît des DEUX filtres.
+    $pastSingleDay = DeskAbsence::factory()->create([
+        'date_start' => $today->subDays(2)->toDateString(),
+        'date_end' => null,
+    ]);
+    // Récurrence hebdo BORNÉE et terminée : passée elle aussi.
+    $endedWeekly = DeskAbsence::factory()->weekly()->create([
+        'date_start' => $today->subMonths(3)->toDateString(),
+        'date_end' => $today->subMonth()->toDateString(),
+    ]);
     $upcoming = DeskAbsence::factory()->create([
         'date_start' => $today->addWeek()->toDateString(),
         'date_end' => null,
@@ -68,11 +82,24 @@ it('filtre par défaut sur les absences à venir ou en cours', function () {
 
     Livewire::test(ListDeskAbsences::class)
         ->assertCanSeeTableRecords([$upcoming])
-        ->assertCanNotSeeTableRecords([$past])
-        ->filterTable('past')
-        ->removeTableFilter('upcoming')
-        ->assertCanSeeTableRecords([$past])
-        ->assertCanNotSeeTableRecords([$upcoming]);
+        ->assertCanNotSeeTableRecords([$past, $pastSingleDay, $endedWeekly])
+        ->filterTable('period_status', 'past')
+        ->assertCanSeeTableRecords([$past, $pastSingleDay, $endedWeekly])
+        ->assertCanNotSeeTableRecords([$upcoming])
+        // Option vide du select = « toutes ».
+        ->filterTable('period_status', null)
+        ->assertCanSeeTableRecords([$past, $pastSingleDay, $endedWeekly, $upcoming]);
+});
+
+it('réserve le panneau aux détenteurs de declare-presence-for-others', function () {
+    $this->seed(PermissionSeeder::class);
+    $resident = absenceResident();
+
+    actingAs($resident);
+    expect(DeskAbsenceResource::canAccess())->toBeFalse();
+
+    actingAs(User::factory()->admin()->create());
+    expect(DeskAbsenceResource::canAccess())->toBeTrue();
 });
 
 it('crée une absence pour un membre via le PresenceService, sans notifier les admins', function () {
@@ -121,4 +148,25 @@ it('trace la correction et la suppression admin dans l\'audit log', function () 
 
     expect($absence->fresh()->period)->toBe(Period::Morning)
         ->and(Activity::forSubject($absence)->forEvent('updated')->exists())->toBeTrue();
+});
+
+it('supprime une absence passée depuis le back-office, en la traçant', function () {
+    actingAs(User::factory()->admin()->create());
+    $member = absenceResident();
+    $today = CarbonImmutable::today();
+    // Absence PASSÉE : interdite au membre (403 côté portail), permise à l'admin.
+    $absence = DeskAbsence::factory()->create([
+        'user_id' => $member->id,
+        'desk_id' => $member->memberProfile->desk_id,
+        'date_start' => $today->subWeeks(2)->toDateString(),
+        'date_end' => $today->subWeek()->toDateString(),
+    ]);
+    $id = $absence->id;
+
+    Livewire::test(EditDeskAbsence::class, ['record' => $absence->getRouteKey()])
+        ->callAction(DeleteAction::class);
+
+    expect(DeskAbsence::query()->whereKey($id)->exists())->toBeFalse()
+        ->and(Activity::query()->where('subject_type', 'desk_absence')->where('subject_id', $id)
+            ->where('event', 'deleted')->exists())->toBeTrue();
 });

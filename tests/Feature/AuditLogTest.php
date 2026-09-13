@@ -83,6 +83,32 @@ it('journalise la création, la modification et la suppression d\'une absence', 
         ->where('event', 'deleted')->exists())->toBeTrue();
 });
 
+it('ne journalise pas de faux changement de booléen à la création du profil', function () {
+    // Piège documenté du trait Auditable : sans défaut explicite sur le modèle,
+    // la première écriture serait journalisée `null → false`.
+    $profile = MemberProfile::factory()->create();
+    $profile->update(['job_title' => 'Développeuse']); // hors liste blanche
+
+    expect(Activity::forSubject($profile)->forEvent('updated')->exists())->toBeFalse();
+});
+
+it('journalise l\'opt-out RGPD du profil membre (annuaire, newsletter)', function () {
+    $profile = MemberProfile::factory()->create([
+        'show_in_directory' => true,
+        'newsletter_opt_in' => true,
+    ]);
+
+    $profile->update(['show_in_directory' => false, 'newsletter_opt_in' => false]);
+
+    $activity = Activity::forSubject($profile)->forEvent('updated')->latest('id')->first();
+
+    expect($activity)->not->toBeNull()
+        ->and($activity->attribute_changes['attributes']['show_in_directory'])->toBeFalse()
+        ->and($activity->attribute_changes['old']['show_in_directory'])->toBeTrue()
+        ->and($activity->attribute_changes['attributes']['newsletter_opt_in'])->toBeFalse()
+        ->and($activity->attribute_changes['old']['newsletter_opt_in'])->toBeTrue();
+});
+
 it('journalise les opt-in du profil membre (newsletter, annuaire)', function () {
     $profile = MemberProfile::factory()->create([
         'show_in_directory' => false,

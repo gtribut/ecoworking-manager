@@ -280,3 +280,93 @@ it('n\'offre pas le retrait de photo quand le membre n\'en a pas', function () {
     Livewire::test(EditMemberProfile::class, ['record' => $profile->getRouteKey()])
         ->assertActionHidden('deletePhoto');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Contenus hostiles et photos héritées
+|--------------------------------------------------------------------------
+*/
+
+/** Fichier au contenu arbitraire, portant une extension et un type d'image. */
+function disguisedUpload(string $content, string $name, string $mime): UploadedFile
+{
+    $path = tempnam(sys_get_temp_dir(), 'disguised').'-'.$name;
+    file_put_contents($path, $content);
+
+    return new UploadedFile($path, $name, $mime, null, true);
+}
+
+it('refuse un SVG déguisé en .png (vecteur XSS classique)', function () {
+    $user = memberWithProfile();
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">'
+        .'<script>alert(document.cookie)</script></svg>';
+
+    $this->actingAs($user)
+        ->postJson('/api/profile/photo', ['photo' => disguisedUpload($svg, 'logo.png', 'image/png')])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('photo');
+
+    expect($user->memberProfile->fresh()->photo_path)->toBeNull();
+});
+
+it('refuse du PHP déguisé en .jpg', function () {
+    $user = memberWithProfile();
+
+    $this->actingAs($user)
+        ->postJson('/api/profile/photo', [
+            'photo' => disguisedUpload('<?php system($_GET["c"]); ?>', 'shell.jpg', 'image/jpeg'),
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('photo');
+
+    expect($user->memberProfile->fresh()->photo_path)->toBeNull();
+});
+
+it('refuse un GIF authentique renommé en .jpg (format hors catalogue)', function () {
+    $user = memberWithProfile();
+
+    $canvas = imagecreatetruecolor(200, 200);
+    ob_start();
+    imagegif($canvas);
+    $gif = (string) ob_get_clean();
+    imagedestroy($canvas);
+
+    $this->actingAs($user)
+        ->postJson('/api/profile/photo', ['photo' => disguisedUpload($gif, 'anim.jpg', 'image/jpeg')])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('photo');
+});
+
+it('refuse une image démesurée (bombe de décompression) sans jamais la décoder', function () {
+    $user = memberWithProfile();
+
+    // 7000 × 7000 en PNG uni : quelques kilo-octets sur le disque, ~200 Mo une
+    // fois décodé. `dimensions` lit l'en-tête, la borne tombe avant le décodage.
+    $canvas = imagecreatetruecolor(7000, 7000);
+    ob_start();
+    imagepng($canvas, null, 9);
+    $png = (string) ob_get_clean();
+    imagedestroy($canvas);
+
+    expect(strlen($png))->toBeLessThan(2048 * 1024);
+
+    $this->actingAs($user)
+        ->postJson('/api/profile/photo', ['photo' => disguisedUpload($png, 'bombe.png', 'image/png')])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('photo');
+
+    expect($user->memberProfile->fresh()->photo_path)->toBeNull();
+});
+
+it('n\'annonce aucune URL pour une photo héritée du téléversement admin', function () {
+    // Ancien `photo_path` Filament : chemin de fichier, pas un préfixe — aucune
+    // des trois tailles n'existe, le portail doit afficher les initiales.
+    $user = memberWithProfile(['photo_path' => 'member-photos/jean.jpg', 'show_in_directory' => true]);
+
+    $this->actingAs($user)
+        ->getJson('/api/profile')
+        ->assertOk()
+        ->assertJsonPath('profile.photo', null);
+
+    $this->actingAs($user)->get("/api/users/{$user->id}/photo/200")->assertNotFound();
+});

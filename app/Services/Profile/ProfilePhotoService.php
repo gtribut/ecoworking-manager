@@ -61,10 +61,20 @@ final class ProfilePhotoService
         $encoder = $this->encoder();
         $extension = $this->extension();
 
-        foreach (self::SIZES as $size) {
-            $rendered = $manager->decodePath($file->getRealPath())
-                ->cover($size, $size)
-                ->encode($encoder);
+        // UN SEUL décodage, puis réduction immédiate au plus grand rendu : les
+        // tailles suivantes sont dérivées par clonage de cette image déjà
+        // petite. Décoder une fois par taille ferait payer trois fois le coût
+        // (mémoire ET CPU) de l'image source, qui peut être énorme même en
+        // quelques kilo-octets (cf. la borne de dimensions du Form Request).
+        $sizes = self::SIZES;
+        rsort($sizes);
+        $largest = (int) array_shift($sizes);
+
+        $source = $manager->decodePath($file->getRealPath())->cover($largest, $largest);
+        $this->disk()->put($prefix.'/'.$largest.'.'.$extension, (string) $source->encode($encoder));
+
+        foreach ($sizes as $size) {
+            $rendered = (clone $source)->cover($size, $size)->encode($encoder);
 
             $this->disk()->put($prefix.'/'.$size.'.'.$extension, (string) $rendered);
         }
@@ -135,7 +145,12 @@ final class ProfilePhotoService
      */
     public static function urls(?string $photoPath, int $userId): ?array
     {
-        if ($photoPath === null || $photoPath === '') {
+        // Un `photo_path` qui n'est pas un préfixe de ce service est une photo
+        // héritée du téléversement admin Filament (chemin de fichier simple,
+        // une seule taille) : aucune des trois URLs ne résoudrait, l'annuaire
+        // afficherait trois images cassées. On annonce « pas de photo », le
+        // front retombe sur les initiales.
+        if ($photoPath === null || ! str_starts_with($photoPath, self::PREFIX.'/')) {
             return null;
         }
 

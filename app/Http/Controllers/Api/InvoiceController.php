@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\IndexInvoicesRequest;
 use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\User;
@@ -23,22 +24,28 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 final class InvoiceController extends Controller
 {
-    public function index(Request $request): AnonymousResourceCollection
+    /**
+     * Liste paginée, triable et filtrable (PRD §3.6.2). L'autorisation (rôle
+     * `billing_contact`, PRD §2.5/§3.6.1) est portée par la Form Request : un
+     * membre sans ce rôle reçoit un refus explicite, pas une liste vide.
+     */
+    public function index(IndexInvoicesRequest $request): AnonymousResourceCollection
     {
         $user = $request->user();
 
-        // Module masqué de la nav sans rôle billing (PRD §2.5/§3.6.1) : un
-        // membre sans ce rôle reçoit un refus explicite, pas une liste vide.
-        Gate::authorize('viewAny', Invoice::class);
-
         $query = Invoice::query()
-            ->whereNotNull('number') // jamais de brouillon côté membre
-            ->latest('issued_at')
-            ->latest('id');
+            ->whereNotNull('number'); // jamais de brouillon côté membre
 
+        // Périmètre d'abord : tout ce qui suit ne peut que le restreindre.
         $this->scopeToBillingPerimeter($query, $user);
+        $this->applyFilters($query, $request);
 
-        return InvoiceResource::collection($query->paginate(20));
+        $query->orderBy($request->sort(), $request->direction())
+            ->orderBy('id', $request->direction()); // départage stable
+
+        return InvoiceResource::collection(
+            $query->paginate($request->perPage())->withQueryString()
+        );
     }
 
     public function downloadPdf(Request $request, Invoice $invoice): StreamedResponse
@@ -54,6 +61,27 @@ final class InvoiceController extends Controller
         $filename = ($invoice->number ?? "facture-{$invoice->id}").'.pdf';
 
         return Storage::download($invoice->pdf_path, $filename);
+    }
+
+    /**
+     * Applique tri/filtres/recherche validés. `issued_at` est une colonne DATE
+     * (pas un timestamptz) : les filtres mois/année se comparent donc côté SQL
+     * (`whereYear`/`whereMonth`), sans Carbon PHP — aucun décalage de fuseau
+     * possible (piège connu du projet sur les timestamps).
+     *
+     * @param  Builder<Invoice>  $query
+     */
+    private function applyFilters($query, IndexInvoicesRequest $request): void
+    {
+        $query->when($request->year(), fn ($q, int $year) => $q->whereYear('issued_at', $year))
+            ->when($request->month(), fn ($q, int $month) => $q->whereMonth('issued_at', $month))
+            ->when($request->status(), fn ($q, string $status) => $q->where('status', $status))
+            ->when(
+                $request->numberSearch(),
+                // Recherche insensible à la casse sur le numéro seul ; jokers
+                // déjà échappés par la Form Request (pas de DB::raw, §7).
+                fn ($q, string $search) => $q->where('number', 'ilike', '%'.$search.'%'),
+            );
     }
 
     /**

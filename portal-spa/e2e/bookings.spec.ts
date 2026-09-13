@@ -58,14 +58,15 @@ test.describe('Réservation de salle', () => {
     await expect(dialog).toBeVisible()
     await expect(dialog.getByLabel('Date')).toHaveValue(date)
     await dialog.getByLabel('Libellé (optionnel)').fill('Point équipe e2e')
-    await dialog.getByRole('button', { name: 'Réserver' }).click()
+    await dialog.getByRole('button', { name: 'Réserver', exact: true }).click()
 
     await expect(page.getByText('Réservation confirmée.')).toBeVisible()
 
     // La réservation apparaît dans « Mes prochaines réservations », confirmée.
     await expect(page.getByRole('heading', { name: 'Mes prochaines réservations' })).toBeVisible()
-    await expect(page.getByRole('table').getByText('Confirmée').first()).toBeVisible()
-    await expect(page.getByRole('table').getByText('Point équipe e2e')).toBeVisible()
+    const myBookings = page.getByRole('table', { name: 'Mes réservations de salle à venir' })
+    await expect(myBookings.getByText('Confirmée').first()).toBeVisible()
+    await expect(myBookings.getByText('Point équipe e2e')).toBeVisible()
 
     await checkA11y('bookings')
   })
@@ -115,7 +116,7 @@ test.describe('Réservation de salle', () => {
     // Le clic sur le créneau périmé doit produire une erreur propre (409).
     await page.getByRole('button', { name: `Réserver ${seed.rooms.small}, ${label} 10:00` }).click()
     const dialog = page.getByRole('dialog')
-    await dialog.getByRole('button', { name: 'Réserver' }).click()
+    await dialog.getByRole('button', { name: 'Réserver', exact: true }).click()
     await expect(dialog.getByText('Ce créneau est déjà réservé pour cette salle.')).toBeVisible()
   })
 
@@ -126,7 +127,7 @@ test.describe('Réservation de salle', () => {
     await page.getByRole('button', { name: `Réserver ${seed.rooms.small}, ${label} 14:00` }).click()
     const createDialog = page.getByRole('dialog', { name: `Réserver ${seed.rooms.small}` })
     await createDialog.getByLabel('Libellé (optionnel)').fill('Atelier e2e')
-    await createDialog.getByRole('button', { name: 'Réserver' }).click()
+    await createDialog.getByRole('button', { name: 'Réserver', exact: true }).click()
     await expect(page.getByText('Réservation confirmée.')).toBeVisible()
 
     // Sa propre résa est mise en avant et ouvre la modale « Modifier / Supprimer ».
@@ -137,17 +138,23 @@ test.describe('Réservation de salle', () => {
     const editDialog = page.getByRole('dialog', { name: `Ma réservation — ${seed.rooms.small}` })
     await expect(editDialog.getByLabel('Libellé (optionnel)')).toHaveValue('Atelier e2e')
     await editDialog.getByLabel('Libellé (optionnel)').fill('Atelier e2e modifié')
-    await editDialog.getByRole('button', { name: 'Enregistrer les modifications' }).click()
+    await editDialog
+      .getByRole('button', { name: 'Enregistrer les modifications', exact: true })
+      .click()
     await expect(page.getByText('Réservation modifiée.')).toBeVisible()
-    await expect(page.getByRole('table').getByText('Atelier e2e modifié')).toBeVisible()
+    await expect(
+      page
+        .getByRole('table', { name: 'Mes réservations de salle à venir' })
+        .getByText('Atelier e2e modifié'),
+    ).toBeVisible()
 
     await page
       .getByRole('button', { name: /Ma réservation.*modifier ou supprimer/ })
       .first()
       .click()
     const deleteDialog = page.getByRole('dialog', { name: `Ma réservation — ${seed.rooms.small}` })
-    await deleteDialog.getByRole('button', { name: 'Supprimer' }).click()
-    await deleteDialog.getByRole('button', { name: 'Oui, supprimer' }).click()
+    await deleteDialog.getByRole('button', { name: 'Supprimer', exact: true }).click()
+    await deleteDialog.getByRole('button', { name: 'Oui, supprimer', exact: true }).click()
     await expect(page.getByText('Réservation annulée.')).toBeVisible()
   })
 

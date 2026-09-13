@@ -86,7 +86,11 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
             {title}
           </h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
-            Fermer<span className="sr-only"> la fenêtre {title}</span>
+            {/* Le nom accessible ne reprend PAS le titre de la modale : la boîte
+                est déjà nommée par `aria-labelledby`, et concaténer le titre
+                créait des collisions de nom (« Fermer la fenêtre Réserver… »
+                vs le bouton « Réserver »). */}
+            Fermer<span className="sr-only"> cette fenêtre</span>
           </Button>
         </div>
         {children}

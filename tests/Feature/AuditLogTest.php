@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Enums\Period;
 use App\Models\Company;
+use App\Models\DeskAbsence;
+use App\Models\MemberProfile;
 use App\Models\Resource;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Spatie\Activitylog\Models\Activity;
 
 it('journalise les modifications des entités sensibles', function () {
@@ -48,4 +52,51 @@ it('ne journalise pas les entités non sensibles', function () {
     Resource::factory()->create();
 
     expect(Activity::count())->toBe($countBefore);
+});
+
+/**
+ * Lot C (PRD §3.4.6 / §3.4.5) : les absences et les champs sensibles du profil
+ * (opt-in newsletter, visibilité annuaire) sont tracés — y compris la
+ * suppression d'une absence, seule trace restante une fois la ligne effacée.
+ */
+it('journalise la création, la modification et la suppression d\'une absence', function () {
+    $absence = DeskAbsence::factory()->create([
+        'date_start' => CarbonImmutable::today()->addDays(3)->toDateString(),
+        'notes' => 'Déplacement client',
+    ]);
+
+    expect(Activity::forSubject($absence)->forEvent('created')->exists())->toBeTrue();
+
+    $absence->update(['period' => Period::Morning->value, 'notes' => 'Formation']);
+
+    $updated = Activity::forSubject($absence)->forEvent('updated')->latest('id')->first();
+
+    expect($updated)->not->toBeNull()
+        ->and($updated->attribute_changes['attributes']['period'])->toBe(Period::Morning->value)
+        ->and($updated->attribute_changes['old']['period'])->toBe(Period::FullDay->value)
+        ->and($updated->attribute_changes['attributes']['notes'])->toBe('Formation');
+
+    $id = $absence->id;
+    $absence->delete();
+
+    expect(Activity::query()->where('subject_type', 'desk_absence')->where('subject_id', $id)
+        ->where('event', 'deleted')->exists())->toBeTrue();
+});
+
+it('journalise les opt-in du profil membre (newsletter, annuaire)', function () {
+    $profile = MemberProfile::factory()->create([
+        'show_in_directory' => false,
+        'newsletter_opt_in' => false,
+    ]);
+
+    $profile->update(['show_in_directory' => true, 'newsletter_opt_in' => true]);
+
+    $activity = Activity::forSubject($profile)->forEvent('updated')->latest('id')->first();
+
+    expect($activity)->not->toBeNull()
+        ->and($activity->attribute_changes['attributes']['show_in_directory'])->toBeTrue()
+        ->and($activity->attribute_changes['old']['show_in_directory'])->toBeFalse()
+        ->and($activity->attribute_changes['attributes']['newsletter_opt_in'])->toBeTrue()
+        // Jamais de PII inutile dans le journal (CLAUDE.md §3.4).
+        ->and($activity->attribute_changes['attributes'])->not->toHaveKeys(['bio', 'birth_date', 'photo_path', 'admin_notes']);
 });

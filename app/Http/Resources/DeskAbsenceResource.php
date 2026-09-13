@@ -29,6 +29,11 @@ final class DeskAbsenceResource extends JsonResource
             'recurrence_type' => $this->recurrence_type,
             'recurrence_day_of_week' => $this->recurrence_day_of_week,
             'notes' => $this->notes,
+            // Fenêtres d'action du MEMBRE, calculées en SQL par le contrôleur
+            // (jamais `isPast()` en PHP : piège fuseau du dépôt) : édition
+            // jusqu'à la veille du début, suppression jusqu'au début inclus.
+            'can_edit' => $this->resource->canEdit ?? false,
+            'can_delete' => $this->resource->canDelete ?? false,
         ];
     }
 }

@@ -4,6 +4,8 @@ import { NavLink, Outlet, useLocation } from 'react-router'
 import { Toaster } from 'sonner'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
+import { TOAST_CLASS_NAMES, TOAST_CONTAINER_ARIA_LABEL } from '@/lib/toastTheme'
+import { useIsDarkMode } from '@/lib/useIsDarkMode'
 import { cn } from '@/lib/utils'
 import { Footer } from './Footer'
 import { OfflineBanner } from './OfflineBanner'
@@ -26,6 +28,7 @@ interface NavEntry {
 export function Layout() {
   const { isResident, isExternal, canViewDirectory, canViewBilling, canViewBookings } =
     usePermissions()
+  const isDark = useIsDarkMode()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
@@ -82,7 +85,13 @@ export function Layout() {
 
       {/* Toasts (PRD §3.1/§3.8.4) : feedback d'action éphémère, thème suivi,
           animations coupées si prefers-reduced-motion (géré par Sonner). */}
-      <Toaster richColors closeButton position="top-right" />
+      <Toaster
+        closeButton
+        position="top-right"
+        theme={isDark ? 'dark' : 'light'}
+        containerAriaLabel={TOAST_CONTAINER_ARIA_LABEL}
+        toastOptions={{ classNames: TOAST_CLASS_NAMES }}
+      />
       <OfflineBanner />
 
       <header className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">

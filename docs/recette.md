@@ -6,9 +6,12 @@
 > (UX, libellés, cohérence des données, emails reçus), pas la couverture de code.
 >
 > **Comment l'utiliser** : cocher `- [x]` au fil de l'eau, noter les anomalies dans le journal
+>
+> [x] testé ET validé, [-] testé ET problèmes/non conforme, [ ] pas testé
+>
 > (§9) avec un identifiant `R-nn`, puis me dire « corrige R-03 » (ou coller le journal).
-> Chaque item décrit le **résultat attendu** ; si l'écran fait autre chose, c'est une anomalie
-> (ou un écart PRD à trancher — le signaler comme tel).
+>
+> Chaque item décrit le **résultat attendu** ; si l'écran fait autre chose, c'est une anomalie (ou un écart PRD à trancher — le signaler comme tel).
 >
 > Démarrée le : 13/09/2026 · Terminée le : ______ · Testeur : Guillaume
 
@@ -32,16 +35,16 @@
   ```
   Attendu : tableau des comptes en fin de run, aucune erreur. PDF factures et notifications générés immédiatement (queue forcée en `sync` par le seeder). Les emails d'émission partent dans Mailpit.
 - [x] `/etc/hosts` Windows : `127.0.0.1 admin.ecoworking.test` et `127.0.0.1 portail.ecoworking.test` (BRIEF §14)
-- [ ] Portail servi, au choix (⚠️ toujours via `./node_modules/.bin/*` : `pnpm <script>` échoue sur le dep-check `msw`) :
+- [x] Portail servi, au choix (⚠️ toujours via `./node_modules/.bin/*` : `pnpm <script>` échoue sur le dep-check `msw`) :
   - **mode prod-like** (recommandé pour la recette) :
     ```bash
     cd portal-spa && ./node_modules/.bin/tsc -b && ./node_modules/.bin/vite build
     ```
     puis http://portail.ecoworking.test (à relancer après chaque modification SPA)
   - **mode dev** (HMR) : `cd portal-spa && ./node_modules/.bin/vite` puis http://portail.ecoworking.test:5173
-- [ ] Back-office : http://admin.ecoworking.test
-- [ ] Mailpit : http://localhost:8025 (vider la boîte avant de commencer)
-- [ ] Worker de queue **non requis** pour la démo ; pour tester les jobs « comme en prod » (§7) : `sail artisan queue:work --stop-when-empty`
+- [x] Back-office : http://admin.ecoworking.test
+- [x] Mailpit : http://localhost:8025 (vider la boîte avant de commencer)
+- [x] Worker de queue **non requis** pour la démo ; pour tester les jobs « comme en prod » (§7) : `sail artisan queue:work --stop-when-empty`
 
 > ⚠️ WSL : si `localhost` ne répond pas depuis Windows, utiliser l'IP de la VM WSL (`hostname -I`) — piège connu.
 
@@ -73,17 +76,17 @@ Données de cadre : catalogue 8 offres (prix PRD), 49 bureaux (29 + 20), 3 salle
 
 Compte : n'importe quel membre (commencer par Claire).
 
-- [ ] `/login` : email + mot de passe → redirection dashboard, « Bonjour Claire »
-- [ ] Mauvais mot de passe → message générique (ne révèle pas si l'email existe), champ en erreur annoncé (aria)
-- [ ] 6 tentatives ratées en 1 min → message de limitation (429)
-- [ ] **Lien de connexion (magic link)** : saisir l'email → message générique identique que l'email existe ou non → mail reçu dans Mailpit → clic → connecté. Recliquer le même lien → refusé (usage unique). Lien > 15 min → refusé
-- [ ] Magic link avec l'email de `paul.ancien@…` (anonymisé) → aucun mail envoyé, même message générique
-- [ ] **Mot de passe oublié** → mail Mailpit → nouveau mot de passe → connexion OK → l'ancien magic link éventuel est invalidé
-- [ ] **2FA membre (optionnelle)** : activer dans le profil → QR code → code TOTP → à la reconnexion, challenge 2FA ; codes de récupération utilisables
-- [ ] Déconnexion (menu profil) → retour `/login` ; bouton Précédent du navigateur ne ré-affiche pas de données
-- [ ] Session expirée (supprimer le cookie de session puis naviguer) → redirection `/login` propre, pas d'écran blanc
-- [ ] URL protégée en anonyme (`/invoices`) → `/login` puis retour sur la page demandée après connexion
-- [ ] Un membre ne peut **pas** se connecter sur admin.ecoworking.test (403 / « accès refusé »)
+- [x] `/login` : email + mot de passe → redirection dashboard, « Bonjour Claire »
+- [x] Mauvais mot de passe → message générique (ne révèle pas si l'email existe), champ en erreur annoncé (aria)
+- [x] 6 tentatives ratées en 1 min → message de limitation (429)
+- [-] **Lien de connexion (magic link)** : saisir l'email → message générique identique que l'email existe ou non → mail reçu dans Mailpit → clic → connecté. Recliquer le même lien → refusé (usage unique). Lien > 15 min → refusé
+- [-] Magic link avec l'email de `paul.ancien@…` (anonymisé) → aucun mail envoyé, même message générique
+- [-] **Mot de passe oublié** → mail Mailpit → nouveau mot de passe → connexion OK → l'ancien magic link éventuel est invalidé
+- [-] **2FA membre (optionnelle)** : activer dans le profil → QR code → code TOTP → à la reconnexion, challenge 2FA ; codes de récupération utilisables
+- [x] Déconnexion (menu profil) → retour `/login` ; bouton Précédent du navigateur ne ré-affiche pas de données
+- [x] Session expirée (supprimer le cookie de session puis naviguer) → redirection `/login` propre, pas d'écran blanc
+- [x] URL protégée en anonyme (`/invoices`) → `/login` puis retour sur la page demandée après connexion
+- [x] Un membre ne peut **pas** se connecter sur admin.ecoworking.test (403 / « accès refusé »)
 
 ---
 
@@ -93,15 +96,15 @@ Compte : n'importe quel membre (commencer par Claire).
 
 Tester avec **Claire**, puis **Julien** (additional), puis **Léa** (external sans ticket).
 
-- [ ] Entête « Bonjour {prénom} »
-- [ ] Bloc **Mes dernières factures** (Claire) : 3 max, numéro `EW-AAAA-NNNNN`, date, badge statut coloré, bouton PDF ; lien « Voir toutes mes factures »
-- [ ] Bloc factures **masqué** pour Julien (pas billing_contact) et Marc
-- [ ] Bloc **Actualités** : 3 dernières, badge Info / Alerte / Événement, lien « Voir toutes »
-- [ ] Bloc **Documents à valider** (Claire) : « Charte du coworking v2.0 » listée à valider ; CGU affichée « validée le … » ; « Autorisation de droit à l'image » présente (audience résidents)
-- [ ] Bloc documents chez Marc : « Tous vos documents sont à jour » (ou bloc masqué) — sauf droit à l'image non validé, à vérifier
-- [ ] Bloc **Mes prochaines réservations** : 3 max, ressource + date + créneau ; résa annulée **absente**
+- [x] Entête « Bonjour {prénom} »
+- [-] Bloc **Mes dernières factures** (Claire) : 3 max, numéro `EW-AAAA-NNNNN`, date, badge statut coloré, bouton PDF ; lien « Voir toutes mes factures »
+- [x] Bloc factures **masqué** pour Julien (pas billing_contact) et Marc
+- [x] Bloc **Actualités** : 3 dernières, badge Info / Alerte / Événement, lien « Voir toutes »
+- [x] Bloc **Documents à valider** (Claire) : « Charte du coworking v2.0 » listée à valider ; CGU affichée « validée le … » ; « Autorisation de droit à l'image » présente (audience résidents)
+- [x] Bloc documents chez Marc : « Tous vos documents sont à jour » (ou bloc masqué) — sauf droit à l'image non validé, à vérifier
+- [-] Bloc **Mes prochaines réservations** : 3 max, ressource + date + créneau ; résa annulée **absente**
 - [ ] États vides chez Léa : messages rassurants (aucune facture / résa / actualité restreinte aux résidents non visible)
-- [ ] Bouton **Nous contacter** = `mailto:contact@ecoworking.fr` avec sujet pré-rempli
+- [-] Bouton **Nous contacter** = `mailto:contact@ecoworking.fr` avec sujet pré-rempli
 - [ ] Skeletons pendant le chargement (throttling réseau « Slow 3G » dans DevTools), jamais de spinner plein écran
 
 ### 3.2 Profil (PRD §3.4)
@@ -489,12 +492,8 @@ sail artisan queue:work --stop-when-empty               # vider la queue databas
 
 ## 9. Journal des anomalies
 
-| ID   | Écran / § | Compte | Constaté | Attendu (PRD) | Gravité                                 | Statut     |
-| ---- | --------- | ------ | -------- | ------------- | --------------------------------------- | ---------- |
-| R-01 |           |        |          |               | 🔴 bloquant / 🟠 majeur / 🟡 mineur / 💡 UX | à corriger |
-| R-02 |           |        |          |               |                                         |            |
-
-Gravité : 🔴 = donnée d'autrui visible, argent faux, perte de données · 🟠 = parcours impossible · 🟡 = gênant mais contournable · 💡 = amélioration / écart PRD à trancher.
+➡️ Déplacé dans **[`recette_journal-des-anomalies.md`](./recette_journal-des-anomalies.md)** (fichier dédié à la saisie,
+éditable indépendamment de cette checklist). Ce fichier-ci ne contient plus que les cases à cocher.
 
 ---
 

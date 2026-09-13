@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
+import { MarkdownContent } from '@/components/MarkdownContent'
 import { occupantDisplayName, statusLabel } from './plan-utils'
 import type { PlanDesk } from './types'
 
@@ -66,7 +67,12 @@ export function DeskDetailPanel({ desk, onClose }: DeskDetailPanelProps) {
           {occupant.job_title && (
             <p className="text-neutral-600 dark:text-neutral-300">{occupant.job_title}</p>
           )}
-          {occupant.bio && <p className="text-neutral-600 dark:text-neutral-300">{occupant.bio}</p>}
+          {occupant.bio && (
+            <MarkdownContent
+              markdown={occupant.bio}
+              className="text-neutral-600 dark:text-neutral-300"
+            />
+          )}
           {occupant.interests && (
             <p className="text-neutral-600 dark:text-neutral-300">
               Centres d’intérêt : {occupant.interests}

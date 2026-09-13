@@ -1,6 +1,7 @@
 import { isAxiosError } from 'axios'
 import { Linkedin, Search } from 'lucide-react'
 import { useState } from 'react'
+import { MarkdownContent } from '@/components/MarkdownContent'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -109,7 +110,10 @@ export function DirectoryPage() {
                       </p>
                     )}
                     {entry.bio && (
-                      <p className="text-sm text-neutral-600 dark:text-neutral-300">{entry.bio}</p>
+                      <MarkdownContent
+                        markdown={entry.bio}
+                        className="text-sm text-neutral-600 dark:text-neutral-300"
+                      />
                     )}
                     <ul className="flex flex-wrap gap-3 pt-1">
                       {entry.linkedin_url && (

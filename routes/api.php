@@ -64,6 +64,7 @@ $register = function (): void {
         // C4.5 — Tickets nomades, bureaux external & présence résident.
         Route::get('/tickets', [TicketController::class, 'index'])->name('api.tickets.index');
         Route::get('/desks/availability', [DeskController::class, 'availability'])->name('api.desks.availability');
+        Route::get('/desk-occupations', [DeskController::class, 'index'])->name('api.desk-occupations.index');
         Route::post('/desk-occupations', [DeskController::class, 'store'])->name('api.desk-occupations.store');
         Route::delete('/desk-occupations/{deskOccupation}', [DeskController::class, 'destroy'])->name('api.desk-occupations.destroy');
         Route::get('/presence', [PresenceController::class, 'index'])->name('api.presence.index');

@@ -51,4 +51,12 @@ class DeskOccupationFactory extends Factory
             'status' => DeskOccupationStatus::Absent->value,
         ]);
     }
+
+    /** Occupation annulée (délai respecté ou super-pouvoir admin). */
+    public function cancelled(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => DeskOccupationStatus::Cancelled->value,
+        ]);
+    }
 }

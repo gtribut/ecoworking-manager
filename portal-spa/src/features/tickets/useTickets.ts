@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   cancelDeskOccupation,
   createDeskOccupation,
   fetchDeskAvailability,
+  fetchDeskOccupations,
   fetchTickets,
 } from './api'
 import type { CreateDeskOccupationInput, DeskPeriod } from './types'
@@ -10,6 +11,8 @@ import type { CreateDeskOccupationInput, DeskPeriod } from './types'
 export const ticketsQueryKey = ['tickets'] as const
 export const deskAvailabilityQueryKey = (date: string, period: DeskPeriod) =>
   ['desks', 'availability', date, period] as const
+export const deskOccupationsQueryKey = (scope: 'upcoming' | 'past', page: number) =>
+  ['desk-occupations', scope, page] as const
 
 export function useTickets() {
   return useQuery({ queryKey: ticketsQueryKey, queryFn: fetchTickets })
@@ -23,6 +26,15 @@ export function useDeskAvailability(date: string, period: DeskPeriod, enabled: b
   })
 }
 
+/** « Mes bureaux réservés » (PRD §3.5.9) : à venir (défaut) ou historique. */
+export function useDeskOccupations(scope: 'upcoming' | 'past', page: number) {
+  return useQuery({
+    queryKey: deskOccupationsQueryKey(scope, page),
+    queryFn: () => fetchDeskOccupations(scope, page),
+    placeholderData: keepPreviousData,
+  })
+}
+
 export function useCreateDeskOccupation() {
   const queryClient = useQueryClient()
 
@@ -31,6 +43,7 @@ export function useCreateDeskOccupation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKey })
       queryClient.invalidateQueries({ queryKey: ['desks', 'availability'] })
+      queryClient.invalidateQueries({ queryKey: ['desk-occupations'] })
     },
   })
 }
@@ -43,6 +56,7 @@ export function useCancelDeskOccupation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKey })
       queryClient.invalidateQueries({ queryKey: ['desks', 'availability'] })
+      queryClient.invalidateQueries({ queryKey: ['desk-occupations'] })
     },
   })
 }

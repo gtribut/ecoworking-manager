@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Enums\DeskOccupationStatus;
 use App\Enums\Period;
 use App\Models\Company;
 use App\Models\DeskAbsence;
+use App\Models\DeskOccupation;
 use App\Models\MemberProfile;
 use App\Models\Resource;
 use App\Models\User;
@@ -81,6 +83,26 @@ it('journalise la création, la modification et la suppression d\'une absence', 
 
     expect(Activity::query()->where('subject_type', 'desk_absence')->where('subject_id', $id)
         ->where('event', 'deleted')->exists())->toBeTrue();
+});
+
+/**
+ * Lot E (PRD §3.5.9) : l'annulation d'un bureau nomade (restitution de ticket
+ * incluse, cf. DeskAvailabilityService::cancelExternal) doit rester traçable.
+ */
+it('journalise la création et l\'annulation d\'une occupation de bureau', function () {
+    $occupation = DeskOccupation::factory()->create([
+        'date' => CarbonImmutable::today()->addDays(3)->toDateString(),
+    ]);
+
+    expect(Activity::forSubject($occupation)->forEvent('created')->exists())->toBeTrue();
+
+    $occupation->update(['status' => DeskOccupationStatus::Cancelled->value]);
+
+    $activity = Activity::forSubject($occupation)->forEvent('updated')->latest('id')->first();
+
+    expect($activity)->not->toBeNull()
+        ->and($activity->attribute_changes['attributes']['status'])->toBe(DeskOccupationStatus::Cancelled->value)
+        ->and($activity->attribute_changes['old']['status'])->toBe(DeskOccupationStatus::Present->value);
 });
 
 it('ne journalise pas de faux changement de booléen à la création du profil', function () {

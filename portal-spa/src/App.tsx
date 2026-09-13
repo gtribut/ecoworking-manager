@@ -56,7 +56,16 @@ export function App() {
             à un événement est gardée dans RsvpButton. */}
         <Route path="announcements" element={<AnnouncementsPage />} />
         <Route path="announcements/:id" element={<AnnouncementDetailPage />} />
-        <Route path="tickets" element={<TicketsPage />} />
+        {/* Tickets & bureaux nomades : réservé à l'external (PRD §3.5.6/§3.5.9,
+            même garde que le back — DeskOccupationPolicy::viewAny). */}
+        <Route
+          path="tickets"
+          element={
+            <RequireAccess permission="create-paid-booking">
+              <TicketsPage />
+            </RequireAccess>
+          }
+        />
         <Route
           path="presence"
           element={

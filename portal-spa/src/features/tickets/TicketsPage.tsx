@@ -6,8 +6,11 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
+import { usePermissions } from '@/features/auth/usePermissions'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
+import { MyDeskOccupationsList } from './MyDeskOccupationsList'
+import { MyTicketsTable } from './MyTicketsTable'
 import type { Desk, DeskPeriod } from './types'
 import { useCreateDeskOccupation, useDeskAvailability, useTickets } from './useTickets'
 
@@ -15,6 +18,18 @@ const PERIOD_LABELS: Record<DeskPeriod, string> = {
   morning: 'Matin',
   afternoon: 'Après-midi',
   full_day: 'Journée complète',
+}
+
+/** PRD §3.5.6/§3.5.9 : pas d'achat en ligne en MVP, on invite à écrire. */
+const TICKETS_MAILTO = 'mailto:contact@ecoworking.fr?subject=[backend ecowo] Demande de tickets'
+const DESK_MAILTO = 'mailto:contact@ecoworking.fr?subject=[backend ecowo] Demande de bureau'
+
+function ContactLink({ mailto, label }: { mailto: string; label: string }) {
+  return (
+    <a href={mailto} className="ml-1 font-medium underline underline-offset-2 hover:no-underline">
+      {label}
+    </a>
+  )
 }
 
 function todayIso(): string {
@@ -26,7 +41,8 @@ function todayIso(): string {
 /**
  * Week-end (samedi/dimanche) — les bureaux nomades ne sont réservables que
  * les jours ouvrés (règle serveur : DeskAvailabilityService). Les jours
- * fériés restent validés côté back (422 affiché tel quel).
+ * fériés ne peuvent pas être calculés côté client : ils sont détectés à
+ * l'appel de la disponibilité (`reason: non_working_day`, cf. plus bas).
  */
 function isWeekend(isoDate: string): boolean {
   const day = new Date(`${isoDate}T12:00:00`).getDay()
@@ -45,6 +61,7 @@ function nextBookableDateIso(): string {
 export function TicketsPage() {
   usePageTitle('Tickets & bureaux nomades — Portail Ecoworking')
 
+  const { isExternal } = usePermissions()
   const { data, isLoading, isError } = useTickets()
 
   return (
@@ -84,9 +101,26 @@ export function TicketsPage() {
                 </span>
               </li>
             </ul>
+
+            {/* Le 0-ticket bureau n'est signalé qu'une fois, juste avant le
+                formulaire de réservation (DeskBookingForm) — pas ici en plus
+                (review lot E pt.8, un seul encart + un seul mailto). */}
+            {data.balances.meeting_room_half_day === 0 && (
+              <Alert variant="info">
+                Vous n’avez plus de ticket salle de réunion : contactez Ecoworking pour en obtenir.
+                <ContactLink mailto={TICKETS_MAILTO} label="Nous contacter" />
+              </Alert>
+            )}
           </section>
 
-          <DeskBookingForm deskTicketBalance={data.balances.desk_half_day} />
+          <MyTicketsTable tickets={data.tickets} />
+
+          {isExternal && (
+            <>
+              <DeskBookingForm deskTicketBalance={data.balances.desk_half_day} />
+              <MyDeskOccupationsList />
+            </>
+          )}
         </>
       )}
     </div>
@@ -131,17 +165,27 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
     }
   }
 
+  // 0 ticket bureau : on le dit AVANT de proposer le formulaire de recherche
+  // (PRD §3.5.9), pas un simple bandeau au-dessus d'un formulaire inerte.
+  if (deskTicketBalance === 0) {
+    return (
+      <section aria-labelledby="desk-booking-heading" className="space-y-4">
+        <h2 id="desk-booking-heading" className="text-lg font-medium">
+          Réserver un bureau nomade
+        </h2>
+        <Alert variant="info">
+          Vous n’avez plus de ticket bureau nomade. Contactez Ecoworking pour en obtenir.
+          <ContactLink mailto={TICKETS_MAILTO} label="Nous contacter" />
+        </Alert>
+      </section>
+    )
+  }
+
   return (
     <section aria-labelledby="desk-booking-heading" className="space-y-4">
       <h2 id="desk-booking-heading" className="text-lg font-medium">
         Réserver un bureau nomade
       </h2>
-
-      {deskTicketBalance === 0 && (
-        <Alert variant="info">
-          Vous n’avez plus de ticket bureau nomade. Contactez Ecoworking pour en obtenir.
-        </Alert>
-      )}
 
       {feedback && (
         <Alert variant={feedback.type === 'success' ? 'success' : 'error'}>
@@ -194,13 +238,21 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
           {availability.isError && (
             <Alert variant="error">Impossible de charger les disponibilités.</Alert>
           )}
-          {availability.data && availability.data.desks.length === 0 && (
+          {/* Jour non ouvré détecté côté serveur (férié — le week-end est déjà
+              bloqué côté client ci-dessus) : message dédié, pas un « 0 dispo ». */}
+          {availability.data && !availability.data.available && (
             <Alert variant="info">
-              Aucun bureau disponible le {new Date(`${date}T00:00:00`).toLocaleDateString('fr-FR')}{' '}
-              ({PERIOD_LABELS[period]}).
+              Ce jour n’est pas un jour ouvré (week-end ou jour férié) : aucun bureau nomade n’y est
+              réservable.
             </Alert>
           )}
-          {availability.data && availability.data.desks.length > 0 && (
+          {availability.data?.available && availability.data.desks.length === 0 && (
+            <Alert variant="info">
+              Aucun bureau disponible sur ce créneau. Contactez-nous pour étudier les possibilités.
+              <ContactLink mailto={DESK_MAILTO} label="Nous contacter pour un bureau" />
+            </Alert>
+          )}
+          {availability.data?.available && availability.data.desks.length > 0 && (
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-800">
               <h3 className="border-b border-neutral-200 px-4 py-2 text-sm font-medium dark:border-neutral-800">
                 {availability.data.count} bureau(x) disponible(s) — {PERIOD_LABELS[period]}
@@ -220,7 +272,7 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
                     <Button
                       size="sm"
                       variant="secondary"
-                      disabled={createOccupation.isPending || deskTicketBalance === 0}
+                      disabled={createOccupation.isPending}
                       onClick={() => void onBook(desk)}
                     >
                       Réserver<span className="sr-only"> le bureau {desk.name}</span>

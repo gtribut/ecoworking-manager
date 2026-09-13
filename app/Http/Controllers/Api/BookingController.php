@@ -8,6 +8,7 @@ use App\Enums\BookingStatus;
 use App\Enums\Period;
 use App\Enums\TicketType;
 use App\Exceptions\DomainActionException;
+use App\Http\Controllers\Api\Concerns\MarksScopedFlag;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreBookingRequest;
 use App\Http\Requests\Api\UpdateBookingRequest;
@@ -35,6 +36,8 @@ use Illuminate\Support\Facades\Gate;
  */
 final class BookingController extends Controller
 {
+    use MarksScopedFlag;
+
     /**
      * Liste des réservations du membre. Par défaut : historique complet, plus
      * récentes d'abord. `?upcoming=1` (dashboard PRD §3.3.2 et vue « Mes
@@ -260,18 +263,6 @@ final class BookingController extends Controller
      */
     private function markStartsLater(array $bookings): void
     {
-        if ($bookings === []) {
-            return;
-        }
-
-        $laterIds = Booking::query()
-            ->whereKey(array_map(static fn (Booking $booking): int => $booking->id, $bookings))
-            ->startsLater()
-            ->pluck('id')
-            ->all();
-
-        foreach ($bookings as $booking) {
-            $booking->startsLater = in_array($booking->id, $laterIds, true);
-        }
+        $this->markWithScope($bookings, 'startsLater', 'startsLater');
     }
 }

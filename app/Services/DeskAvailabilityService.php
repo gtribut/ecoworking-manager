@@ -124,16 +124,42 @@ final class DeskAvailabilityService
         });
     }
 
-    /** Annule une occupation external et restitue le ticket. */
+    /**
+     * Annule une occupation external et restitue le ticket. Idempotent (une
+     * occupation déjà annulée est renvoyée telle quelle) : la Policy filtre
+     * déjà ce cas (`DeskOccupation::scopeCancellable` exige `status=present`),
+     * mais l'admin contourne la Policy (super-pouvoir §2.6) — cette méthode ne
+     * doit donc jamais restituer deux fois (review lot E pt.1).
+     *
+     * Défense en profondeur supplémentaire : on ne restitue QUE si le ticket
+     * pointe encore réciproquement sur CETTE occupation
+     * (`ticket->desk_occupation_id === $occupation->id`). `ticket_id` sur la
+     * ligne d'occupation n'est en effet jamais réécrit après une annulation
+     * (trace historique dans `desk_occupations` + audit log) alors que le
+     * ticket lui-même peut, depuis, avoir été repris par une AUTRE
+     * réservation — sans ce garde-fou, une occupation déjà annulée renverrait
+     * à tort un ticket qui sert maintenant ailleurs.
+     */
     public function cancelExternal(DeskOccupation $occupation): DeskOccupation
     {
+        if ($occupation->status === DeskOccupationStatus::Cancelled) {
+            return $occupation;
+        }
+
         return $this->db->transaction(function () use ($occupation): DeskOccupation {
             $occupation->status = DeskOccupationStatus::Cancelled;
             $occupation->save();
 
-            if ($occupation->ticket !== null) {
-                $this->tickets->restitute($occupation->ticket);
+            $ticket = $occupation->ticket;
+
+            if ($ticket !== null && $ticket->desk_occupation_id === $occupation->id) {
+                $this->tickets->restitute($ticket);
             }
+
+            // Le lien est de toute façon rompu : l'occupation est annulée, son
+            // ticket (restitué ou déjà repris ailleurs) ne lui appartient plus.
+            $occupation->ticket_id = null;
+            $occupation->save();
 
             return $occupation;
         });

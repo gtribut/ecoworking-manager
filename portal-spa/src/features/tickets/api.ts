@@ -1,3 +1,4 @@
+import type { Paginated } from '@/lib/api-types'
 import { http } from '@/lib/http'
 import type {
   CreateDeskOccupationInput,
@@ -9,6 +10,22 @@ import type {
 
 export async function fetchTickets(): Promise<TicketsPayload> {
   const { data } = await http.get<TicketsPayload>('/api/tickets')
+  return data
+}
+
+/**
+ * Bureaux nomades réservés du membre : à venir (défaut) ou historique
+ * (PRD §3.5.9). Pas de paramètre `upcoming` : le comportement par défaut du
+ * back EST « à venir », seul `past=1` bascule vers l'historique (un
+ * paramètre envoyé puis jamais lu serait mort côté back, review lot E pt.4).
+ */
+export async function fetchDeskOccupations(
+  scope: 'upcoming' | 'past',
+  page = 1,
+): Promise<Paginated<DeskOccupation>> {
+  const { data } = await http.get<Paginated<DeskOccupation>>('/api/desk-occupations', {
+    params: { page, ...(scope === 'past' ? { past: 1 } : {}) },
+  })
   return data
 }
 

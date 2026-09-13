@@ -17,15 +17,12 @@ test.describe('Audit a11y — écrans sans spec dédiée', () => {
     await loginViaApi(page)
   })
 
-  test('tickets & bureaux nomades', async ({ page, checkA11y }) => {
-    await page.goto('/tickets')
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Tickets & bureaux nomades' }),
-    ).toBeVisible()
-    // Attendre la fin du chargement (soldes affichés) avant l'audit.
-    await expect(page.getByRole('heading', { name: 'Mes soldes de tickets' })).toBeVisible()
-    await checkA11y('tickets')
-  })
+  // « tickets & bureaux nomades » retiré (lot E, review pt.3) : la route
+  // /tickets est désormais gardée par <RequireAccess permission=
+  // "create-paid-booking"> (external uniquement), et le membre e2e
+  // (E2eSeeder::MEMBER_EMAIL) est `resident` — il n'a plus accès à cette page
+  // (Accès refusé). Aucun compte `external` n'est seedé pour l'e2e : à
+  // ajouter dans E2eSeeder si un audit a11y dédié à ce parcours est souhaité.
 
   test('présence (résident)', async ({ page, checkA11y }) => {
     await page.goto('/presence')

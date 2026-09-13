@@ -20,6 +20,7 @@
 | [06-db-tests-ci.md](./06-db-tests-ci.md) | Migrations, contraintes, factories, couverture de tests, CI |
 | [07-chantier-mvp-restant.md](./07-chantier-mvp-restant.md) | Prompt de mission pour développer les modules MVP manquants (C12) |
 | [08-ecarts-prd-portail.md](./08-ecarts-prd-portail.md) | **13/09/26** — écarts PRD §3 (portail) ↔ code, par écran, avec lots de correction proposés (recette C13) |
+| [09-prompt-orchestrateur-lots.md](./09-prompt-orchestrateur-lots.md) | Prompt de lancement de la session orchestrateur (Fable 5.1) qui délègue les lots A→G à des sous-agents |
 
 ## État constaté (exécuté le 2026-07-02)
 

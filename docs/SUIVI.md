@@ -205,6 +205,7 @@
 | C13.3 | Exécution de la recette (Guillaume) | ⬜ | Cocher au fil de l'eau, remplir le journal §9 |
 | C13.4 | Corrections des anomalies `R-nn` | 🚧 | R-01→R-06 corrigées le 13/09 (`5dc146a`, `b1a2959`, `18f622f`, `e44a036`) : 429 FR, bloc docs masqué, worker queue documenté, mot de passe oublié, 2FA membre, accueil PRD §3.3. Suites : 453 Pest + 84 Vitest verts |
 | C13.5 | Passe d'écarts PRD §3 portail ↔ code | ✅ | [`review_fable/08-ecarts-prd-portail.md`](./review_fable/08-ecarts-prd-portail.md) — ≈ 55 % conforme ; lots A→G proposés, **à trancher par Guillaume** avant de coder |
+| C13.6 | Lots de conformité PRD §3 (A→G) via session orchestrateur | ⬜ | Prompt prêt : [`review_fable/09-prompt-orchestrateur-lots.md`](./review_fable/09-prompt-orchestrateur-lots.md) — ordre B → A → C → D → E → F → G, une branche/worktree par lot |
 
 ---
 

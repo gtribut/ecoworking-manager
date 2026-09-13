@@ -19,6 +19,7 @@
 | [05-spa-portail.md](./05-spa-portail.md) | React/TS, TanStack Query, a11y RGAA, contrats API, UX |
 | [06-db-tests-ci.md](./06-db-tests-ci.md) | Migrations, contraintes, factories, couverture de tests, CI |
 | [07-chantier-mvp-restant.md](./07-chantier-mvp-restant.md) | Prompt de mission pour développer les modules MVP manquants (C12) |
+| [08-ecarts-prd-portail.md](./08-ecarts-prd-portail.md) | **13/09/26** — écarts PRD §3 (portail) ↔ code, par écran, avec lots de correction proposés (recette C13) |
 
 ## État constaté (exécuté le 2026-07-02)
 

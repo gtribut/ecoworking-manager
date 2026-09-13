@@ -203,7 +203,8 @@
 | C13.1 | `DemoSeeder` : jeu de données de recette (dev only) | ✅ | `database/seeders/DemoSeeder.php` — 11 comptes (`demo-password`), 2 entreprises + 1 particulier + 1 external sans ticket + staff + membre anonymisé ; 3 mois de factures émises via `MonthlyBillingService`/`IssueInvoiceService` (payée, partielle, en retard, annulée + avoir, brouillons courants) ; tickets/occupations/résas/absences/annonces/documents. Refuse la prod. Test `DemoSeederTest` (2, 59 assertions) vert le 13/09 ; suite complète 446 Pest verte |
 | C13.2 | `docs/recette.md` : checklist de recette | ✅ | 9 sections : préparation, comptes, auth, 12 écrans portail, 13 modules admin, isolation A/B (bloquant), emails Mailpit, crons, journal des anomalies `R-nn` |
 | C13.3 | Exécution de la recette (Guillaume) | ⬜ | Cocher au fil de l'eau, remplir le journal §9 |
-| C13.4 | Corrections des anomalies `R-nn` | ⬜ | Une PR par lot, tests de non-régression ajoutés à chaque fix |
+| C13.4 | Corrections des anomalies `R-nn` | 🚧 | R-01→R-06 corrigées le 13/09 (`5dc146a`, `b1a2959`, `18f622f`, `e44a036`) : 429 FR, bloc docs masqué, worker queue documenté, mot de passe oublié, 2FA membre, accueil PRD §3.3. Suites : 453 Pest + 84 Vitest verts |
+| C13.5 | Passe d'écarts PRD §3 portail ↔ code | ✅ | [`review_fable/08-ecarts-prd-portail.md`](./review_fable/08-ecarts-prd-portail.md) — ≈ 55 % conforme ; lots A→G proposés, **à trancher par Guillaume** avant de coder |
 
 ---
 

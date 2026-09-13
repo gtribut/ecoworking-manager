@@ -4,8 +4,8 @@ import { useAuth } from './useAuth'
  * Aide à la lecture des permissions de l'utilisateur courant (cf. CLAUDE.md §3.1).
  * Le serveur reste l'autorité : ces helpers ne servent qu'à adapter l'UI.
  *
- * - `canCreateOwnBooking` : résident/staff/membre additionnel (bureau attitré,
- *   réserve salles sans surcoût et déclare ses absences).
+ * - `canCreateOwnBooking` : résident/staff/membre additionnel (réserve les salles
+ *   sans surcoût) — ne dit RIEN d'un bureau attitré : voir `isResident`.
  * - `canCreatePaidBooking` : external (réserve à la demi-journée payante, dispose
  *   de tickets bureaux nomades).
  */

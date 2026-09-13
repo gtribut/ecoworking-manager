@@ -12,6 +12,8 @@ use App\Models\DeskAbsence;
 use App\Models\MemberProfile;
 use App\Models\Resource;
 use App\Models\User;
+use App\Notifications\AbsenceDeclaredNotification;
+use App\Notifications\AbsenceRecordedNotification;
 use Carbon\CarbonImmutable;
 use Database\Seeders\PermissionSeeder;
 use Filament\Actions\DeleteAction;
@@ -104,7 +106,8 @@ it('réserve le panneau aux détenteurs de declare-presence-for-others', functio
 
 it('crée une absence pour un membre via le PresenceService, sans notifier les admins', function () {
     Notification::fake();
-    actingAs(User::factory()->admin()->create());
+    $admin = User::factory()->admin()->create();
+    actingAs($admin);
     $member = absenceResident();
     $today = CarbonImmutable::today();
 
@@ -126,8 +129,10 @@ it('crée une absence pour un membre via le PresenceService, sans notifier les a
         ->and($absence->period)->toBe(Period::Afternoon)
         ->and($absence->notes)->toBe('Rendez-vous chantier — saisi par l’accueil');
 
-    // Q25 : la notification admin ne concerne QUE les déclarations portail.
-    Notification::assertNothingSent();
+    // Q25 : la notification admin ne concerne QUE les déclarations portail…
+    Notification::assertNotSentTo($admin, AbsenceDeclaredNotification::class);
+    // …mais le résident, lui, est prévenu de la saisie faite pour lui (lot G).
+    Notification::assertSentTo($member, AbsenceRecordedNotification::class);
 });
 
 it('trace la correction et la suppression admin dans l\'audit log', function () {

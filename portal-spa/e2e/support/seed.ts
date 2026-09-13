@@ -14,6 +14,10 @@ export const seed = {
     lastName: 'Discret',
   },
   password: 'e2e-password',
+  /** Entité juridique du membre e2e (bloc « Mon entreprise », PRD §3.6.4). */
+  entity: {
+    legalName: 'Atelier Numérique E2E',
+  },
   invoice: {
     // Compteur pré-positionné à 90000 par E2eSeeder (isolation du storage
     // partagé avec le dev) → premier numéro émis : 90001.

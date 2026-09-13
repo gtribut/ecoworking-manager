@@ -1,12 +1,14 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { fetchInvoices } from './api'
+import type { InvoiceFilters } from './types'
 
-export const invoicesQueryKey = (page: number) => ['invoices', page] as const
+/** La clé porte tous les filtres : chaque combinaison a son entrée de cache. */
+export const invoicesQueryKey = (filters: InvoiceFilters) => ['invoices', filters] as const
 
-export function useInvoices(page: number) {
+export function useInvoices(filters: InvoiceFilters) {
   return useQuery({
-    queryKey: invoicesQueryKey(page),
-    queryFn: () => fetchInvoices(page),
+    queryKey: invoicesQueryKey(filters),
+    queryFn: () => fetchInvoices(filters),
     placeholderData: keepPreviousData,
   })
 }

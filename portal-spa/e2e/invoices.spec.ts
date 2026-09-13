@@ -9,7 +9,8 @@ test.describe('Mes factures', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Mes factures' })).toBeVisible()
     await expect(page.getByRole('rowheader', { name: seed.invoice.number })).toBeVisible()
-    await expect(page.getByText('En attente')).toBeVisible()
+    // Cibler la cellule : « En attente » est aussi une option du filtre statut.
+    await expect(page.getByRole('cell', { name: 'En attente' })).toBeVisible()
 
     // Téléchargement réel du PDF généré à l'émission (flux argent critique).
     const downloadPromise = page.waitForEvent('download')
@@ -18,5 +19,37 @@ test.describe('Mes factures', () => {
     expect(download.suggestedFilename()).toBe(`${seed.invoice.number}.pdf`)
 
     await checkA11y('invoices')
+  })
+
+  test('filtres, tri et bloc entité (PRD §3.6.2 / §3.6.4)', async ({ page }) => {
+    await loginViaApi(page)
+    await page.goto('/invoices')
+
+    const row = page.getByRole('rowheader', { name: seed.invoice.number })
+    await expect(row).toBeVisible()
+
+    // Bloc « Mon entreprise » du module administratif.
+    const entityBlock = page.getByRole('region', { name: 'Mon entreprise' })
+    await expect(entityBlock.getByRole('heading', { level: 2 })).toBeVisible()
+    await expect(entityBlock.getByText(seed.entity.legalName)).toBeVisible()
+
+    // Tri par numéro : le bouton porte un aria-label explicite, la cellule
+    // d'en-tête porte l'état via aria-sort.
+    await page.getByRole('button', { name: 'Trier par numéro' }).click()
+    await expect(page.getByRole('columnheader', { name: /trier par numéro/i })).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    )
+    await expect(page).toHaveURL(/sort=number/)
+
+    // Filtre année : la facture e2e est émise cette année.
+    await page.getByLabel('Année').selectOption(String(new Date().getFullYear()))
+    await expect(row).toBeVisible()
+
+    // Filtre statut non concordant : état vide filtré + réinitialisation.
+    await page.getByLabel('Statut', { exact: true }).selectOption('paid')
+    await expect(page.getByText('Aucune facture ne correspond à ces filtres.')).toBeVisible()
+    await page.getByRole('button', { name: 'Réinitialiser les filtres' }).first().click()
+    await expect(row).toBeVisible()
   })
 })

@@ -4,6 +4,7 @@ import { Alert } from '@/components/ui/Alert'
 import { Spinner } from '@/components/ui/Spinner'
 import { invoicePdfUrl } from './api'
 import { formatInvoiceDate, InvoiceStatusBadge } from './status'
+import { DEFAULT_INVOICE_FILTERS } from './types'
 import { useInvoices } from './useInvoices'
 
 /**
@@ -12,7 +13,7 @@ import { useInvoices } from './useInvoices'
  * les contacts facturation — le parent gate sur `view-entity-invoices`.
  */
 export function DashboardInvoices() {
-  const { data, isLoading, isError } = useInvoices(1)
+  const { data, isLoading, isError } = useInvoices(DEFAULT_INVOICE_FILTERS)
   const invoices = data?.data.slice(0, 3) ?? []
 
   return (

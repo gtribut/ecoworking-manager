@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AdministrativeDocumentController;
 use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AnnouncementRegistrationController;
+use App\Http\Controllers\Api\BillingEntityController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\CalendarSubscriptionController;
 use App\Http\Controllers\Api\CurrentUserController;
@@ -46,6 +47,10 @@ $register = function (): void {
         // C4.3 — Factures (liste scopée + téléchargement PDF).
         Route::get('/invoices', [InvoiceController::class, 'index'])->name('api.invoices.index');
         Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('api.invoices.pdf');
+
+        // Lot D — Bloc entité du module administratif (PRD §3.6.4) : entités
+        // facturables du contact de facturation (linkedCompanyIds).
+        Route::get('/billing/entity', BillingEntityController::class)->name('api.billing.entity');
 
         // C4.4 — Réservation de salle (catalogue, dispo, mes résas, annulation).
         Route::get('/rooms', [RoomController::class, 'index'])->name('api.rooms.index');

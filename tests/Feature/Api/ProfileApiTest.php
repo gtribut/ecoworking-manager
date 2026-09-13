@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Enums\Role;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\MemberProfile;
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
 
 /** C4.2 — Endpoints profil membre (lecture / édition partielle, auto-scopé). */
 it('protège le profil : 401 si non authentifié', function () {
@@ -82,4 +85,44 @@ it('renvoie 409 si le compte n\'a pas de profil membre éditable', function () {
     $this->actingAs($user)->getJson('/api/profile')
         ->assertOk()
         ->assertJsonPath('profile', null);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Lot D — données de facturation dans le bloc entité du profil (PRD §3.4.3)
+|--------------------------------------------------------------------------
+*/
+
+it('masque le mode de paiement et l\'IBAN-4 au membre qui n\'est pas contact facturation', function () {
+    $this->seed(PermissionSeeder::class);
+    $company = Company::factory()->create([
+        'preferred_payment_method' => 'sepa',
+        'sepa_iban_last4' => '1234',
+    ]);
+    $user = User::factory()->resident()->create();
+    MemberProfile::factory()->for($user)->create(['company_id' => $company->id]);
+
+    $response = $this->actingAs($user)->getJson('/api/profile')->assertOk();
+
+    expect(array_keys((array) $response->json('company')))
+        ->not->toContain('payment_method', 'iban_last4');
+});
+
+it('expose le mode de paiement et l\'IBAN-4 au contact facturation déclaré de l\'entité', function () {
+    $this->seed(PermissionSeeder::class);
+    $company = Company::factory()->create([
+        'preferred_payment_method' => 'transfer',
+        'sepa_iban_last4' => '9876',
+    ]);
+    $user = User::factory()->resident()->create();
+    $user->assignRole(Role::BillingContact->value);
+    MemberProfile::factory()->for($user)->create(['company_id' => $company->id]);
+    // Mandat explicite : sans lui, le rattachement de membre ne donne pas accès
+    // aux coordonnées bancaires (review lot D).
+    Contact::factory()->billing()->create(['user_id' => $user->id, 'company_id' => $company->id]);
+
+    $this->actingAs($user)->getJson('/api/profile')->assertOk()
+        ->assertJsonPath('company.payment_method', 'transfer')
+        ->assertJsonPath('company.payment_method_label', 'Virement')
+        ->assertJsonPath('company.iban_last4', '9876');
 });

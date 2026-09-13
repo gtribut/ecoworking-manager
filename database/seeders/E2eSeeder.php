@@ -9,6 +9,7 @@ use App\Enums\ResourceAssignment;
 use App\Enums\Role;
 use App\Models\Announcement;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\InternalDocument;
 use App\Models\Invoice;
 use App\Models\InvoiceCounter;
@@ -73,6 +74,18 @@ final class E2eSeeder extends Seeder
         // Rôle additionnel : contact facturation (PRD) — sans lui, un résident
         // ne voit AUCUNE facture, même à son nom (InvoiceController::scope…).
         $member->assignRole(Role::BillingContact->value);
+
+        // Contact facturation explicite sur l'entité : c'est LUI qui ouvre les
+        // coordonnées bancaires du bloc « Mon entreprise » (PRD §3.6.4,
+        // CompanyPolicy::viewBillingDetails) — le rattachement de membre ne
+        // suffit pas.
+        Contact::factory()->billing()->primary()->create([
+            'company_id' => $company->id,
+            'user_id' => $member->id,
+            'first_name' => 'Emma',
+            'last_name' => 'Membre',
+            'email' => self::MEMBER_EMAIL,
+        ]);
 
         $memberDesk = Resource::query()->where('svg_desk_id', self::MEMBER_DESK_SVG_ID)->firstOrFail();
         $memberDesk->update(['assignment' => ResourceAssignment::AssignedResident->value]);

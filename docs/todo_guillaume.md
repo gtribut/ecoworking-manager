@@ -181,6 +181,17 @@
 
 ---
 
+## C13 — Recette manuelle (2026-09-12)
+
+> Livrés : `docs/recette.md` (checklist) + `DemoSeeder` (jeu de démo), validés le 13/09
+> (`DemoSeederTest` vert, suite complète 446 Pest verte, Pint propre).
+
+- [x] ✅ Docker Desktop relancé + intégration WSL2 active (13/09/26)
+- [x] ✅ Suite Pest verte après 2 mois : 446 tests (13/09/26) — Biome/Vitest côté SPA non relancés (aucune modif SPA)
+- [ ] 🔴 Premier chargement du jeu de démo sur la base de dev : `sail artisan migrate:fresh --seed --seeder=DemoSeeder` (écrase la base de dev ; Mailpit doit être up car les mails partent en synchrone)
+- [ ] 🟡 Poser `SEED_ADMIN_PASSWORD` dans le `.env` local avant le seed (sinon mot de passe admin affiché une seule fois)
+- [ ] 🟡 Dérouler `docs/recette.md`, cocher, remplir le journal §9, puis me dire « corrige R-nn »
+
 ## Plus tard / hors MVP (pour mémoire)
 
 - [ ] 🟡 (V1.5) Provisioning **Clever Cloud** : app, Postgres 18, Cellar, FS Bucket, DNS, env vars prod (cf. BRIEF §11, SUIVI D1-D2)

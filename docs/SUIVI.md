@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-07-03 — MVP COMPLET ✅ : C12 (10 lots), C11.3 (e2e) et C11.4 (a11y axe-core, thème sombre corrigé) terminés, jours ouvrés bureaux tranché, advisory npm + P2 doc soldés. Suites : 444 Pest + 72 Vitest + 26 e2e (dont 14 checks a11y), toutes vertes. Prochaine étape : V1.5 (déploiement Clever Cloud, import Cosoft) — cf. `todo_guillaume.md`.**
+> **Dernière mise à jour : 2026-09-12 — reprise après 2 mois. MVP COMPLET ✅ depuis le 03/07 (444 Pest + 72 Vitest + 26 e2e). Chantier ouvert : C13 recette manuelle** (`docs/recette.md` + `DemoSeeder`, livrés le 12/09, validés le 13/09 : 446 Pest verts). Ensuite : corrections issues de la recette, puis V1.5 (Clever Cloud, import Cosoft) — cf. `todo_guillaume.md`.
 
 ---
 
@@ -44,8 +44,9 @@
 > documents portail (C12.4), annuaire + plan SVG 49 bureaux (C12.5), dashboard admin + occupation (C12.6),
 > anonymisation RGPD (C12.7), magic link (C12.8a), audit log/rôles UI + Settings dé-scopé (C12.8b),
 > décision D email admin-only (C12.9). Suite complète **442 Pest + 71 Vitest verts**.
-> Prochaines étapes : **C11.3/C11.4** (tests e2e Playwright, a11y axe-core — y compris nouveaux écrans),
-> corrections review restantes à intercaler avant prod (cf. `review_fable/README` top 12), puis **V1.5** (déploiement Clever Cloud, import Cosoft).
+> **C11.3/C11.4 ✅** (03/07). **C13 🚧 recette manuelle** (ouvert le 12/09) : `docs/recette.md` (checklist par écran,
+> PRD §3/§4/§5 + isolation + emails + crons) et `DemoSeeder` (11 comptes, tous les états métier, vrais services).
+> Puis corrections recette → **V1.5** (déploiement Clever Cloud, import Cosoft).
 
 ---
 
@@ -190,6 +191,19 @@
 | C12.8a | Magic link membre (usage unique, 15 min, rate-limité, anti-énumération) | ✅ | ADR-0011 : URL signée 15 min + jeton SHA-256 en table `magic_link_tokens` (usage unique atomique) ; éligibilité (jamais admin/anonymisé) vérifiée à l'envoi ET à la consommation ; invalidation au changement de mdp (`UserObserver`) ; throttle 5/min ; réponse générique anti-énumération ; SPA : étape « lien de connexion » sur LoginPage ; 11 Pest + 3 Vitest |
 | C12.8b | Audit log UI + gestion rôles UI + Settings | ✅ | `ActivityResource` lecture seule (filtres modèle/action/auteur/période + recherche dans le diff `attribute_changes`, eager loading morphs, `ActivityPolicy` admin-only) + lien depuis le widget dashboard ; page `RolePermissionMatrix` lecture seule (composition réelle en DB) ; affectation rôles déjà couverte par UserForm (XOR) ; **Settings : décision NON implémenté** (PRD §4.15 + data_model §4.6 amendés — périmètre runtime vide, credentials jamais en DB) ; 12 tests. Écarts assumés à arbitrer si besoin : pas de création de rôles (enum codé), pas d'export CSV, pas d'IP dans l'audit |
 | C12.9 | Acter décision D : email membre = admin-only (PRD §3.4.5 + test UserForm) | ✅ | PRD §3.4.5 amendé ; `UserEmailAdminOnlyTest` (3) : édition admin OK, unicité, `PATCH /api/profile` ignore l'email ; docblock `UpdateProfileRequest` aligné |
+
+### C13 — Recette manuelle (pré-V1.5)
+
+> Ouverte le 2026-09-12 à la reprise du projet. Objectif : dérouler à la main tous les parcours
+> portail + back-office sur un jeu de démo réaliste, consigner les anomalies (`docs/recette.md` §9),
+> les corriger avant le déploiement.
+
+| Code | Tâche | Statut | Note |
+|---|---|---|---|
+| C13.1 | `DemoSeeder` : jeu de données de recette (dev only) | ✅ | `database/seeders/DemoSeeder.php` — 11 comptes (`demo-password`), 2 entreprises + 1 particulier + 1 external sans ticket + staff + membre anonymisé ; 3 mois de factures émises via `MonthlyBillingService`/`IssueInvoiceService` (payée, partielle, en retard, annulée + avoir, brouillons courants) ; tickets/occupations/résas/absences/annonces/documents. Refuse la prod. Test `DemoSeederTest` (2, 59 assertions) vert le 13/09 ; suite complète 446 Pest verte |
+| C13.2 | `docs/recette.md` : checklist de recette | ✅ | 9 sections : préparation, comptes, auth, 12 écrans portail, 13 modules admin, isolation A/B (bloquant), emails Mailpit, crons, journal des anomalies `R-nn` |
+| C13.3 | Exécution de la recette (Guillaume) | ⬜ | Cocher au fil de l'eau, remplir le journal §9 |
+| C13.4 | Corrections des anomalies `R-nn` | ⬜ | Une PR par lot, tests de non-régression ajoutés à chaque fix |
 
 ---
 

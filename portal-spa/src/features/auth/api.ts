@@ -1,5 +1,5 @@
 import { ensureCsrfCookie, http } from '@/lib/http'
-import type { AuthUser, LoginCredentials } from './types'
+import type { AuthUser, LoginCredentials, ResetPasswordInput } from './types'
 
 export type LoginResult = { status: 'authenticated' } | { status: 'two-factor-required' }
 
@@ -37,6 +37,22 @@ export async function twoFactorChallenge(payload: {
 export async function requestMagicLink(email: string): Promise<void> {
   await ensureCsrfCookie()
   await http.post('/magic-link', { email })
+}
+
+/**
+ * « Mot de passe oublié » (PRD §3.2, recette R-03) : Fortify envoie un lien de
+ * réinitialisation (valable 60 min) vers /reset-password/:token. Réponse
+ * générique côté back, email connu ou non (anti-énumération).
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  await ensureCsrfCookie()
+  await http.post('/forgot-password', { email })
+}
+
+/** Définit un nouveau mot de passe depuis le lien reçu par email (Fortify). */
+export async function resetPassword(input: ResetPasswordInput): Promise<void> {
+  await ensureCsrfCookie()
+  await http.post('/reset-password', input)
 }
 
 export async function logout(): Promise<void> {

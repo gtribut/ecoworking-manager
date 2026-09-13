@@ -13,6 +13,29 @@ function withUnauthenticated() {
 }
 
 describe('LoginPage', () => {
+  it('propose « Mot de passe oublié ? » et confirme l’envoi de façon générique (R-03)', async () => {
+    const user = userEvent.setup()
+    withUnauthenticated()
+    let posted: unknown = null
+    server.use(
+      http.post('/forgot-password', async ({ request }) => {
+        posted = await request.json()
+        return HttpResponse.json({ message: 'envoyé' })
+      }),
+    )
+
+    renderWithProviders(<LoginPage />, { withAuth: true })
+
+    await user.click(screen.getByRole('button', { name: 'Mot de passe oublié ?' }))
+    await user.type(screen.getByLabelText('Email'), 'claire@example.test')
+    await user.click(screen.getByRole('button', { name: /envoyer le lien de réinitialisation/i }))
+
+    expect(
+      await screen.findByText(/un lien de réinitialisation vient de vous être envoyé/i),
+    ).toBeInTheDocument()
+    expect(posted).toEqual({ email: 'claire@example.test' })
+  })
+
   it('valide les champs requis côté client', async () => {
     const user = userEvent.setup()
     withUnauthenticated()

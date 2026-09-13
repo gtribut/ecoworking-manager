@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
-import { login, requestMagicLink, twoFactorChallenge } from './api'
+import { login, requestMagicLink, requestPasswordReset, twoFactorChallenge } from './api'
 import { useAuth } from './useAuth'
 
 const loginSchema = z.object({
@@ -34,10 +34,12 @@ const magicLinkSchema = z.object({
 })
 type MagicLinkValues = z.infer<typeof magicLinkSchema>
 
-type Step = 'login' | 'totp' | 'recovery' | 'magic-link'
+type Step = 'login' | 'totp' | 'recovery' | 'magic-link' | 'forgot-password'
 
 interface LocationState {
   from?: { pathname?: string }
+  /** Message de confirmation (ex. mot de passe réinitialisé) affiché au-dessus du formulaire. */
+  notice?: string
 }
 
 export function LoginPage() {
@@ -56,8 +58,11 @@ export function LoginPage() {
       : null,
   )
   const [magicLinkSent, setMagicLinkSent] = useState(false)
+  const [resetLinkSent, setResetLinkSent] = useState(false)
 
-  const target = (location.state as LocationState | null)?.from?.pathname ?? '/'
+  const locationState = location.state as LocationState | null
+  const target = locationState?.from?.pathname ?? '/'
+  const notice = locationState?.notice ?? null
 
   async function finishLogin() {
     await refetchUser()
@@ -84,12 +89,20 @@ export function LoginPage() {
     defaultValues: { email: '' },
   })
 
+  // Même schéma (email seul) pour « mot de passe oublié » (PRD §3.2, R-03).
+  const forgotForm = useForm<MagicLinkValues>({
+    resolver: zodResolver(magicLinkSchema),
+    defaultValues: { email: '' },
+  })
+
   function goTo(nextStep: Step) {
     setFormError(null)
     challengeForm.reset()
     recoveryForm.reset()
     magicLinkForm.reset()
+    forgotForm.reset()
     setMagicLinkSent(false)
+    setResetLinkSent(false)
     setStep(nextStep)
   }
 
@@ -139,11 +152,24 @@ export function LoginPage() {
     }
   })
 
+  const onForgotPassword = forgotForm.handleSubmit(async (values) => {
+    setFormError(null)
+    try {
+      await requestPasswordReset(values.email)
+      setResetLinkSent(true)
+    } catch (error) {
+      setFormError(
+        getApiErrorMessage(error, 'Envoi impossible pour le moment. Réessayez dans un instant.'),
+      )
+    }
+  })
+
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
         <h1 className="text-center text-2xl font-semibold">Portail Ecoworking</h1>
 
+        {notice && step === 'login' && !formError && <Alert variant="success">{notice}</Alert>}
         {formError && <Alert variant="error">{formError}</Alert>}
 
         {step === 'totp' && (
@@ -265,7 +291,14 @@ export function LoginPage() {
             <Button type="submit" className="w-full" disabled={loginForm.formState.isSubmitting}>
               Se connecter
             </Button>
-            <div className="text-center text-sm">
+            <div className="flex flex-col gap-2 text-center text-sm">
+              <button
+                type="button"
+                className="text-brand-700 underline dark:text-brand-50"
+                onClick={() => goTo('forgot-password')}
+              >
+                Mot de passe oublié ?
+              </button>
               <button
                 type="button"
                 className="text-brand-700 underline dark:text-brand-50"
@@ -276,6 +309,51 @@ export function LoginPage() {
             </div>
           </form>
         )}
+
+        {step === 'forgot-password' &&
+          (resetLinkSent ? (
+            <div className="space-y-4">
+              {/* Générique : ne révèle pas si l'email correspond à un compte (PRD §3.2). */}
+              <Alert variant="success">
+                Si un compte correspond à cette adresse, un lien de réinitialisation vient de vous
+                être envoyé par email. Il est valable 60 minutes.
+              </Alert>
+              <div className="text-center text-sm">
+                <button type="button" className="underline" onClick={() => goTo('login')}>
+                  Retour à la connexion
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={onForgotPassword} className="space-y-4" noValidate>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                Saisissez votre email : vous recevrez un lien pour définir un nouveau mot de passe.
+              </p>
+              <div>
+                <Label htmlFor="forgot-email">Email</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  autoComplete="email"
+                  aria-invalid={Boolean(forgotForm.formState.errors.email)}
+                  {...forgotForm.register('email')}
+                />
+                {forgotForm.formState.errors.email && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {forgotForm.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
+              <Button type="submit" className="w-full" disabled={forgotForm.formState.isSubmitting}>
+                Envoyer le lien de réinitialisation
+              </Button>
+              <div className="text-center text-sm">
+                <button type="button" className="underline" onClick={() => goTo('login')}>
+                  Retour à la connexion
+                </button>
+              </div>
+            </form>
+          ))}
 
         {step === 'magic-link' &&
           (magicLinkSent ? (

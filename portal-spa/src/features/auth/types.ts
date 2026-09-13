@@ -15,3 +15,11 @@ export interface LoginCredentials {
   password: string
   remember?: boolean
 }
+
+/** Corps de POST /reset-password (Fortify). */
+export interface ResetPasswordInput {
+  token: string
+  email: string
+  password: string
+  password_confirmation: string
+}

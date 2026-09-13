@@ -5,6 +5,7 @@ import { AnnouncementDetailPage } from '@/features/announcements/AnnouncementDet
 import { AnnouncementsPage } from '@/features/announcements/AnnouncementsPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
+import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { BookingsPage } from '@/features/bookings/BookingsPage'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { DirectoryPage } from '@/features/directory/DirectoryPage'
@@ -19,6 +20,8 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      {/* R-03 — cible du lien « mot de passe oublié » (PRD §3.2), hors auth */}
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
       <Route
         element={

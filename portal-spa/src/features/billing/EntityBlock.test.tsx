@@ -28,6 +28,7 @@ describe('EntityBlock', () => {
   it('affiche l’entité complète, adresse (line2 + pays) et données de facturation', () => {
     render(
       <EntityBlock
+        showBillingDetails
         entity={makeEntity({
           payment_method: 'sepa',
           payment_method_label: 'Prélèvement SEPA',
@@ -73,10 +74,29 @@ describe('EntityBlock', () => {
   })
 
   it('n’affiche ni IBAN ni mode de paiement quand l’API ne les renvoie pas', () => {
-    render(<EntityBlock entity={makeEntity()} />)
+    render(<EntityBlock showBillingDetails entity={makeEntity()} />)
 
     expect(screen.queryByText('IBAN')).not.toBeInTheDocument()
     expect(screen.queryByText('Mode de paiement')).not.toBeInTheDocument()
+  })
+
+  it('masque les coordonnées bancaires hors module administratif (PRD §3.4.3)', () => {
+    // Le profil rend le bloc sans `showBillingDetails` : le PRD ne prévoit le
+    // mode de paiement et l'IBAN-4 que dans le module administratif (§3.6.4).
+    render(
+      <EntityBlock
+        entity={makeEntity({
+          payment_method: 'sepa',
+          payment_method_label: 'Prélèvement SEPA',
+          iban_last4: '1234',
+        })}
+      />,
+    )
+
+    expect(screen.queryByText('Prélèvement SEPA')).not.toBeInTheDocument()
+    expect(screen.queryByText('•••• 1234')).not.toBeInTheDocument()
+    // Le reste de l'entité reste affiché.
+    expect(screen.getByText('Acme SCOP')).toBeInTheDocument()
   })
 
   it('propose un lien de demande de modification', () => {

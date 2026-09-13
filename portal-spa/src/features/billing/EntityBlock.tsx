@@ -34,7 +34,17 @@ function formatAddress(address: BillingEntity['address']): string[] {
  * (PRD §3.6.4). Aucune donnée sensible : l'IBAN n'apparaît que par ses 4
  * derniers chiffres, jamais le mandat SEPA.
  */
-export function EntityBlock({ entity }: { entity: BillingEntity }) {
+export function EntityBlock({
+  entity,
+  showBillingDetails = false,
+}: {
+  entity: BillingEntity
+  /**
+   * Mode de paiement + IBAN-4 : prévus par le PRD dans le **module
+   * administratif** (§3.6.4) seulement, pas dans le profil (§3.4.3).
+   */
+  showBillingDetails?: boolean
+}) {
   const headingId = useId()
   const isIndividual = entity.entity_type === 'individual'
   const addressLines = formatAddress(entity.address)
@@ -45,8 +55,8 @@ export function EntityBlock({ entity }: { entity: BillingEntity }) {
     ['SIRET', entity.siret],
     ['N° TVA intracommunautaire', entity.vat_number],
     ['Email de facturation', entity.billing_email],
-    ['Mode de paiement', entity.payment_method_label ?? null],
-    ['IBAN', entity.iban_last4 ? `•••• ${entity.iban_last4}` : null],
+    ['Mode de paiement', showBillingDetails ? (entity.payment_method_label ?? null) : null],
+    ['IBAN', showBillingDetails && entity.iban_last4 ? `•••• ${entity.iban_last4}` : null],
   ]
   const filledRows = rows.filter(([, value]) => Boolean(value))
 
@@ -100,13 +110,19 @@ export function EntityBlock({ entity }: { entity: BillingEntity }) {
  * Liste des entités facturables (multi-entités : un bloc par entité, PRD
  * §3.6.4). Rien n'est rendu si l'utilisateur n'a aucune entité.
  */
-export function EntityBlocks({ entities }: { entities: BillingEntity[] }) {
+export function EntityBlocks({
+  entities,
+  showBillingDetails = false,
+}: {
+  entities: BillingEntity[]
+  showBillingDetails?: boolean
+}) {
   if (entities.length === 0) return null
 
   return (
     <div className="space-y-4">
       {entities.map((entity) => (
-        <EntityBlock key={entity.id} entity={entity} />
+        <EntityBlock key={entity.id} entity={entity} showBillingDetails={showBillingDetails} />
       ))}
     </div>
   )

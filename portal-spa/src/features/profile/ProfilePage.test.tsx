@@ -72,7 +72,7 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Acme SCOP')).toBeInTheDocument()
   })
 
-  it('affiche les données de facturation de l’entité au contact facturation (PRD §3.4.3)', async () => {
+  it('affiche l’entité complète sans les coordonnées bancaires (PRD §3.4.3)', async () => {
     server.use(
       http.get('/api/profile', () =>
         HttpResponse.json({
@@ -93,10 +93,11 @@ describe('ProfilePage', () => {
     expect(
       await screen.findByRole('heading', { level: 2, name: 'Mon entreprise' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Virement')).toBeInTheDocument()
-    expect(screen.getByText('•••• 9876')).toBeInTheDocument()
     // Adresse complète : le pays est rendu (écart §3.4 « adresse tronquée »).
     expect(screen.getByText('France')).toBeInTheDocument()
+    // Mode de paiement et IBAN-4 restent au module administratif (§3.6.4).
+    expect(screen.queryByText('Virement')).not.toBeInTheDocument()
+    expect(screen.queryByText('•••• 9876')).not.toBeInTheDocument()
   })
 
   it('explique l’absence d’entité juridique rattachée', async () => {

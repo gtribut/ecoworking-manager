@@ -1,5 +1,4 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, Download } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
@@ -13,6 +12,26 @@ import type { InvoiceSort, SortDirection } from './types'
 import { useInvoiceFilters } from './useInvoiceFilters'
 import { useInvoices } from './useInvoices'
 
+const SORT_LABELS: Record<InvoiceSort, string> = {
+  issued_at: 'date d’émission',
+  number: 'numéro',
+  // Tri alphabétique sur la valeur stockée du statut : ordre métier non
+  // pertinent en MVP (acté review lot D).
+  status: 'statut',
+}
+
+/** Résumé annoncé aux lecteurs d'écran après un tri ou un changement de filtre. */
+function resultSummary(
+  total: number,
+  filters: { sort: InvoiceSort; direction: SortDirection },
+  filtered: boolean,
+): string {
+  const plural = total > 1 ? 's' : ''
+  const order = filters.direction === 'asc' ? 'croissant' : 'décroissant'
+
+  return `${total} facture${plural}${filtered ? ` filtrée${plural}` : ''}, triée${plural} par ${SORT_LABELS[filters.sort]}, ordre ${order}.`
+}
+
 /**
  * En-tête de colonne triable : bouton dans le `<th>` + `aria-sort` porté par la
  * cellule (RGAA/WCAG). Déclaré hors du composant page pour que le `<th>` ne
@@ -20,13 +39,13 @@ import { useInvoices } from './useInvoices'
  */
 function SortableHeader({
   column,
-  children,
+  label,
   sort,
   direction,
   onToggle,
 }: {
   column: InvoiceSort
-  children: ReactNode
+  label: string
   sort: InvoiceSort
   direction: SortDirection
   onToggle: (column: InvoiceSort) => void
@@ -42,10 +61,11 @@ function SortableHeader({
     >
       <button
         type="button"
+        aria-label={`Trier par ${label.toLowerCase()}`}
         onClick={() => onToggle(column)}
         className="inline-flex items-center gap-1 rounded underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
-        {children}
+        {label}
         <Icon className="size-3.5" aria-hidden="true" />
       </button>
     </th>
@@ -71,6 +91,11 @@ export function InvoicesPage() {
         onReset={reset}
         hasActiveFilters={hasActiveFilters}
       />
+
+      {/* Annonce le résultat après un tri ou un filtre (lecteur d'écran). */}
+      <p aria-live="polite" className="sr-only">
+        {data ? resultSummary(data.meta.total, filters, hasActiveFilters) : ''}
+      </p>
 
       {isLoading && <Spinner label="Chargement des factures…" />}
       {isError && <Alert variant="error">Impossible de charger vos factures.</Alert>}
@@ -101,28 +126,25 @@ export function InvoicesPage() {
                 <tr>
                   <SortableHeader
                     column="number"
+                    label="Numéro"
                     sort={filters.sort}
                     direction={filters.direction}
                     onToggle={toggleSort}
-                  >
-                    Numéro
-                  </SortableHeader>
+                  />
                   <SortableHeader
                     column="issued_at"
+                    label="Date"
                     sort={filters.sort}
                     direction={filters.direction}
                     onToggle={toggleSort}
-                  >
-                    Date
-                  </SortableHeader>
+                  />
                   <SortableHeader
                     column="status"
+                    label="Statut"
                     sort={filters.sort}
                     direction={filters.direction}
                     onToggle={toggleSort}
-                  >
-                    Statut
-                  </SortableHeader>
+                  />
                   <th scope="col" className="px-4 py-3 text-right font-medium">
                     Total TTC
                   </th>
@@ -196,7 +218,9 @@ export function InvoicesPage() {
         </>
       )}
 
-      {entities.data && <EntityBlocks entities={entities.data} />}
+      {/* Module administratif (§3.6.4) : c'est ici que le PRD prévoit le mode
+          de paiement et l'IBAN-4, pas dans le profil. */}
+      {entities.data && <EntityBlocks entities={entities.data} showBillingDetails />}
     </div>
   )
 }

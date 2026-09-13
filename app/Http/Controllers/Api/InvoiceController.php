@@ -71,7 +71,7 @@ final class InvoiceController extends Controller
      *
      * @param  Builder<Invoice>  $query
      */
-    private function applyFilters($query, IndexInvoicesRequest $request): void
+    private function applyFilters(Builder $query, IndexInvoicesRequest $request): void
     {
         $query->when($request->year(), fn ($q, int $year) => $q->whereYear('issued_at', $year))
             ->when($request->month(), fn ($q, int $month) => $q->whereMonth('issued_at', $month))
@@ -91,7 +91,7 @@ final class InvoiceController extends Controller
      *
      * @param  Builder<Invoice>  $query
      */
-    private function scopeToBillingPerimeter($query, User $user): void
+    private function scopeToBillingPerimeter(Builder $query, User $user): void
     {
         if (! $user->isBillingContact()) {
             $query->whereRaw('1 = 0');

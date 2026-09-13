@@ -183,9 +183,29 @@ describe('PresencePage', () => {
 
     renderWithProviders(<PresencePage />, { withAuth: true })
 
-    expect(await screen.findByText(/Absence commencée/)).toBeInTheDocument()
+    expect(await screen.findByText(/contactez l’accueil/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Modifier/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Supprimer/ })).not.toBeInTheDocument()
+  })
+
+  it('rend le focus au bouton qui a ouvert le formulaire', async () => {
+    const user = userEvent.setup()
+    server.use(...presenceHandlers([absence()]))
+
+    renderWithProviders(<PresencePage />, { withAuth: true })
+
+    const edit = await screen.findByRole('button', { name: /^Modifier/ })
+    await user.click(edit)
+
+    // Le bouton de déclaration ne se prétend pas déplié pendant une édition.
+    expect(screen.getByRole('button', { name: 'Marquer une absence' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Annuler' }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Modifier/ })).toHaveFocus())
   })
 
   it('supprime une absence après confirmation', async () => {
@@ -209,12 +229,20 @@ describe('PresencePage', () => {
     await waitFor(() => expect(deleteSpy).toHaveBeenCalledTimes(1))
   })
 
-  it('bascule sur l’historique complet (?all=1)', async () => {
+  it('bascule sur l’historique complet (?all=1), sans rappel « absence commencée »', async () => {
     const user = userEvent.setup()
     server.use(
       ...presenceHandlers(
         [],
-        [absence({ id: 9, date_start: '2025-01-10', date_end: '2025-01-12', can_edit: false })],
+        [
+          absence({
+            id: 9,
+            date_start: '2025-01-10',
+            date_end: '2025-01-12',
+            can_edit: false,
+            can_delete: false,
+          }),
+        ],
       ),
     )
 
@@ -225,5 +253,6 @@ describe('PresencePage', () => {
     await user.click(screen.getByRole('button', { name: 'Voir l’historique' }))
 
     expect(await screen.findByText('du 10/01/2025 au 12/01/2025')).toBeInTheDocument()
+    expect(screen.queryByText(/Absence commencée/)).not.toBeInTheDocument()
   })
 })

@@ -66,13 +66,20 @@ function PresenceContent() {
   const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(
     null,
   )
-  const declareButtonRef = useRef<HTMLButtonElement>(null)
+  // Élément ayant ouvert le formulaire (« Marquer une absence » ou le bouton
+  // « Modifier » d'une ligne) : le focus lui revient à la fermeture, plutôt
+  // qu'au seul bouton de déclaration (RGAA, retour de contexte).
+  const openerRef = useRef<HTMLElement | null>(null)
 
-  function closeForm(returnFocus = true) {
+  function openForm(absence: Absence | null, opener: HTMLElement | null) {
+    setFeedback(null)
+    openerRef.current = opener
+    setEditing({ absence })
+  }
+
+  function closeForm() {
     setEditing(null)
-    if (returnFocus) {
-      declareButtonRef.current?.focus()
-    }
+    openerRef.current?.focus()
   }
 
   async function onSubmit(payload: CreateAbsenceInput) {
@@ -135,12 +142,16 @@ function PresenceContent() {
         </p>
 
         <Button
-          ref={declareButtonRef}
-          aria-expanded={editing !== null}
+          // `aria-expanded` ne décrit QUE le formulaire de déclaration : en
+          // modification, ce bouton rouvre une déclaration vierge.
+          aria-expanded={editing !== null && editing.absence === null}
           aria-controls="absence-form"
-          onClick={() => {
-            setFeedback(null)
-            setEditing(editing === null ? { absence: null } : null)
+          onClick={(event) => {
+            if (editing !== null && editing.absence === null) {
+              closeForm()
+              return
+            }
+            openForm(null, event.currentTarget)
           }}
         >
           Marquer une absence
@@ -201,9 +212,13 @@ function PresenceContent() {
                       {absence.notes}
                     </span>
                   )}
-                  {!absence.can_edit && !absence.can_delete && (
+                  {/* Rappel utile uniquement sur la liste « à venir » : dans
+                      l'historique, toutes les lignes passées sont verrouillées. */}
+                  {!absence.can_edit && !showHistory && (
                     <span className="block text-xs text-neutral-500 dark:text-neutral-400">
-                      Absence commencée : contactez l’accueil pour la modifier.
+                      {absence.can_delete
+                        ? 'Absence commencée : vous pouvez encore la supprimer aujourd’hui.'
+                        : 'Absence commencée : contactez l’accueil pour la modifier.'}
                     </span>
                   )}
                 </span>
@@ -212,10 +227,7 @@ function PresenceContent() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => {
-                        setFeedback(null)
-                        setEditing({ absence })
-                      }}
+                      onClick={(event) => openForm(absence, event.currentTarget)}
                     >
                       Modifier
                       <span className="sr-only"> l’absence {absenceSummary(absence)}</span>

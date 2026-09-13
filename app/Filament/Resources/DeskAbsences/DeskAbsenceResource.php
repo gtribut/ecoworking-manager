@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\DeskAbsences;
 
+use App\Enums\Permission;
 use App\Filament\Resources\DeskAbsences\Pages\CreateDeskAbsence;
 use App\Filament\Resources\DeskAbsences\Pages\EditDeskAbsence;
 use App\Filament\Resources\DeskAbsences\Pages\ListDeskAbsences;
 use App\Filament\Resources\DeskAbsences\Schemas\DeskAbsenceForm;
 use App\Filament\Resources\DeskAbsences\Tables\DeskAbsencesTable;
 use App\Models\DeskAbsence;
+use App\Models\User;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -38,6 +41,19 @@ class DeskAbsenceResource extends Resource
     protected static ?string $pluralModelLabel = 'absences déclarées';
 
     protected static ?string $navigationLabel = 'Absences bureaux';
+
+    /**
+     * Back-office uniquement (défense en profondeur, en plus de
+     * `canAccessPanel`) : la Policy autorise aussi le membre à gérer SES
+     * absences depuis le portail, elle ne peut donc pas garder ce panneau.
+     */
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user instanceof User
+            && ($user->isAdmin() || $user->can(Permission::DeclarePresenceForOthers->value));
+    }
 
     public static function form(Schema $schema): Schema
     {

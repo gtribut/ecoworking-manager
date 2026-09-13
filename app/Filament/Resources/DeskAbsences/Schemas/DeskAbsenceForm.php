@@ -74,10 +74,10 @@ class DeskAbsenceForm
                             ->visible(fn (Get $get): bool => $get('recurrence_type') === DeskAbsenceRecurrence::Weekly->value)
                             ->required(fn (Get $get): bool => $get('recurrence_type') === DeskAbsenceRecurrence::Weekly->value),
                         Textarea::make('notes')
-                            ->label('Note interne')
+                            ->label('Note (visible du membre s’il l’a écrite lui-même)')
                             ->maxLength(255)
                             ->columnSpanFull()
-                            ->helperText('Visible du back-office et du membre concerné uniquement.'),
+                            ->helperText('Une note saisie ici par le back-office reste interne : le portail ne la renvoie pas au membre.'),
                     ]),
             ]);
     }

@@ -11,7 +11,6 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -60,22 +59,29 @@ class DeskAbsencesTable
                     ->toggleable(),
             ])
             ->filters([
-                // Comparaisons CÔTÉ SQL (scopes du modèle) : jamais `isPast()`
-                // en PHP sur une ligne fraîche (piège fuseau du dépôt).
-                Filter::make('upcoming')
-                    ->label('À venir ou en cours')
-                    ->query(fn (Builder $query) => $query->upcoming())
-                    ->default(),
-                Filter::make('past')
-                    ->label('Terminées')
-                    ->query(fn (Builder $query) => $query->whereNot(fn (Builder $ongoing) => $ongoing->upcoming())),
+                // Filtre TERNAIRE (et non deux cases indépendantes : cochées
+                // ensemble, elles donnaient une liste vide). Comparaisons CÔTÉ
+                // SQL via les scopes du modèle — jamais `isPast()` en PHP sur
+                // une ligne fraîche (piège fuseau du dépôt).
+                SelectFilter::make('period_status')
+                    ->label('Période')
+                    ->options([
+                        'upcoming' => 'À venir ou en cours',
+                        'past' => 'Terminées',
+                    ])
+                    ->default('upcoming')
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'upcoming' => $query->upcoming(),
+                        'past' => $query->whereNot(fn (Builder $ongoing) => $ongoing->upcoming()),
+                        default => $query, // « Toutes » (option vide du select)
+                    }),
                 SelectFilter::make('desk')
                     ->label('Bureau')
                     ->relationship('desk', 'name')
                     ->searchable()
                     ->preload(),
                 SelectFilter::make('period')
-                    ->label('Période')
+                    ->label('Créneau')
                     ->options(Period::class),
                 SelectFilter::make('recurrence_type')
                     ->label('Récurrence')

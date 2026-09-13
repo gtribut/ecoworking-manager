@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Enums\Audience;
+use App\Enums\ResourceAssignment;
 use App\Enums\Role;
 use App\Models\Announcement;
 use App\Models\Company;
@@ -13,6 +14,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceCounter;
 use App\Models\InvoiceLine;
 use App\Models\MemberProfile;
+use App\Models\Resource;
 use App\Models\User;
 use App\Services\IssueInvoiceService;
 use Illuminate\Database\Seeder;
@@ -40,6 +42,14 @@ final class E2eSeeder extends Seeder
     /** Mot de passe commun aux comptes e2e (base dédiée, jamais en prod). */
     public const string PASSWORD = 'e2e-password';
 
+    /**
+     * Bureau attitré du membre principal (`svg_desk_id` du ResourceSeeder).
+     * Requis depuis le lot B : `/api/user` expose `has_desk` et le module
+     * « Ma présence » n'est accessible qu'avec un bureau. `desk-1` reste libre —
+     * directory.spec.ts l'utilise comme exemple de bureau non attribué.
+     */
+    public const string MEMBER_DESK_SVG_ID = 'desk-2';
+
     public function run(): void
     {
         $this->call([
@@ -63,9 +73,14 @@ final class E2eSeeder extends Seeder
         // Rôle additionnel : contact facturation (PRD) — sans lui, un résident
         // ne voit AUCUNE facture, même à son nom (InvoiceController::scope…).
         $member->assignRole(Role::BillingContact->value);
+
+        $memberDesk = Resource::query()->where('svg_desk_id', self::MEMBER_DESK_SVG_ID)->firstOrFail();
+        $memberDesk->update(['assignment' => ResourceAssignment::AssignedResident->value]);
+
         MemberProfile::factory()->inDirectory()->create([
             'user_id' => $member->id,
             'company_id' => $company->id,
+            'desk_id' => $memberDesk->id,
             'job_title' => 'Designer produit',
             'bio' => 'Profil e2e visible dans l’annuaire.',
         ]);

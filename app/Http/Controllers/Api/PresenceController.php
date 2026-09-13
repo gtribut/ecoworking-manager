@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\DeskAbsenceRecurrence;
 use App\Enums\Period;
 use App\Enums\Role;
+use App\Http\Controllers\Api\Concerns\MarksScopedFlag;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreAbsenceRequest;
 use App\Http\Requests\Api\UpdateAbsenceRequest;
@@ -30,6 +31,8 @@ use Illuminate\Support\Facades\Notification;
  */
 final class PresenceController extends Controller
 {
+    use MarksScopedFlag;
+
     /** Bureau attitré, jours présents sur une plage + absences du membre. */
     public function index(Request $request, PresenceService $presence): JsonResponse
     {
@@ -143,27 +146,17 @@ final class PresenceController extends Controller
      * Renseigne `can_edit` / `can_delete` en UNE requête pour toute la page :
      * « l'absence a-t-elle commencé ? » se compare CÔTÉ SQL sur les colonnes
      * DATE (une ligne fraîchement écrite est relue décalée du fuseau). Les deux
-     * fenêtres sont identiques (jour de début inclus, cf. DeskAbsencePolicy),
-     * mais restent deux drapeaux distincts dans le contrat d'API.
+     * fenêtres sont identiques (jour de début inclus, cf. DeskAbsencePolicy) —
+     * `canDelete` recopie `canEdit` plutôt que de rejouer la requête.
      *
      * @param  Collection<int, DeskAbsence>  $absences
      */
     private function markEditability(Collection $absences): void
     {
-        if ($absences->isEmpty()) {
-            return;
-        }
-
-        $openIds = DeskAbsence::query()
-            ->whereKey($absences->modelKeys())
-            ->notStartedBefore()
-            ->pluck('id')
-            ->all();
+        $this->markWithScope($absences, 'notStartedBefore', 'canEdit');
 
         foreach ($absences as $absence) {
-            $open = in_array($absence->id, $openIds, true);
-            $absence->canEdit = $open;
-            $absence->canDelete = $open;
+            $absence->canDelete = $absence->canEdit;
         }
     }
 }

@@ -10,7 +10,7 @@
 > factures/annuaire), chaque puce du PRD vérifiée par lecture + grep. Les items **conformes ne
 > sont pas listés** ici — seuls les écarts. Numéros de section = `docs/PRD.md`.
 
-Légende : ❌ absent · ⚠️ partiel · 🔀 fait autrement que le PRD · 🔮 le PRD le marque lui-même hors MVP / 🟡 « à valider » · ✅ *corrigé 13/09*
+Légende : ❌ absent · ⚠️ partiel · 🔀 fait autrement que le PRD · 🔮 le PRD le marque lui-même hors MVP / 🟡 « à valider » · ✅ *corrigé 13/09* (anomalies R-nn) · ✅ *soldé <date> (lot X, commit)* (lots C13.6)
 
 ---
 
@@ -20,7 +20,7 @@ Par ordre d'impact utilisateur, après corrections du 13/09 :
 
 1. **Calendrier des salles (§3.5.2)** : ce n'est pas un calendrier. Une salle à la fois, un seul jour, liste de créneaux d'1 h, occupants anonymes (ni nom, ni entité, ni libellé, pas de distinction de ses propres résas), pas de navigation semaine, **salle événementielle invisible**. Le PRD en fait l'outil de coordination d'équipe « temps réel ».
 2. **Réservation resident/additional (§3.5.3)** : créneaux figés à 1 h entre 8 h et 20 h. Pas de journée / demi-journée / créneau personnalisé, pas de résa nocturne alors que le back accepte 24/7. **Aucune modification** de résa (ni API ni UI) : annuler + recréer.
-3. **Navigation non filtrée par rôle (§2.5)** : « Factures » visible pour tous (page vide trompeuse pour un resident sans rôle billing), « Présence » proposée aux `additional` (qui n'ont pas de bureau), « Réservations/Actualités » pour un `billing_contact` pur.
+3. ✅ *soldé 13/09 (lot B)* — **Navigation non filtrée par rôle (§2.5)** : « Factures » visible pour tous (page vide trompeuse pour un resident sans rôle billing), « Présence » proposée aux `additional` (qui n'ont pas de bureau), « Réservations/Actualités » pour un `billing_contact` pur.
 4. **Absences (§3.4.6)** : récurrence hebdo **non bornable** (date de fin désactivée), pas d'édition, pas de champ note, liste sans filtre « à venir », bureau attitré et mini-plan non affichés.
 5. **Factures (§3.6.2)** : aucun tri sélectionnable, aucun filtre (mois, année, statut), aucune recherche par numéro. Bloc « Mon entreprise » : mode de paiement et IBAN-4 absents, adresse tronquée, entité déduite du profil et non des entités facturables.
 6. **Annuaire/plan (§3.7)** : aucun tooltip au survol (identité seulement au clic ou via aria-label), photos jamais rendues, staff opt-in sans mention « Équipe Ecoworking ».
@@ -37,10 +37,10 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 
 | Exigence PRD | Statut | Constat |
 |---|---|---|
-| Calendrier des salles : billing_contact pur ❌ | ⚠️ | Entrée « Réservations » statique pour tous — `Layout.tsx:43` ; aucune lecture de `view-bookings-calendar` |
-| Marquer son bureau vacant : resident + staff, **additional ❌** | 🔀 | `isResident = has('create-own-booking')` (`usePermissions.ts:25`) or `additional` a aussi cette permission → nav « Présence » + tuile visibles pour lui ; `PresencePage` laisse passer jusqu'à l'API (erreur métier « pas de bureau ») |
-| Factures : billing_contact uniquement, module masqué sinon | ⚠️ | Nav « Factures » statique (`Layout.tsx:51`), route sans garde, `InvoicesPage` sans permission → « Aucune facture pour le moment » pour un resident (trompeur). `view-billing-section` inutilisée côté SPA. Le bloc dashboard est, lui, gaté (✅ 13/09) |
-| S'inscrire aux events : billing_contact pur ❌ | ⚠️ | Entrée « Actualités » statique pour tous |
+| Calendrier des salles : billing_contact pur ❌ | ✅ *soldé 13/09 (lot B, `008e3d3`)* | Nav, route SPA (`RequireAccess`) et API `/rooms`, `/bookings` gatées par `view-bookings-calendar` / `view-own-bookings` |
+| Marquer son bureau vacant : resident + staff, **additional ❌** | ✅ *soldé 13/09 (lot B, `008e3d3`)* | `GET /api/user` expose `has_desk` ; `isResident = has_desk` ; `DeskAbsencePolicy::viewAny/create` = bureau attitré (403 sinon) |
+| Factures : billing_contact uniquement, module masqué sinon | ✅ *soldé 13/09 (lot B, `008e3d3`)* | Nav + route gatées par `view-billing-section` ; `InvoicePolicy::viewAny` / `AdministrativeDocumentPolicy::viewAny` → 403 hors rôle billing (plus de liste vide) |
+| S'inscrire aux events : billing_contact pur ❌ | ✅ *soldé 13/09 (lot B, `008e3d3`)* | Lecture des actualités conservée pour tous (le billing pur est une audience des annonces) ; seul le bouton d'inscription dépend de `register-event` (déjà le cas) |
 | Voir son entité juridique (lecture seule) | ⚠️ | Pas de module dédié : bloc dans le profil uniquement (cf. §3.6.4) |
 
 ## §1.4 / §3.1 — Identité, principes UI, RGAA
@@ -107,7 +107,7 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 
 | Exigence PRD | Statut | Constat |
 |---|---|---|
-| Accès resident/staff uniquement | ⚠️ | Visible aux `additional` (cf. §2.5) ; `DeskAbsencePolicy::create` → `true`, garde réelle = exception métier dans `PresenceService` |
+| Accès resident/staff uniquement | ✅ *soldé 13/09 (lot B, `008e3d3`)* | Module masqué et route gardée sans `has_desk` ; Policy stricte côté API |
 | Affichage du bureau attitré (numéro, étage) | ❌ | `PresencePage` ne référence pas `desk` ; `/api/presence` ne le renvoie pas |
 | Mini-aperçu de la position sur le plan | ❌ | Absent |
 | Liste des absences **à venir** | ⚠️ | Toutes les absences renvoyées sans filtre de date (`PresenceController.php:128-130`) |
@@ -187,7 +187,7 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 
 | Exigence PRD | Statut | Constat |
 |---|---|---|
-| Module masqué de la nav sans rôle billing | ⚠️ | Cf. §2.5 (nav « Factures » statique) |
+| Module masqué de la nav sans rôle billing | ✅ *soldé 13/09 (lot B, `008e3d3`)* | Cf. §2.5 |
 | Colonne libellé / nom de la facture | ❌ | Aucune colonne ni donnée (pas de label sur `invoices`) |
 | Tri date / numéro / statut | ⚠️ | Défaut date desc OK ; aucun tri sélectionnable (`InvoiceController@index` ne lit que `page`) |
 | Filtres mois, année, statut ; recherche numéro | ❌ | Aucun |
@@ -219,7 +219,7 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 | Suspense React / code-splitting | ❌ | Toutes les pages importées statiquement (chunk 560 kB) |
 | Bandeau hors-ligne | ❌ | Aucun `navigator.onLine` |
 | 500 : toast + bouton « Réessayer » | ⚠️ | Alert inline sans réessai (retry TanStack ×2 automatique) |
-| 403 : message « Accès refusé » générique | ⚠️ | Géré localement (annuaire/plan) ; ailleurs message serveur brut |
+| 403 : message « Accès refusé » générique | ⚠️ partiel *(lot B `008e3d3` : écran `Forbidden` « Accès refusé » sur toute garde de route SPA)* | Reste (lot G) : 403 renvoyé par l'API affiché en message serveur brut hors annuaire/plan |
 | États vides « rassurants + CTA » | ⚠️ | « Aucune réservation pour le moment. » sans « Réservez votre première salle → » ; idem factures |
 | Toasts éphémères | ❌ | Aucun système |
 | Marquer lu **manuellement** (sans naviguer) | ⚠️ | Auto au clic uniquement ; l'API `POST /notifications/{id}/read` existe |
@@ -262,4 +262,10 @@ Regrouper en lots, chacun = une branche + tests :
 - **Lot E — External** (§3.5.6, 3.5.9) : liste + annulation des bureaux nomades, détail par ticket, mailto, fériés filtrés côté dispo, plan filtré (ou acter la liste).
 - **Lot F — Compte** (§3.4.2/3.4.5) : changement de mot de passe, photo (upload + redimensionnement), markdown bio, audit `MemberProfile`, email d'accueil à la création par l'admin.
 - **Lot G — Chrome & transverses** (§3.1, 3.8, 3.9) : footer + `/accessibilite`, switch thème/menu profil header, toasts, Skeleton, offline, « Réessayer », états vides avec CTA, notifications manquantes (document à valider, résa admin), rétention 90 j.
-- **À acter plutôt qu'à coder** (écarts 🔀 défendables) : nav horizontale vs sidebar, thème en base vs localStorage, Spinner vs Skeleton, `id="desk-N"` vs id DB, route `/pdf` vs `/download`, statut `partial`. Une ligne dans le PRD suffit pour les figer.
+- **À acter plutôt qu'à coder** (écarts 🔀 défendables) : nav horizontale vs sidebar, thème en base vs localStorage, Spinner vs Skeleton, `id="desk-N"` vs id DB, route `/pdf` vs `/download`, statut `partial`. ✅ *Actés dans le PRD le 13/09 (`fff53c3`)*, avec la déconnexion en bouton direct.
+
+### Avancement des lots (C13.6)
+
+| Lot | Statut | Commits | Notes |
+|---|---|---|---|
+| B — Rôles & navigation | ✅ mergé 13/09 | `008e3d3` (merge) | 477 Pest / 99 Vitest / e2e 19-20 verts. Écarts hors lot relevés : `/api/announcements`, `/api/tickets`, `/api/desks/*` sans permission de rôle (auto-scopés) ; route `/tickets` non gardée ; e2e « session expirée » flaky **sur main aussi** (échoue seul, dépend de l'ordre des specs) |

@@ -35,8 +35,13 @@ export interface RoomAvailability {
   is_external: boolean
 }
 
-/** Identité de l'occupant d'un créneau (Q4 : transparence entre membres). */
+/**
+ * Identité de l'occupant d'un créneau (Q4 : transparence entre membres).
+ * `kind` distingue un membre (dont le nom peut être masqué par l'opt-out
+ * annuaire) d'une entité juridique (résa posée par l'admin).
+ */
 export interface Occupant {
+  kind: 'member' | 'entity'
   first_name: string | null
   last_name: string | null
   company_name: string | null
@@ -47,8 +52,11 @@ export interface CalendarSlot {
   /** Renseigné uniquement pour ses propres réservations (seules modifiables). */
   booking_id: number | null
   is_mine: boolean
+  /** Sa résa est-elle encore modifiable (créneau pas encore commencé) ? */
+  cancellable: boolean
   starts_at: string
   ends_at: string
+  /** `null` si le membre n'a pas accès à l'identité des coworkers (external). */
   label: string | null
   occupant: Occupant | null
 }

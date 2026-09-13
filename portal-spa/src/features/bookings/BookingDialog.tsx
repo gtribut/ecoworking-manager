@@ -9,16 +9,16 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { Modal } from '@/components/ui/Modal'
 import { getApiErrorMessage, getApiFieldErrors, getApiStatus } from '@/lib/errors'
+import { fetchRoomAvailability } from './api'
 import {
   AFTERNOON,
   DEFAULT_HOURS,
-  EXTERNAL_HOURS,
   findNearestFreeSlot,
   formatHour,
   MORNING,
   toIsoDate,
 } from './calendar'
-import type { CalendarSlot, CreateBookingInput, SlotPeriod } from './types'
+import type { CreateBookingInput, SlotPeriod } from './types'
 import { useCancelBooking, useCreateBooking, useUpdateBooking } from './useBookings'
 
 /** Créneau à réserver (clic sur une case libre) ou réservation à modifier. */
@@ -29,7 +29,6 @@ export type DialogTarget =
       roomName: string
       date: string
       startHour: number
-      slots: CalendarSlot[]
     }
   | {
       mode: 'edit'
@@ -39,8 +38,8 @@ export type DialogTarget =
       startsAt: string
       endsAt: string
       title: string | null
+      /** Créneau encore modifiable (délai Q22) : sinon la modale est en lecture seule. */
       cancellable: boolean
-      slots: CalendarSlot[]
     }
 
 const SLOT_KINDS = ['full_day', 'morning', 'afternoon', 'custom'] as const
@@ -183,6 +182,35 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
     target.mode === 'create' ? `Réserver ${target.roomName}` : `Ma réservation — ${target.roomName}`
   const kinds: SlotKind[] = isExternal ? ['morning', 'afternoon'] : [...SLOT_KINDS]
 
+  // Filet : si la résa a commencé entre l'affichage de la liste et le clic, le
+  // serveur refuserait (403). On le dit au lieu de proposer un formulaire mort.
+  if (target.mode === 'edit' && !target.cancellable) {
+    return (
+      <Modal open title={title} onClose={onClose}>
+        <div className="space-y-4">
+          <Alert variant="info">
+            Cette réservation a déjà commencé : elle n’est plus modifiable ni annulable depuis le
+            portail. Contactez Ecoworking pour un cas particulier.
+          </Alert>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt className="font-medium">Salle</dt>
+            <dd>{target.roomName}</dd>
+            <dt className="font-medium">Créneau</dt>
+            <dd>
+              {new Date(target.startsAt).toLocaleString('fr-FR', {
+                dateStyle: 'long',
+                timeStyle: 'short',
+              })}{' '}
+              – {hhmm(target.endsAt)}
+            </dd>
+            <dt className="font-medium">Libellé</dt>
+            <dd>{target.title ?? '—'}</dd>
+          </dl>
+        </div>
+      </Modal>
+    )
+  }
+
   async function onSubmit(values: FormValues) {
     if (target === null) {
       return
@@ -216,30 +244,36 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
       }
       onClose()
     } catch (error) {
+      // Les champs horaires ne sont rendus qu'en « créneau personnalisé » : hors
+      // de ce mode (external, journée, demi-journée) l'erreur serait invisible,
+      // on la rattache alors au champ Date, toujours affiché.
+      const timesVisible = !isExternal && values.kind === 'custom'
       const fieldErrors = getApiFieldErrors(error)
       for (const [field, message] of Object.entries(fieldErrors)) {
-        if (field === 'starts_at' || field === 'date') {
-          setError('start_time', { message })
-        } else if (field === 'ends_at') {
-          setError('end_time', { message })
-        } else if (field === 'title') {
+        if (field === 'title') {
           setError('title', { message })
+        } else if (field === 'ends_at' && timesVisible) {
+          setError('end_time', { message })
+        } else if (timesVisible && (field === 'starts_at' || field === 'date')) {
+          setError('start_time', { message })
+        } else {
+          setError('date', { message })
         }
       }
       setFormError(getApiErrorMessage(error, 'Réservation impossible.'))
 
       if (getApiStatus(error) === 409 && !isExternal) {
+        // La suggestion se calcule sur une dispo FRAÎCHE : celle affichée datait
+        // d'avant la réservation concurrente qui vient de provoquer le conflit.
         const start = new Date(`${values.date}T${times.start}:00`)
         const end = new Date(`${values.date}T${times.end}:00`)
         const duration = Math.round((end.getTime() - start.getTime()) / 60_000)
-        setSuggestion(
-          findNearestFreeSlot(
-            target.slots,
-            start,
-            duration,
-            isExternal ? EXTERNAL_HOURS : DEFAULT_HOURS,
-          ),
-        )
+        try {
+          const fresh = await fetchRoomAvailability(target.roomId, values.date)
+          setSuggestion(findNearestFreeSlot(fresh.busy, start, duration, DEFAULT_HOURS))
+        } catch {
+          setSuggestion(null) // message de conflit seul
+        }
       }
     }
   }

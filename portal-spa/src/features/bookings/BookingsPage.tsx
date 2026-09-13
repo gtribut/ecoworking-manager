@@ -40,8 +40,9 @@ export function BookingsPage() {
         startsAt: picked.slot.starts_at,
         endsAt: picked.slot.ends_at,
         title: picked.slot.label,
-        cancellable: true,
-        slots: picked.room.slots,
+        // Le serveur tranche : une résa déjà commencée n'est plus modifiable
+        // (délai Q22) — la modale s'ouvre alors en lecture seule.
+        cancellable: picked.slot.cancellable,
       })
       return
     }
@@ -63,7 +64,6 @@ export function BookingsPage() {
       roomName: picked.room.name,
       date: picked.date,
       startHour: picked.hour,
-      slots: picked.room.slots,
     })
   }
 
@@ -78,7 +78,6 @@ export function BookingsPage() {
       endsAt: booking.ends_at,
       title: booking.title,
       cancellable: booking.cancellable,
-      slots: [],
     })
   }
 

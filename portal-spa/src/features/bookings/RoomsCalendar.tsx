@@ -85,6 +85,7 @@ export function RoomsCalendar({ isExternal, onPick, onPickEventRoom }: RoomsCale
   const [anchor, setAnchor] = useState<Date>(() => atHour(new Date(), 0))
   const [showAllHours, setShowAllHours] = useState(false)
   const [selectedIds, setSelectedIds] = useState<number[] | null>(null)
+  const [detail, setDetail] = useState<string | null>(null)
 
   const { data: catalog, isLoading: catalogLoading, isError: catalogError } = useRooms()
   const roomIds = selectedIds ?? []
@@ -294,6 +295,7 @@ export function RoomsCalendar({ isExternal, onPick, onPickEventRoom }: RoomsCale
                                   compact
                                   onPick={onPick}
                                   onPickEventRoom={onPickEventRoom}
+                                  onDetail={setDetail}
                                 />
                               ))}
                             </div>
@@ -313,6 +315,7 @@ export function RoomsCalendar({ isExternal, onPick, onPickEventRoom }: RoomsCale
                               compact={false}
                               onPick={onPick}
                               onPickEventRoom={onPickEventRoom}
+                              onDetail={setDetail}
                             />
                           </td>
                         ))}
@@ -322,7 +325,18 @@ export function RoomsCalendar({ isExternal, onPick, onPickEventRoom }: RoomsCale
             </table>
           </div>
 
-          <DayList rooms={rooms} day={view === 'week' ? anchor : anchor} />
+          {/* Détail du créneau survolé ou atteint au clavier : l'infobulle
+              flottante serait rognée par le défilement horizontal de la grille.
+              `aria-hidden` — l'information est déjà dans l'`aria-label` du
+              créneau, inutile de la faire annoncer deux fois. */}
+          <p
+            aria-hidden="true"
+            className="min-h-10 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
+          >
+            {detail ?? 'Survolez un créneau (ou atteignez-le au clavier) pour en voir le détail.'}
+          </p>
+
+          <DayList rooms={rooms} days={days} />
         </>
       )}
     </section>
@@ -338,6 +352,8 @@ interface SlotCellProps {
   compact: boolean
   onPick: (slot: PickedSlot) => void
   onPickEventRoom: () => void
+  /** Remonte la description du créneau survolé / focalisé (panneau de détail). */
+  onDetail: (description: string | null) => void
 }
 
 /** Une heure d'une salle : libre (réservable), occupée, ou passée. */
@@ -350,6 +366,7 @@ function SlotCell({
   compact,
   onPick,
   onPickEventRoom,
+  onDetail,
 }: SlotCellProps) {
   const start = atHour(day, hour)
   const end = atHour(day, hour + 1)
@@ -369,6 +386,7 @@ function SlotCell({
         size={size}
         compact={compact}
         onPick={onPick}
+        onDetail={onDetail}
         day={day}
         hour={hour}
       />
@@ -379,11 +397,21 @@ function SlotCell({
     return (
       <button
         type="button"
-        className={`${size} truncate rounded border border-dashed border-neutral-300 text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800`}
+        className={`${size} rounded border border-dashed border-neutral-300 text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800`}
         aria-label={`${room.name}, ${when} : réservation sur demande auprès d’Ecoworking`}
         onClick={onPickEventRoom}
+        onMouseEnter={() =>
+          onDetail(`${room.name}, ${when} : réservation sur demande auprès d’Ecoworking`)
+        }
+        onMouseLeave={() => onDetail(null)}
+        onFocus={() =>
+          onDetail(`${room.name}, ${when} : réservation sur demande auprès d’Ecoworking`)
+        }
+        onBlur={() => onDetail(null)}
       >
-        <span aria-hidden="true">{compact ? badge : 'Sur demande'}</span>
+        <span aria-hidden="true" className="block truncate">
+          {compact ? badge : 'Sur demande'}
+        </span>
       </button>
     )
   }
@@ -402,19 +430,26 @@ function SlotCell({
   return (
     <button
       type="button"
-      className={`${size} truncate rounded border border-dashed border-neutral-300 text-neutral-600 hover:border-brand-600 hover:bg-brand-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800`}
+      className={`${size} rounded border border-dashed border-neutral-300 text-neutral-600 hover:border-brand-600 hover:bg-brand-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800`}
       aria-label={`Réserver ${room.name}, ${when}`}
       onClick={() => onPick({ room, date: toIsoDate(day), hour, slot: null })}
+      onMouseEnter={() => onDetail(`${room.name}, ${when} : libre`)}
+      onMouseLeave={() => onDetail(null)}
+      onFocus={() => onDetail(`${room.name}, ${when} : libre`)}
+      onBlur={() => onDetail(null)}
     >
-      <span aria-hidden="true">{compact ? badge : 'Libre'}</span>
+      <span aria-hidden="true" className="block truncate">
+        {compact ? badge : 'Libre'}
+      </span>
     </button>
   )
 }
 
 /**
- * Créneau occupé : les siennes sont mises en avant et modifiables, celles des
- * autres affichent prénom + nom + entité + libellé au survol ET au focus
- * clavier (Q4), sans être modifiables.
+ * Créneau occupé : les siennes sont mises en avant et — tant que le créneau n'a
+ * pas commencé — modifiables. Celles des autres restent focalisables (leur
+ * `aria-label` et le panneau de détail portent prénom + nom + entité + libellé,
+ * Q4) mais ne sont jamais modifiables.
  */
 function BusySlotCell({
   slot,
@@ -424,6 +459,7 @@ function BusySlotCell({
   size,
   compact,
   onPick,
+  onDetail,
   day,
   hour,
 }: {
@@ -434,48 +470,50 @@ function BusySlotCell({
   size: string
   compact: boolean
   onPick: (picked: PickedSlot) => void
+  onDetail: (description: string | null) => void
   day: Date
   hour: number
 }) {
   const description = `${room.name}, ${formatDayLabel(day)} : ${describeSlot(slot)}`
-  const mine = slot.is_mine && slot.booking_id !== null
-  const classes = `${size} group relative truncate rounded border ${slot.is_mine ? MINE_CLASSES : color}`
+  const editable = slot.is_mine && slot.booking_id !== null && slot.cancellable
+  const classes = `${size} rounded border ${slot.is_mine ? MINE_CLASSES : color}`
+  const detailHandlers = {
+    onMouseEnter: () => onDetail(description),
+    onMouseLeave: () => onDetail(null),
+    onFocus: () => onDetail(description),
+    onBlur: () => onDetail(null),
+  }
 
   const content = (
-    <>
-      <span aria-hidden="true" className="block truncate">
-        {compact ? badge : describeSlot(slot)}
-      </span>
-      <span
-        aria-hidden="true"
-        className="invisible absolute left-0 top-full z-20 mt-1 w-max max-w-60 rounded border border-neutral-300 bg-white p-2 text-left text-xs font-normal text-neutral-900 shadow-lg group-hover:visible group-focus:visible group-focus-within:visible dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-      >
-        {description}
-      </span>
-    </>
+    <span aria-hidden="true" className="block truncate">
+      {compact ? badge : describeSlot(slot)}
+    </span>
   )
 
-  if (mine) {
+  if (editable) {
     return (
       <button
         type="button"
         className={`${classes} hover:opacity-90`}
         aria-label={`${description} — modifier ou supprimer`}
         onClick={() => onPick({ room, date: toIsoDate(day), hour, slot })}
+        {...detailHandlers}
       >
         {content}
       </button>
     )
   }
 
-  // Résa d'un autre membre : focusable (donc consultable au clavier) mais non
-  // modifiable — `aria-disabled` plutôt que `disabled` pour rester atteignable.
+  // Résa d'un autre membre, ou sienne déjà commencée : focusable (donc
+  // consultable au clavier) mais non modifiable — `aria-disabled` plutôt que
+  // `disabled` pour rester atteignable.
   return (
     <button
       type="button"
       aria-disabled="true"
       className={`${classes} cursor-default`}
       aria-label={description}
+      {...detailHandlers}
     >
       {content}
     </button>
@@ -483,44 +521,49 @@ function BusySlotCell({
 }
 
 /**
- * Alternative accessible à la grille (CLAUDE.md §3.5) : l'occupation de la
- * journée sélectionnée, salle par salle, en texte intégral.
+ * Alternative accessible à la grille (CLAUDE.md §3.5) : l'occupation de chaque
+ * jour affiché, salle par salle, en texte intégral.
  */
-function DayList({ rooms, day }: { rooms: CalendarRoom[]; day: Date }) {
+function DayList({ rooms, days }: { rooms: CalendarRoom[]; days: Date[] }) {
   return (
-    <section aria-labelledby="calendar-day-list-heading" className="space-y-3">
+    <section aria-labelledby="calendar-day-list-heading" className="space-y-4">
       <h3 id="calendar-day-list-heading" className="text-sm font-medium">
-        Vue liste — {formatDayLabel(day)}
+        Vue liste
       </h3>
-      <ul className="space-y-3">
-        {rooms.map((room) => {
-          const busy = slotsOfDay(room.slots, day)
-          return (
-            <li key={room.id}>
-              <p className="text-sm font-medium">
-                {room.name}
-                {!room.is_bookable && (
-                  <span className="font-normal text-neutral-500 dark:text-neutral-400">
-                    {' '}
-                    — lecture seule
-                  </span>
-                )}
-              </p>
-              {busy.length === 0 ? (
-                <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                  Aucune réservation ce jour.
-                </p>
-              ) : (
-                <ul className="ml-4 list-disc text-sm text-neutral-700 dark:text-neutral-200">
-                  {busy.map((slot) => (
-                    <li key={`${slot.starts_at}-${slot.ends_at}`}>{describeSlot(slot)}</li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          )
-        })}
-      </ul>
+      {days.map((day) => (
+        <div key={day.toISOString()} className="space-y-2">
+          <h4 className="text-sm font-medium capitalize">{formatDayLabel(day)}</h4>
+          <ul className="space-y-2">
+            {rooms.map((room) => {
+              const busy = slotsOfDay(room.slots, day)
+              return (
+                <li key={room.id}>
+                  <p className="text-sm font-medium">
+                    {room.name}
+                    {!room.is_bookable && (
+                      <span className="font-normal text-neutral-500 dark:text-neutral-400">
+                        {' '}
+                        — lecture seule
+                      </span>
+                    )}
+                  </p>
+                  {busy.length === 0 ? (
+                    <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                      Aucune réservation ce jour.
+                    </p>
+                  ) : (
+                    <ul className="ml-4 list-disc text-sm text-neutral-700 dark:text-neutral-200">
+                      {busy.map((slot) => (
+                        <li key={`${slot.starts_at}-${slot.ends_at}`}>{describeSlot(slot)}</li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ))}
     </section>
   )
 }

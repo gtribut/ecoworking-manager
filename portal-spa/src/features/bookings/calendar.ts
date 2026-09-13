@@ -1,5 +1,11 @@
 import type { CalendarSlot } from './types'
 
+/** Tout intervalle daté : un créneau du calendrier ou une plage `busy` brute. */
+export interface TimeRange {
+  starts_at: string
+  ends_at: string
+}
+
 /** Bornes horaires affichées par défaut (PRD §3.5.2 : 8 h-20 h, 9 h-18 h external). */
 export const DEFAULT_HOURS = { start: 8, end: 20 } as const
 export const EXTERNAL_HOURS = { start: 9, end: 18 } as const
@@ -55,7 +61,7 @@ export function atHour(day: Date, hour: number): Date {
 }
 
 /** Premier créneau occupé chevauchant [start, end[ — bornes semi-ouvertes. */
-export function slotCovering(slots: CalendarSlot[], start: Date, end: Date): CalendarSlot | null {
+export function slotCovering<T extends TimeRange>(slots: T[], start: Date, end: Date): T | null {
   const from = start.getTime()
   const to = end.getTime()
   return (
@@ -86,7 +92,7 @@ export function slotsOfDay(slots: CalendarSlot[], day: Date): CalendarSlot[] {
  * journée est pleine. Pas de créneau dans le passé.
  */
 export function findNearestFreeSlot(
-  slots: CalendarSlot[],
+  slots: TimeRange[],
   desiredStart: Date,
   durationMinutes: number,
   bounds: { start: number; end: number },
@@ -139,22 +145,36 @@ export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
-/** Identité affichée d'un occupant : « Hugo Discret (Atelier Numérique) ». */
-export function formatOccupant(slot: CalendarSlot): string {
+/**
+ * Identité affichée d'un occupant : « Hugo Discret (Atelier Numérique) ».
+ * `null` quand le serveur ne communique aucune identité (external, PRD §3.5.9).
+ */
+export function formatOccupant(slot: CalendarSlot): string | null {
   const occupant = slot.occupant
   if (occupant === null) {
-    return 'Réservation Ecoworking'
+    return null
   }
   const name = [occupant.first_name, occupant.last_name].filter(Boolean).join(' ').trim()
-  if (name !== '' && occupant.company_name) {
-    return `${name} (${occupant.company_name})`
+  if (name !== '') {
+    return occupant.company_name ? `${name} (${occupant.company_name})` : name
   }
-  return name !== '' ? name : (occupant.company_name ?? 'Réservation Ecoworking')
+  // Membre sans nom = opt-out annuaire : l'entité reste affichée (coordination).
+  if (occupant.kind === 'member') {
+    return occupant.company_name
+      ? `Coworker (souhaite rester discret) · ${occupant.company_name}`
+      : 'Coworker (souhaite rester discret)'
+  }
+  return occupant.company_name ?? 'Réservation Ecoworking'
 }
 
-/** Description complète d'un créneau occupé (aria-label + infobulle). */
+/** Description complète d'un créneau occupé (aria-label + panneau de détail). */
 export function describeSlot(slot: CalendarSlot): string {
-  const who = slot.is_mine ? 'Ma réservation' : `Occupé par ${formatOccupant(slot)}`
+  const occupant = formatOccupant(slot)
+  const who = slot.is_mine
+    ? 'Ma réservation'
+    : occupant === null
+      ? 'Occupé'
+      : `Occupé par ${occupant}`
   const label = slot.label ? ` — ${slot.label}` : ''
   return `${formatTime(slot.starts_at)} – ${formatTime(slot.ends_at)} · ${who}${label}`
 }

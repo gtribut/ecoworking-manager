@@ -9,6 +9,7 @@ import {
   makeAuthUser,
   renderWithProviders,
 } from '@/test/utils'
+import { BookingDialog } from './BookingDialog'
 import { BookingsPage } from './BookingsPage'
 
 const MEETING_ROOM = {
@@ -98,6 +99,7 @@ describe('BookingsPage — calendrier des salles', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
   it('affiche la grille semaine avec toutes les salles et la navigation', async () => {
@@ -139,6 +141,114 @@ describe('BookingsPage — calendrier des salles', () => {
     expect(screen.getByText(/Semaine du lundi 15 juin/, { selector: 'p' })).toBeInTheDocument()
   })
 
+  it('ouvre la vue jour par défaut sur mobile (matchMedia)', async () => {
+    // Seule la requête de largeur répond « mobile » : le reste (thème) doit
+    // continuer à passer par le stub jsdom, qui expose addEventListener.
+    const realMatchMedia = window.matchMedia.bind(window)
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) =>
+      query.includes('max-width')
+        ? ({ ...realMatchMedia(query), matches: true } as MediaQueryList)
+        : realMatchMedia(query),
+    )
+    setup()
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    expect(await screen.findByRole('heading', { name: 'Calendrier des salles' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Jour précédent' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Salle Rhône' })).toBeInTheDocument()
+  })
+
+  it('étend la grille à 24 h via le toggle', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    setup()
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+    await screen.findByRole('heading', { name: 'Calendrier des salles' })
+
+    // 8 h-20 h par défaut : ni 06:00 ni 22:00 dans les en-têtes de ligne.
+    expect(screen.queryByRole('rowheader', { name: '06:00' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Voir 24 h' }))
+
+    expect(screen.getByRole('rowheader', { name: '00:00' })).toBeInTheDocument()
+    expect(screen.getByRole('rowheader', { name: '23:00' })).toBeInTheDocument()
+  })
+
+  it('liste les 7 jours de la semaine dans l’alternative accessible', async () => {
+    setup({
+      slots: [
+        {
+          booking_id: null,
+          is_mine: false,
+          cancellable: false,
+          starts_at: '2026-06-12T10:00:00+02:00',
+          ends_at: '2026-06-12T11:00:00+02:00',
+          label: 'Atelier',
+          occupant: { kind: 'entity', first_name: null, last_name: null, company_name: 'Cabinet' },
+        },
+      ],
+    })
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    expect(await screen.findByRole('heading', { name: 'Vue liste' })).toBeVisible()
+    // Lundi 8 → dimanche 14 juin : un sous-titre par jour affiché.
+    expect(screen.getByRole('heading', { name: 'lundi 8 juin' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'dimanche 14 juin' })).toBeVisible()
+    // Et le créneau du vendredi 12 y figure en texte, avec son occupant.
+    expect(screen.getByText(/Occupé par Cabinet — Atelier/)).toBeVisible()
+  })
+
+  it('n’offre aucune action sur une résa déjà commencée et ouvre la modale en lecture seule', async () => {
+    setup({
+      bookings: [
+        {
+          id: 77,
+          resource_id: 7,
+          resource_name: 'Salle Rhône',
+          title: 'Déjà commencée',
+          starts_at: '2026-06-10T08:00:00+02:00',
+          ends_at: '2026-06-10T12:00:00+02:00',
+          status: 'confirmed',
+          is_paid: false,
+          ticket: null,
+          // Encore « à venir » (non terminée) mais le créneau a commencé.
+          cancellable: false,
+        },
+      ],
+    })
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+    await screen.findByText('Déjà commencée')
+
+    expect(screen.queryByRole('button', { name: /Modifier/ })).not.toBeInTheDocument()
+  })
+
+  it('affiche la modale en lecture seule si l’état de la liste est périmé', () => {
+    renderWithProviders(
+      <BookingDialog
+        target={{
+          mode: 'edit',
+          bookingId: 77,
+          roomId: 7,
+          roomName: 'Salle Rhône',
+          startsAt: '2026-06-10T08:00:00+02:00',
+          endsAt: '2026-06-10T12:00:00+02:00',
+          title: 'Déjà commencée',
+          cancellable: false,
+        }}
+        isExternal={false}
+        onClose={() => undefined}
+        onSuccess={() => undefined}
+      />,
+    )
+
+    expect(screen.getByRole('dialog', { name: 'Ma réservation — Salle Rhône' })).toBeVisible()
+    expect(screen.getByText(/n’est plus modifiable ni annulable depuis le portail/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Supprimer' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Enregistrer les modifications' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Déjà commencée')).toBeVisible()
+  })
+
   it('bascule en vue jour (une colonne par salle)', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     setup()
@@ -158,10 +268,12 @@ describe('BookingsPage — calendrier des salles', () => {
         {
           booking_id: null,
           is_mine: false,
+          cancellable: false,
           starts_at: '2026-06-11T10:00:00+02:00',
           ends_at: '2026-06-11T11:00:00+02:00',
           label: 'Comité produit',
           occupant: {
+            kind: 'member',
             first_name: 'Hugo',
             last_name: 'Discret',
             company_name: 'Atelier Numérique',
@@ -169,6 +281,7 @@ describe('BookingsPage — calendrier des salles', () => {
         },
       ],
     })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
     const busy = await screen.findByRole('button', {
@@ -176,8 +289,19 @@ describe('BookingsPage — calendrier des salles', () => {
     })
     // Consultable au clavier mais jamais modifiable (PRD §3.5.2).
     expect(busy).toHaveAttribute('aria-disabled', 'true')
-    // L'infobulle visible au survol ET au focus porte la même information.
-    expect(within(busy).getByText(/Hugo Discret \(Atelier Numérique\)/)).toBeInTheDocument()
+
+    // Le panneau de détail s'alimente au focus clavier comme au survol.
+    busy.focus()
+    expect(
+      await screen.findByText(/Occupé par Hugo Discret \(Atelier Numérique\) — Comité produit/, {
+        selector: 'p',
+      }),
+    ).toBeVisible()
+
+    await user.hover(busy)
+    expect(
+      screen.getByText(/Occupé par Hugo Discret \(Atelier Numérique\)/, { selector: 'p' }),
+    ).toBeVisible()
   })
 
   it('propose de nous contacter au clic sur la salle événementielle', async () => {
@@ -261,6 +385,7 @@ describe('BookingsPage — calendrier des salles', () => {
         {
           booking_id: null,
           is_mine: false,
+          cancellable: false,
           starts_at: '2026-06-11T10:00:00+02:00',
           ends_at: '2026-06-11T11:00:00+02:00',
           label: null,
@@ -275,6 +400,19 @@ describe('BookingsPage — calendrier des salles', () => {
           { status: 409 },
         ),
       ),
+      // La suggestion se calcule sur une dispo FRAÎCHE : 09:00–10:00 vient
+      // d'être pris par un tiers, 10:00–11:00 l'était déjà.
+      http.get('/api/rooms/:id/availability', () =>
+        HttpResponse.json({
+          date: '2026-06-11',
+          busy: [
+            { starts_at: '2026-06-11T09:00:00+02:00', ends_at: '2026-06-11T10:00:00+02:00' },
+            { starts_at: '2026-06-11T10:00:00+02:00', ends_at: '2026-06-11T11:00:00+02:00' },
+          ],
+          external_slots: [],
+          is_external: false,
+        }),
+      ),
     )
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
@@ -287,7 +425,10 @@ describe('BookingsPage — calendrier des salles', () => {
     expect(
       await within(dialog).findByText('Ce créneau est déjà réservé pour cette salle.'),
     ).toBeVisible()
-    expect(within(dialog).getByText(/Créneau libre le plus proche/)).toBeVisible()
+    expect(await within(dialog).findByText(/Créneau libre le plus proche/)).toBeVisible()
+    // 08:00–09:00 : créneau libre le plus proche du 09:00 demandé, d'après la
+    // dispo rafraîchie (09:00 et 10:00 sont pris).
+    expect(within(dialog).getByRole('button', { name: '08:00 – 09:00' })).toBeVisible()
   })
 
   it('affiche les erreurs 422 sous les champs concernés', async () => {
@@ -341,10 +482,16 @@ describe('BookingsPage — calendrier des salles', () => {
         {
           booking_id: 42,
           is_mine: true,
+          cancellable: true,
           starts_at: '2026-06-11T10:00:00+02:00',
           ends_at: '2026-06-11T11:00:00+02:00',
           label: 'Point équipe',
-          occupant: { first_name: 'Alex', last_name: 'Martin', company_name: 'Ecoworking' },
+          occupant: {
+            kind: 'member',
+            first_name: 'Alex',
+            last_name: 'Martin',
+            company_name: 'Ecoworking',
+          },
         },
       ],
     })
@@ -380,6 +527,7 @@ describe('BookingsPage — calendrier des salles', () => {
         {
           booking_id: 42,
           is_mine: true,
+          cancellable: true,
           starts_at: '2026-06-11T10:00:00+02:00',
           ends_at: '2026-06-11T11:00:00+02:00',
           label: null,

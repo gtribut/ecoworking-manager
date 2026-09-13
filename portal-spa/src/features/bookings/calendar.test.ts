@@ -18,6 +18,7 @@ function slot(startsAt: string, endsAt: string, overrides: Partial<CalendarSlot>
   return {
     booking_id: null,
     is_mine: false,
+    cancellable: false,
     starts_at: startsAt,
     ends_at: endsAt,
     label: null,
@@ -124,7 +125,12 @@ describe('calendar', () => {
   it('décrit un créneau avec occupant, entité et libellé (Q4)', () => {
     const busy = slot('2026-09-16T10:00:00+02:00', '2026-09-16T11:00:00+02:00', {
       label: 'Comité produit',
-      occupant: { first_name: 'Hugo', last_name: 'Discret', company_name: 'Atelier Numérique' },
+      occupant: {
+        kind: 'member',
+        first_name: 'Hugo',
+        last_name: 'Discret',
+        company_name: 'Atelier Numérique',
+      },
     })
 
     expect(formatOccupant(busy)).toBe('Hugo Discret (Atelier Numérique)')
@@ -133,9 +139,35 @@ describe('calendar', () => {
     expect(describeSlot({ ...busy, is_mine: true })).toContain('Ma réservation')
   })
 
+  it('n’affiche aucun occupant quand le serveur n’en communique pas (external)', () => {
+    const busy = slot('2026-09-16T10:00:00+02:00', '2026-09-16T11:00:00+02:00')
+
+    expect(formatOccupant(busy)).toBeNull()
+    expect(describeSlot(busy)).toContain('Occupé')
+    expect(describeSlot(busy)).not.toContain('Occupé par')
+  })
+
+  it('affiche « souhaite rester discret » pour un membre opt-out, entité conservée', () => {
+    const busy = slot('2026-09-16T10:00:00+02:00', '2026-09-16T11:00:00+02:00', {
+      occupant: {
+        kind: 'member',
+        first_name: null,
+        last_name: null,
+        company_name: 'Atelier Numérique',
+      },
+    })
+
+    expect(formatOccupant(busy)).toBe('Coworker (souhaite rester discret) · Atelier Numérique')
+  })
+
   it('affiche l’entité seule quand la résa n’a pas de membre (résa admin)', () => {
     const busy = slot('2026-09-16T10:00:00+02:00', '2026-09-16T11:00:00+02:00', {
-      occupant: { first_name: null, last_name: null, company_name: 'Cabinet Rhône' },
+      occupant: {
+        kind: 'entity',
+        first_name: null,
+        last_name: null,
+        company_name: 'Cabinet Rhône',
+      },
     })
 
     expect(formatOccupant(busy)).toBe('Cabinet Rhône')

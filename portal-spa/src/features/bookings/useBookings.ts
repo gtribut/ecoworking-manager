@@ -13,10 +13,14 @@ import {
 import type { CreateBookingInput, UpdateBookingInput } from './types'
 
 export const roomsQueryKey = ['rooms'] as const
+/**
+ * Préfixe `bookings` commun (invalidé en bloc par toute écriture), mais segment
+ * distinct par usage : `['bookings','upcoming',3]` (dashboard) et la page 3 de
+ * la liste « à venir » se seraient autrement partagé la même entrée de cache.
+ */
 export const bookingsQueryKey = (scope: 'upcoming' | 'past', page: number) =>
-  ['bookings', scope, page] as const
-/** Préfixe `bookings` conservé : invalidé par création/annulation comme la liste. */
-export const upcomingBookingsQueryKey = (limit: number) => ['bookings', 'upcoming', limit] as const
+  ['bookings', 'list', scope, page] as const
+export const upcomingBookingsQueryKey = (limit: number) => ['bookings', 'dashboard', limit] as const
 export const roomAvailabilityQueryKey = (roomId: number, date: string) =>
   ['rooms', roomId, 'availability', date] as const
 export const roomsAvailabilityQueryKey = (from: string, to: string, roomIds: number[]) =>

@@ -27,6 +27,10 @@ final class CurrentUserController extends Controller
             'email' => $user->email,
             'theme' => $user->theme,
             'two_factor_enabled' => $user->two_factor_confirmed_at !== null,
+            // Lot B (PRD §2.5) : le module présence/absences est réservé au
+            // membre doté d'un bureau attitré — la SPA ne peut pas le déduire
+            // des permissions (un `additional` a les mêmes, sans bureau).
+            'has_desk' => $user->hasAssignedDesk(),
             'roles' => $user->getRoleNames()->values(),
             'permissions' => $user->getAllPermissions()->pluck('name')->values(),
         ]);

@@ -6,6 +6,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\ContactRole;
+use App\Enums\ResourceType;
 use App\Enums\Role;
 use App\Models\Concerns\Auditable;
 use App\Observers\UserObserver;
@@ -18,6 +19,7 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -205,6 +207,22 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         }
 
         return false;
+    }
+
+    /**
+     * Dispose-t-il d'un bureau attitré (PRD §2.5 « Occuper son bureau attitré ») ?
+     *
+     * C'est LA définition du « résident » côté portail : le module présence /
+     * absences (§3.4.6) en dépend, pas la permission `create-own-booking` (qu'un
+     * membre additionnel possède aussi, sans bureau). Vérifié côté SQL, sans
+     * charger le profil ni la ressource.
+     */
+    public function hasAssignedDesk(): bool
+    {
+        return $this->memberProfile()
+            ->whereNotNull('desk_id')
+            ->whereHas('desk', fn (Builder $query) => $query->where('type', ResourceType::Desk->value))
+            ->exists();
     }
 
     /** @return HasOne<MemberProfile, $this> */

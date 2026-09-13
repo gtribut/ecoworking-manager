@@ -1,9 +1,11 @@
+import type { PhotoUrls } from '@/components/Avatar'
+
 /** Entrée de l'annuaire (GET /api/directory) — profils opt-in uniquement. */
 export interface DirectoryEntry {
   id: number
   first_name: string
   last_name: string
-  photo_path: string | null
+  photo: PhotoUrls | null
   job_title: string | null
   bio: string | null
   interests: string | null
@@ -23,7 +25,7 @@ export interface PlanOccupantVisible {
   member_profile_id: number
   first_name: string
   last_name: string
-  photo_path: string | null
+  photo: PhotoUrls | null
   job_title: string | null
   bio: string | null
   interests: string | null

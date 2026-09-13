@@ -1,6 +1,8 @@
 import { Linkedin, Search, Users } from 'lucide-react'
 import { useState } from 'react'
+import { Avatar, initialsOf } from '@/components/Avatar'
 import { EmptyState } from '@/components/EmptyState'
+import { MarkdownContent } from '@/components/MarkdownContent'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -11,9 +13,9 @@ import { DirectoryTabs } from './DirectoryTabs'
 import type { DirectoryEntry } from './types'
 import { useDirectory } from './useDirectory'
 
-/** Initiales pour l'avatar de repli (l'upload de photo n'existe pas encore). */
+/** Initiales pour l'avatar de repli (PRD §3.4.2 : photo absente). */
 export function initials(entry: DirectoryEntry): string {
-  return `${entry.first_name.charAt(0)}${entry.last_name.charAt(0)}`.toUpperCase()
+  return initialsOf(entry.first_name, entry.last_name)
 }
 
 /**
@@ -93,12 +95,11 @@ export function DirectoryPage() {
                 className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
               >
                 <article aria-labelledby={`coworker-${entry.id}-name`} className="flex gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-50 text-base font-semibold text-brand-700 dark:bg-neutral-800 dark:text-brand-50"
-                  >
-                    {initials(entry)}
-                  </span>
+                  <Avatar
+                    firstName={entry.first_name}
+                    lastName={entry.last_name}
+                    photo={entry.photo}
+                  />
                   <div className="min-w-0 space-y-1">
                     <h2 id={`coworker-${entry.id}-name`} className="text-base font-medium">
                       {entry.first_name} {entry.last_name}
@@ -110,7 +111,10 @@ export function DirectoryPage() {
                       </p>
                     )}
                     {entry.bio && (
-                      <p className="text-sm text-neutral-600 dark:text-neutral-300">{entry.bio}</p>
+                      <MarkdownContent
+                        markdown={entry.bio}
+                        className="text-sm text-neutral-600 dark:text-neutral-300"
+                      />
                     )}
                     <ul className="flex flex-wrap gap-3 pt-1">
                       {entry.linkedin_url && (

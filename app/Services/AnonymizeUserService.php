@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\User;
+use App\Services\Profile\ProfilePhotoService;
 use Illuminate\Database\DatabaseManager;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 use RuntimeException;
@@ -24,7 +24,10 @@ use RuntimeException;
  */
 final class AnonymizeUserService
 {
-    public function __construct(private readonly DatabaseManager $db) {}
+    public function __construct(
+        private readonly DatabaseManager $db,
+        private readonly ProfilePhotoService $photos,
+    ) {}
 
     /**
      * @throws RuntimeException si l'utilisateur est déjà anonymisé
@@ -103,11 +106,10 @@ final class AnonymizeUserService
             return;
         }
 
-        if ($profile->photo_path !== null) {
-            // Disque des uploads Filament (photos `member-photos/`).
-            Storage::disk(config('filament.default_filesystem_disk', 'public'))
-                ->delete($profile->photo_path);
-        }
+        // Supprime les fichiers du disque (3 rendus) ET remet `photo_path` à
+        // null — cf. ProfilePhotoService, qui gère aussi les photos déposées
+        // par l'admin avant le portail (chemin de fichier simple).
+        $this->photos->delete($profile);
 
         $profile->forceFill([
             'photo_path' => null,

@@ -12,7 +12,7 @@ function makeEntry(overrides: Partial<DirectoryEntry> = {}): DirectoryEntry {
     id: 1,
     first_name: 'Marie',
     last_name: 'Durand',
-    photo_path: null,
+    photo: null,
     job_title: 'Designer',
     bio: 'Design de services.',
     interests: 'Vélo, céramique',
@@ -86,6 +86,30 @@ describe('DirectoryPage', () => {
     expect(
       await screen.findByText('Aucun coworker ne s’affiche dans l’annuaire pour le moment.'),
     ).toBeInTheDocument()
+  })
+
+  it('affiche la photo si elle existe, les initiales sinon (PRD §3.4.2)', async () => {
+    server.use(
+      http.get('/api/directory', () =>
+        page([
+          makeEntry({
+            photo: {
+              sm: '/api/users/7/photo/80',
+              md: '/api/users/7/photo/200',
+              lg: '/api/users/7/photo/400',
+            },
+          }),
+          makeEntry({ id: 2, first_name: 'Hugo', last_name: 'Petit', photo: null }),
+        ]),
+      ),
+    )
+
+    renderWithProviders(<DirectoryPage />)
+
+    const photo = await screen.findByRole('img', { name: 'Marie Durand' })
+    expect(photo).toHaveAttribute('src', '/api/users/7/photo/80')
+    expect(photo).toHaveAttribute('loading', 'lazy')
+    expect(screen.getByText('HP')).toBeInTheDocument()
   })
 
   it('explique le refus d’accès (403 : external sans view-annuaire)', async () => {

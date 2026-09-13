@@ -6,11 +6,11 @@ namespace App\Filament\Resources\Users\Schemas;
 
 use App\Enums\Role;
 use App\Rules\ExclusiveUsageRole;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Facades\Hash;
 
 class UserForm
 {
@@ -40,16 +40,17 @@ class UserForm
                 Section::make('Accès')
                     ->columns(2)
                     ->schema([
-                        TextInput::make('password')
+                        // Pas de champ mot de passe (PRD §3.2) : l'admin ne
+                        // choisit ni ne connaît jamais le mot de passe d'un
+                        // membre. À la création, un secret aléatoire est posé
+                        // puis le membre reçoit un email d'accueil avec un lien
+                        // de définition (CreateUser + action « Renvoyer l'email
+                        // d'accueil » sur la fiche).
+                        Placeholder::make('password_state')
                             ->label('Mot de passe')
-                            ->password()
-                            ->revealable()
-                            ->rule('min:8')
-                            // Requis à la création ; à l'édition, vide = inchangé.
-                            ->required(fn (string $operation): bool => $operation === 'create')
-                            ->dehydrated(fn (?string $state): bool => filled($state))
-                            ->dehydrateStateUsing(fn (string $state): string => Hash::make($state))
-                            ->helperText('Laisser vide à l\'édition pour conserver le mot de passe actuel.'),
+                            ->content(fn (string $operation): string => $operation === 'create'
+                                ? 'Le membre le définira lui-même via l\'email d\'accueil envoyé à la création.'
+                                : 'Défini par le membre. Utilisez « Renvoyer l\'email d\'accueil » pour lui permettre de le redéfinir.'),
                         Select::make('roles')
                             ->label('Rôles')
                             ->relationship('roles', 'name')

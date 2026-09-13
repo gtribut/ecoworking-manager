@@ -5,7 +5,29 @@ import { describe, expect, it } from 'vitest'
 import { server } from '@/test/server'
 import { renderWithProviders } from '@/test/utils'
 import { FloorPlanPage } from './FloorPlanPage'
-import type { FloorPlan, PlanDesk } from './types'
+import type { FloorPlan, PlanDesk, PlanOccupantVisible } from './types'
+
+const PHOTO = {
+  sm: '/api/users/7/photo/80',
+  md: '/api/users/7/photo/200',
+  lg: '/api/users/7/photo/400',
+}
+
+function visibleOccupant(photo: PlanOccupantVisible['photo'] = null): PlanOccupantVisible {
+  return {
+    visible: true,
+    member_profile_id: 10,
+    first_name: 'Marie',
+    last_name: 'Durand',
+    photo,
+    job_title: 'Designer',
+    bio: null,
+    interests: null,
+    linkedin_url: null,
+    website_url: null,
+    company: 'Acme Studio',
+  }
+}
 
 function makeDesk(overrides: Partial<PlanDesk> = {}): PlanDesk {
   return {
@@ -16,19 +38,7 @@ function makeDesk(overrides: Partial<PlanDesk> = {}): PlanDesk {
     assignment: 'assigned_resident',
     is_own: false,
     status: 'present',
-    occupant: {
-      visible: true,
-      member_profile_id: 10,
-      first_name: 'Marie',
-      last_name: 'Durand',
-      photo_path: null,
-      job_title: 'Designer',
-      bio: null,
-      interests: null,
-      linkedin_url: null,
-      website_url: null,
-      company: 'Acme Studio',
-    },
+    occupant: visibleOccupant(),
     ...overrides,
   }
 }
@@ -155,6 +165,45 @@ describe('FloorPlanPage', () => {
 
     const link = await screen.findByRole('link', { name: 'Gérer mes absences' })
     expect(link).toHaveAttribute('href', '/presence')
+  })
+
+  it('pose la photo du résident sur son bureau, en décoration (PRD §3.7.3)', async () => {
+    await renderPlan({
+      ...defaultPlan,
+      desks: [makeDesk({ occupant: visibleOccupant(PHOTO) })],
+    })
+
+    await waitFor(() => {
+      const image = document.querySelector('#desk-1 [data-desk-photo]')
+      expect(image).not.toBeNull()
+      // Rendu 80 px (le plus petit) et hors arbre d'accessibilité : l'info est
+      // déjà portée par l'aria-label du bloc et l'alternative texte.
+      expect(image).toHaveAttribute('href', PHOTO.sm)
+      expect(image).toHaveAttribute('aria-hidden', 'true')
+    })
+  })
+
+  it('grise la photo d’un résident absent et n’en pose aucune sans opt-in', async () => {
+    await renderPlan({
+      ...defaultPlan,
+      desks: [
+        makeDesk({
+          status: 'absent',
+          occupant: visibleOccupant(PHOTO),
+        }),
+        makeDesk({
+          resource_id: 2,
+          svg_desk_id: 'desk-2',
+          name: 'Bureau 2',
+          occupant: { visible: false },
+        }),
+      ],
+    })
+
+    await waitFor(() => {
+      expect(document.querySelector('#desk-1 [data-desk-photo]')).toHaveAttribute('opacity', '0.45')
+    })
+    expect(document.querySelector('#desk-2 [data-desk-photo]')).toBeNull()
   })
 
   it('signale un jour non ouvré', async () => {

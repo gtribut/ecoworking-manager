@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { MarkdownContent } from '@/components/MarkdownContent'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -13,8 +14,12 @@ import { Textarea } from '@/components/ui/Textarea'
 import { EntityBlock } from '@/features/billing/EntityBlock'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
+import { PasswordSection } from './PasswordSection'
+import { PhotoSection } from './PhotoSection'
 import { TwoFactorSection } from './TwoFactorSection'
 import { useProfile, useUpdateProfile } from './useProfile'
+
+const BIO_MAX_LENGTH = 500
 
 const optionalUrl = z.union([z.literal(''), z.string().url('URL invalide.')])
 
@@ -42,6 +47,7 @@ export function ProfilePage() {
 
   const { data, isLoading, isError, refetch } = useProfile()
   const updateProfile = useUpdateProfile()
+  const [bioPreview, setBioPreview] = useState(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -89,6 +95,7 @@ export function ProfilePage() {
   }
 
   const hasProfile = data.profile !== null
+  const bioValue = form.watch('bio') ?? ''
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
@@ -119,6 +126,14 @@ export function ProfilePage() {
     <div className="mx-auto max-w-2xl space-y-8">
       <h1 className="text-2xl font-semibold">Mon profil</h1>
 
+      {hasProfile && (
+        <PhotoSection
+          firstName={data.user.first_name}
+          lastName={data.user.last_name}
+          photo={data.profile?.photo ?? null}
+        />
+      )}
+
       <form onSubmit={onSubmit} className="space-y-8" noValidate>
         <fieldset className="space-y-4">
           <legend className="text-lg font-medium">Mes informations</legend>
@@ -137,7 +152,7 @@ export function ProfilePage() {
             <Label htmlFor="email">Email</Label>
             <Input id="email" value={data.user.email} disabled readOnly />
             <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-              La modification de l’email se fait via une procédure dédiée.
+              Pour modifier votre adresse email, contactez Ecoworking.
             </p>
           </div>
 
@@ -175,13 +190,68 @@ export function ProfilePage() {
               <Input id="job_title" {...form.register('job_title')} />
             </div>
             <div>
-              <Label htmlFor="bio">Présentation</Label>
-              <Textarea
-                id="bio"
-                rows={4}
-                error={form.formState.errors.bio?.message}
-                {...form.register('bio')}
-              />
+              <div className="flex items-center justify-between">
+                {/* En mode Aperçu le textarea est démonté : `htmlFor="bio"`
+                    désignerait un élément inexistant (RGAA 11.1). On garde
+                    l'identifiant, qui nomme la zone d'aperçu, mais plus la
+                    liaison de formulaire. */}
+                {bioPreview ? (
+                  <span
+                    id="bio-label"
+                    className="mb-1 block text-sm font-medium text-neutral-800 dark:text-neutral-200"
+                  >
+                    Présentation
+                  </span>
+                ) : (
+                  <Label id="bio-label" htmlFor="bio">
+                    Présentation
+                  </Label>
+                )}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  aria-pressed={bioPreview}
+                  onClick={() => setBioPreview((previous) => !previous)}
+                >
+                  {bioPreview ? 'Éditer' : 'Aperçu'}
+                </Button>
+              </div>
+
+              {bioPreview ? (
+                <section
+                  aria-labelledby="bio-label"
+                  className="min-h-20 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+                >
+                  {bioValue.trim() === '' ? (
+                    <p className="text-neutral-400 dark:text-neutral-500">
+                      Rien à prévisualiser pour l’instant.
+                    </p>
+                  ) : (
+                    <MarkdownContent markdown={bioValue} />
+                  )}
+                </section>
+              ) : (
+                <Textarea
+                  id="bio"
+                  rows={4}
+                  maxLength={BIO_MAX_LENGTH}
+                  describedBy="bio-help bio-counter"
+                  error={form.formState.errors.bio?.message}
+                  {...form.register('bio')}
+                />
+              )}
+
+              <p id="bio-help" className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                Markdown simple : **gras**, *italique*, listes, liens.
+              </p>
+              <p
+                id="bio-counter"
+                aria-live="polite"
+                className="mt-1 text-xs text-neutral-500 dark:text-neutral-400"
+              >
+                {bioValue.length}/{BIO_MAX_LENGTH} caractères
+              </p>
             </div>
             <div>
               <Label htmlFor="interests">Centres d’intérêt</Label>
@@ -242,6 +312,7 @@ export function ProfilePage() {
       )}
 
       {/* Sécurité (PRD §3.2 / §3.4.5) — hors du formulaire profil : ses propres appels Fortify. */}
+      <PasswordSection />
       <TwoFactorSection />
     </div>
   )

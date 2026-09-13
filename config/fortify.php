@@ -150,7 +150,8 @@ return [
     // passkeys (hors périmètre MVP, cf. BRIEF §8). 2FA TOTP : optionnel membre /
     // obligatoire admin (enforcement au panel Filament, C3.1).
     // Pas de `updateProfileInformation` : le profil membre passe par /api/profile
-    // (nom read-only, email = flux dédié hors MVP, PRD §3.4.3/§3.4.5).
+    // (nom read-only ; email = acte admin uniquement, back-office Resource User,
+    // AUCUN flux self-service — décision Guillaume du 2026-07-02, PRD §3.4.5).
     'features' => [
         Features::resetPasswords(),
         // Features::emailVerification(),

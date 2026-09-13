@@ -91,7 +91,7 @@ it('expose une projection minimale : jamais d\'email ni de téléphone', functio
 
     $entry = $response->json('data.0');
 
-    expect($entry)->toHaveKeys(['id', 'first_name', 'last_name', 'photo_path', 'job_title', 'bio', 'company'])
+    expect($entry)->toHaveKeys(['id', 'first_name', 'last_name', 'photo', 'job_title', 'bio', 'company'])
         ->and(array_keys($entry))->not->toContain('email')
         ->and(array_keys($entry))->not->toContain('phone')
         ->and(json_encode($entry))->not->toContain('@'); // aucune adresse email sérialisée

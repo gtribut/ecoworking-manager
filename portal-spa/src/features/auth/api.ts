@@ -49,10 +49,19 @@ export async function requestPasswordReset(email: string): Promise<void> {
   await http.post('/forgot-password', { email })
 }
 
-/** Définit un nouveau mot de passe depuis le lien reçu par email (Fortify). */
-export async function resetPassword(input: ResetPasswordInput): Promise<void> {
+/**
+ * Définit un nouveau mot de passe depuis le lien reçu par email (Fortify).
+ *
+ * Deux flux, deux dépôts de jetons étanches (cf. config/auth.php) : le lien
+ * « mot de passe oublié » (60 min) passe par `/reset-password`, le lien de
+ * l'email d'accueil (3 jours, `?welcome=1`) par `/reset-password/welcome`.
+ */
+export async function resetPassword(
+  input: ResetPasswordInput,
+  flow: 'reset' | 'welcome' = 'reset',
+): Promise<void> {
   await ensureCsrfCookie()
-  await http.post('/reset-password', input)
+  await http.post(flow === 'welcome' ? '/reset-password/welcome' : '/reset-password', input)
 }
 
 export async function logout(): Promise<void> {

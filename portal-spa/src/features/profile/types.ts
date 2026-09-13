@@ -1,3 +1,4 @@
+import type { PhotoUrls } from '@/components/Avatar'
 import type { BillingEntity } from '@/features/billing/types'
 
 export interface ProfileUser {
@@ -19,7 +20,8 @@ export interface MemberProfileData {
   linkedin_url: string | null
   website_url: string | null
   birth_date: string | null
-  photo_path: string | null
+  /** URLs des rendus 80/200/400, servies par l'API authentifiée. */
+  photo: PhotoUrls | null
   show_in_directory: boolean
   newsletter_opt_in: boolean
   arrival_date: string | null

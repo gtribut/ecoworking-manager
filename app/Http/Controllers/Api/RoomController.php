@@ -23,8 +23,10 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 final class RoomController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
+        $this->authorizeCalendar($request);
+
         $rooms = Resource::query()
             ->where('type', ResourceType::MeetingRoom->value)
             ->where('is_active', true)
@@ -41,6 +43,8 @@ final class RoomController extends Controller
      */
     public function availability(Request $request, Resource $room, RoomAvailabilityService $availability): JsonResponse
     {
+        $this->authorizeCalendar($request);
+
         // Moindre exposition (review sécu I1) : cet endpoint ne répond que pour
         // les salles de réunion — un bureau (ou la salle event) → 404.
         abort_unless($room->type === ResourceType::MeetingRoom, 404);
@@ -82,5 +86,20 @@ final class RoomController extends Controller
             'external_slots' => $externalSlots,
             'is_external' => (bool) $isExternal,
         ]);
+    }
+
+    /**
+     * Calendrier des salles : interdit au contact facturation pur (PRD §2.5),
+     * qui ne détient pas `view-bookings-calendar`.
+     */
+    private function authorizeCalendar(Request $request): void
+    {
+        $user = $request->user();
+
+        abort_unless(
+            $user !== null && ($user->isAdmin() || $user->can(Permission::ViewBookingsCalendar->value)),
+            403,
+            'Calendrier des salles réservé aux membres.',
+        );
     }
 }

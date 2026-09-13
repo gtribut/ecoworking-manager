@@ -265,14 +265,13 @@ it('isole les documents administratifs entre entités (un contact ne voit pas un
     expect($response->json('data'))->toHaveCount(0);
 });
 
-it('masque les documents administratifs à un membre sans rôle billing_contact', function () {
+it('refuse les documents administratifs (403) à un membre sans rôle billing_contact', function () {
+    // Lot B (PRD §2.5/§3.6.1) : même refus explicite que le module factures.
     $company = Company::factory()->create();
     $user = User::factory()->resident()->create();
     AdministrativeDocument::factory()->create(['company_id' => $company->id]);
 
-    $response = $this->actingAs($user)->getJson('/api/documents/administrative')->assertOk();
-
-    expect($response->json('data'))->toHaveCount(0);
+    $this->actingAs($user)->getJson('/api/documents/administrative')->assertForbidden();
 });
 
 it('télécharge le PDF d\'un document administratif du périmètre', function () {

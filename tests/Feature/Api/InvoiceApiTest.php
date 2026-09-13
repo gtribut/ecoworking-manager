@@ -56,15 +56,15 @@ it('isole les factures entre entités (un contact ne voit pas une autre entité)
     expect($response->json('data'))->toHaveCount(0);
 });
 
-it('masque les factures à un membre sans rôle billing_contact', function () {
+it('refuse le module factures (403) à un membre sans rôle billing_contact', function () {
+    // Lot B (PRD §2.5/§3.6.1) : module masqué de la nav ET refusé côté API —
+    // une liste vide laissait croire à une absence de factures.
     $company = Company::factory()->create();
     $user = User::factory()->resident()->create();
     MemberProfile::factory()->for($user)->create(['company_id' => $company->id]);
     Invoice::factory()->issued()->create(['billable_type' => 'company', 'billable_id' => $company->id]);
 
-    $response = $this->actingAs($user)->getJson('/api/invoices')->assertOk();
-
-    expect($response->json('data'))->toHaveCount(0);
+    $this->actingAs($user)->getJson('/api/invoices')->assertForbidden();
 });
 
 it('télécharge le PDF d\'une facture du périmètre', function () {

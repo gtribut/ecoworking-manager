@@ -28,6 +28,9 @@ final class AdministrativeDocumentController extends Controller
     {
         $user = $request->user();
 
+        // Même règle que les factures (PRD §2.5/§3.6.1) : hors rôle billing, 403.
+        abort_unless($user->isAdmin() || $user->isBillingContact(), 403, 'Documents administratifs réservés aux contacts facturation.');
+
         $query = AdministrativeDocument::query()
             ->with('company')
             ->orderByDesc('document_date')

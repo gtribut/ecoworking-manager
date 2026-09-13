@@ -25,7 +25,7 @@ Par ordre d'impact utilisateur, après corrections du 13/09 :
 5. ✅ *soldé 13/09 (lot D, sauf colonne libellé)* — **Factures (§3.6.2)** : aucun tri sélectionnable, aucun filtre (mois, année, statut), aucune recherche par numéro. Bloc « Mon entreprise » : mode de paiement et IBAN-4 absents, adresse tronquée, entité déduite du profil et non des entités facturables.
 6. **Annuaire/plan (§3.7)** : aucun tooltip au survol (identité seulement au clic ou via aria-label), photos jamais rendues, staff opt-in sans mention « Équipe Ecoworking ».
 7. ✅ *soldé 13/09 (lot E, plan SVG acté liste)* — **External (§3.5.9, §3.5.6)** : impossible de **voir ou annuler** ses bureaux nomades réservés (route DELETE et hook existent, aucune page) ; pas de plan SVG filtré ; « Mes tickets » sans détail par ticket ; messages « 0 ticket » techniques et sans mailto.
-8. **Mot de passe (§3.4.2)** : aucun changement de mot de passe depuis le portail (back prêt : `PUT /user/password`).
+8. ✅ *soldé 13/09 (lot F)* — **Mot de passe (§3.4.2)** : aucun changement de mot de passe depuis le portail (back prêt : `PUT /user/password`).
 9. **Notifications (§3.8.4)** : deux des cinq types prévus n'existent pas — « nouveau document à valider » (pourtant critique, doublé email) et « résa créée/modifiée/annulée par l'admin ». Pas de rétention 90 j.
 10. **Chrome global (§3.1, §3.9)** : pas de footer (mentions légales, CGU, contact), pas de déclaration d'accessibilité `/accessibilite`, pas de switch thème ni de menu profil dans le header, pas de toasts, pas de Skeleton, pas de bandeau hors-ligne, pas de bouton « Réessayer ».
 
@@ -70,7 +70,7 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 |---|---|---|
 | Lien « Mot de passe oublié ? » + reset par email | ✅ *corrigé 13/09* | R-03 (`b1a2959`) : étape login + page `/reset-password/:token`, URL vers le portail, anti-énumération back |
 | 2FA TOTP optionnelle membre : activation | ✅ *corrigé 13/09* | R-04 (`18f622f`) : section profil (QR, code, codes de récupération, désactivation) |
-| Email d'accueil avec lien de définition initiale du mot de passe | ❌ | L'admin saisit le mot de passe dans `UserForm.php:43-51` ; aucun mail d'accueil (`app/Mail/` = magic link seul) |
+| Email d'accueil avec lien de définition initiale du mot de passe | ✅ *soldé 13/09 (lot F, `5d0b870`)* | `WelcomeMail` en queue, jeton dédié (table `welcome_invitation_tokens`, broker `welcome` 3 j, étanche du reset 1 h), route `POST /reset-password/welcome` throttlée, action admin « Renvoyer l'email d'accueil » ; l'admin ne saisit plus de mot de passe |
 | Déconnexion « dans le menu profil » | 🔀 | Bouton direct dans le header |
 | Message 429 en anglais | ✅ *corrigé 13/09* | R-01 (`5dc146a`) |
 
@@ -90,18 +90,18 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 
 | Exigence PRD | Statut | Constat |
 |---|---|---|
-| Mot de passe : formulaire ancien + nouveau + confirmation | ❌ (front) | Back prêt (`Features::updatePasswords`, `current_password` exigé) ; aucune UI, aucun appel, aucun test Pest sur `PUT /user/password` |
-| Photo de profil : upload, recadrage carré, 2 Mo, JPG/PNG/WebP | ❌ | `photo_path` exposé en lecture mais jamais affiché ni uploadable côté portail ; admin seul via Filament (sans limite ni redimensionnement) |
-| Présentation : éditeur **markdown** (max 500) | ⚠️ | `<Textarea>` brut, aucun rendu markdown (annuaire affiche le texte plat) |
-| 🟡 Avatar initiales si pas de photo | ⚠️ | Présent dans l'annuaire, absent de la page profil |
-| 🟡 Cellar + Intervention Image (80/200/400) | 🔮 ❌ | Absent |
+| Mot de passe : formulaire ancien + nouveau + confirmation | ✅ *soldé 13/09 (lot F, `5d0b870`)* | `PasswordSection` (Zod min 8, 422 mappées), tests Pest sur `PUT /user/password`, autres sessions invalidées (`AuthenticateSession` Sanctum + `logoutOtherDevices`) |
+| Photo de profil : upload, recadrage carré, 2 Mo, JPG/PNG/WebP | ✅ *soldé 13/09 (lot F, `5d0b870`)* | `POST/DELETE /api/profile/photo`, Intervention Image v4 (80/200/400 WebP, EXIF retirés, max 6000×6000), stockage privé `profile-photos/{uuid}`, `GET /api/users/{id}/photo/{size}` sous Policy (404 sinon) ; upload admin remplacé par « Retirer la photo » |
+| Présentation : éditeur **markdown** (max 500) | ✅ *soldé 13/09 (lot F, `5d0b870`)* | Textarea + Aperçu, `MarkdownContent` (`marked` + `dompurify`, allow-list stricte) sur profil et annuaire |
+| 🟡 Avatar initiales si pas de photo | ✅ *soldé 13/09 (lot F, `5d0b870`)* | Composant `Avatar` partagé (initiales, `onError`) |
+| 🟡 Cellar + Intervention Image (80/200/400) | ✅ *soldé 13/09 (lot F, `5d0b870`)* | Disque `s3` (Cellar) déjà configuré ; **action V1.5** : bucket `ecoworking-storage` en ACL private + `FILESYSTEM_DISK=s3` |
 | Adresse entreprise complète (rue, CP, ville, **pays**) | ✅ *soldé 13/09 (lot D, `94515c1`)* | `EntityBlock` rend `line2` + pays en clair |
 | 🟡 « Mon entreprise » vs « Mes données de facturation » selon entité | ✅ *soldé 13/09 (lot D, `94515c1`)* | Titre selon `entity_type` (`individual`) |
 | Feedback par **toast** | 🔀 | `<Alert>` inline |
-| Texte d'aide email « procédure dédiée » | ⚠️ | Vague : dire « contactez Ecoworking » (décision D) |
-| Audit : mot de passe | ❌ | Aucun événement (valeur exclue à raison, mais pas d'entrée « password changed ») |
+| Texte d'aide email « procédure dédiée » | ✅ *soldé 13/09 (lot F, `5d0b870`)* | « Pour modifier votre adresse email, contactez Ecoworking » |
+| Audit : mot de passe | ✅ *soldé 13/09 (lot F, `5d0b870`)* | Événement `password_changed` sans valeur |
 | Audit : opt-in newsletter, visibilité annuaire | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | `MemberProfile` `Auditable` (liste blanche `show_in_directory`, `newsletter_opt_in`, `desk_id`, `company_id`) |
-| Commentaire `config/fortify.php:153` « email = flux dédié hors MVP » | ⚠️ | Périmé (décision D) — cosmétique |
+| Commentaire `config/fortify.php:153` « email = flux dédié hors MVP » | ✅ *soldé 13/09 (lot F, `5d0b870`)* | Corrigé |
 
 ### §3.4.6 — Mon bureau & mes absences
 
@@ -203,7 +203,7 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 
 | Exigence PRD | Statut | Constat |
 |---|---|---|
-| Photo sur le plan (résident présent) / photo grisée (absent) / photo dans la fiche | ❌ | `photo_path` circule mais n'est jamais rendu (initiales) ; pas d'upload côté portail |
+| Photo sur le plan (résident présent) / photo grisée (absent) / photo dans la fiche | ✅ *soldé 13/09 (lot F, `5d0b870`)* | Photo 80 sur le bloc SVG (grisée si absent), 200 dans la fiche, URLs émises seulement si opt-in annuaire |
 | Couleur « staff vacant » dédiée | 🔀 | Même style `absent` que résident (libellé distingue) |
 | **Tooltip au survol** (7 états) | ❌ | Aucun `<title>` / `title` ; identité via `aria-label` et au clic seulement |
 | Mention « Équipe Ecoworking » pour le staff | ⚠️ | Seulement si staff **opt-out** ; staff opt-in = nom + entreprise sans mention ; aucune distinction dans la liste |
@@ -274,6 +274,7 @@ Regrouper en lots, chacun = une branche + tests :
 | C — Absences | ✅ mergé 13/09 | `1d1dd51` (merge ; `607b832`, `2f5ea01`, `00edbfd`, `f3fa7c2`, `afa5fc1`, `7a54be7`) | 534 Pest / 135 Vitest / e2e 22-23. Review Opus : 10 findings, 9 corrigés (scope NULL-safe, `canAccess`, `update` aligné sur `>=`, faux positif audit booléens, `notes` admin internes, focus, messages, test suppression tracée, docblock PATCH). Reporté : mini-plan du bureau (endpoint dédié à décider). Hors lot relevé : `DeskOccupationPolicy::viewAny/create` sans condition de rôle (→ lot E) ; notes des absences `DemoSeeder` sans `created_by` invisibles côté portail (voulu) |
 | D — Factures & entreprise | ✅ mergé 13/09 | `94515c1` (merge ; `cfbd489`, `f9426d9`, `b7a7fea`, `9358d0f`, `5a878d5`, `54daa65`, `994046c`, `cc9fc49`, `73256a3`, `a821b0a`) | 563 Pest / 150 Vitest / e2e 24/24. Review Opus : 8 findings, 7 corrigés (données bancaires réservées au contact facturation explicite de l'entité — `User::billingContactCompanyIds()` —, focus recherche, `nullable` sur filtres vides, aide mois, mémoïsation `linkedCompanyIds`, pas d'IBAN sur le profil, a11y tri). **À trancher (Guillaume)** : ⏸️ `invoices.billable_type = 'user'` vs acté « tout passe par une entité » ; colonne libellé de facture (schéma) ; périmètre factures `linkedCompanyIds()` inclut l'entité du profil membre (pré-existant, laissé tel quel) |
 | E — External | ✅ mergé 13/09 | `8a81195` (merge ; `6459127`, `28bf84b`, `979d628`, `6b66eb9`, `613ebac`, `baf1c2a`) | 556 Pest / 143 Vitest / e2e 21-22. Review Opus : 9 findings, 9 corrigés dont 1 bloquant (double annulation restituait un ticket repris ailleurs) et `CURRENT_DATE` UTC → `today()` Paris. Trait `MarksScopedFlag` factorise le drapeau par lot (Booking/Absence/Occupation). Route `/tickets` désormais gardée (`create-paid-booking`) → test a11y e2e « tickets » retiré : **aucun compte external seedé en e2e** (à ajouter à `E2eSeeder` si parcours e2e voulu) |
+| F — Compte membre | ✅ mergé 13/09 | `5d0b870` (merge ; `7bfc60c`, `267b6ce`, `08042d6`, `20283a7`, `8eab2a7`, `bb9d6f9`, `90e94ca`, `c666f43`, `2c340fd`) | 629 Pest / 181 Vitest / e2e 23/23. Deps : `intervention/image@4.3.2`, `marked@18.0.11`, `dompurify@3.4.15`. **Migration** : nouvelle table `welcome_invitation_tokens` (réversible). Review Opus : 9 findings, 9 corrigés (bombe de décompression, invalidation des autres sessions, photos héritées, throttles, a11y). **À valider (Guillaume)** : ⏸️ l'admin ne saisit plus de mot de passe (création ni édition) et ne téléverse plus de photo — plus de dépannage hors email ; borne 6000×6000 (ou 4000) ; `last_login_at` jamais alimenté (hors lot). **Action V1.5** : bucket Cellar private + `FILESYSTEM_DISK=s3` |
 
 ### Écarts hors lot découverts (non corrigés)
 

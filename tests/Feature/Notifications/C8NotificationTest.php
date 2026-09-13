@@ -254,3 +254,35 @@ it('persiste les toggles de notification via le profil', function () {
 
     expect($user->fresh()->notify_email)->toBeFalse();
 });
+
+// ── Lot G — pagination de la cloche (PRD §3.8.4, « Charger plus ») ───────────
+
+it('pagine la liste des notifications sans fausser le badge de non-lues', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 3) as $i) {
+        $user->notify(new InvoiceOverdueNotification(Invoice::factory()->issued()->create()));
+    }
+
+    $first = $this->actingAs($user)->getJson('/api/notifications?per_page=2')->assertOk();
+
+    expect($first->json('data'))->toHaveCount(2)
+        ->and($first->json('meta.current_page'))->toBe(1)
+        ->and($first->json('meta.last_page'))->toBe(2)
+        ->and($first->json('meta.per_page'))->toBe(2)
+        ->and($first->json('meta.total'))->toBe(3)
+        // Le badge compte TOUTES les non-lues, pas seulement la page courante.
+        ->and($first->json('meta.unread_count'))->toBe(3);
+
+    $second = $this->actingAs($user)->getJson('/api/notifications?per_page=2&page=2')->assertOk();
+
+    expect($second->json('data'))->toHaveCount(1)
+        ->and($second->json('meta.current_page'))->toBe(2);
+});
+
+it('borne la taille de page demandée par le client', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->getJson('/api/notifications?per_page=5000')->assertStatus(422);
+    $this->actingAs($user)->getJson('/api/notifications?page=0')->assertStatus(422);
+});

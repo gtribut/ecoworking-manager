@@ -38,18 +38,21 @@ final class IndexInvoicesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'sort' => ['sometimes', Rule::in(self::SORTS)],
-            'direction' => ['sometimes', Rule::in(['asc', 'desc'])],
+            // `nullable` partout : la SPA peut envoyer un paramètre vide (un
+            // select remis à « Tous »), que ConvertEmptyStringsToNull
+            // transforme en null — un 422 casserait la page pour rien.
+            'sort' => ['nullable', Rule::in(self::SORTS)],
+            'direction' => ['nullable', Rule::in(['asc', 'desc'])],
             // `month` seul n'a pas de sens (on ne balaie pas tous les ans) :
             // `nullable` plutôt que `sometimes`, sinon `required_with` ne se
             // déclencherait jamais (la règle entière serait sautée).
             'year' => ['nullable', 'required_with:month', 'integer', 'between:2000,2100'],
-            'month' => ['sometimes', 'integer', 'between:1,12'],
+            'month' => ['nullable', 'integer', 'between:1,12'],
             // Jamais `draft` : les brouillons n'existent pas côté membre.
-            'status' => ['sometimes', Rule::in(self::memberVisibleStatuses())],
-            'q' => ['sometimes', 'string', 'max:30'],
-            'page' => ['sometimes', 'integer', 'min:1'],
-            'per_page' => ['sometimes', 'integer', 'between:1,'.self::MAX_PER_PAGE],
+            'status' => ['nullable', Rule::in(self::memberVisibleStatuses())],
+            'q' => ['nullable', 'string', 'max:30'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'between:1,'.self::MAX_PER_PAGE],
         ];
     }
 

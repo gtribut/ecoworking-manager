@@ -341,3 +341,17 @@ it('respecte per_page dans la pagination', function () {
     expect($response->json('data'))->toHaveCount(2)
         ->and($response->json('meta.last_page'))->toBe(2);
 });
+
+it('tolère des paramètres vides envoyés par la SPA (selects « Tous »)', function () {
+    $company = Company::factory()->create();
+    $user = apiBillingContactFor($company);
+    apiIssuedInvoiceFor($company, 'EW-2026-00001', '2026-01-05');
+
+    // ConvertEmptyStringsToNull transforme `?status=` en null : le filtre est
+    // simplement inactif, pas une erreur de validation.
+    $response = $this->actingAs($user)
+        ->getJson('/api/invoices?year=2026&status=&month=&q=&sort=&direction=&per_page=')
+        ->assertOk();
+
+    expect($response->json('data'))->toHaveCount(1);
+});

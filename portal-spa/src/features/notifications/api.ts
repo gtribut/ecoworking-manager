@@ -1,8 +1,11 @@
 import { http } from '@/lib/http'
 import type { NotificationsResponse } from './types'
 
-export async function fetchNotifications(): Promise<NotificationsResponse> {
-  const { data } = await http.get<NotificationsResponse>('/api/notifications')
+/** Liste paginée (PRD §3.8.4, lot G) : `page` alimente le bouton « Charger plus ». */
+export async function fetchNotifications(page = 1): Promise<NotificationsResponse> {
+  const { data } = await http.get<NotificationsResponse>('/api/notifications', {
+    params: { page },
+  })
   return data
 }
 

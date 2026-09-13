@@ -1,6 +1,7 @@
-import { Bell } from 'lucide-react'
+import { Bell, Check } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import type { NotificationItem } from './types'
 import { useMarkAllAsRead, useMarkAsRead, useNotifications } from './useNotifications'
@@ -19,12 +20,12 @@ export function NotificationBell() {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
 
-  const { data } = useNotifications()
+  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } = useNotifications()
   const markAsRead = useMarkAsRead()
   const markAllAsRead = useMarkAllAsRead()
 
-  const items = data?.data ?? []
-  const unread = data?.meta.unread_count ?? 0
+  const items = data?.pages.flatMap((page) => page.data) ?? []
+  const unread = data?.pages[0]?.meta.unread_count ?? 0
 
   useEffect(() => {
     if (open) panelRef.current?.focus()
@@ -60,6 +61,11 @@ export function NotificationBell() {
     if (item.data.url) navigate(item.data.url)
   }
 
+  /** Marquer lu manuellement (PRD §3.8.4, lot G) : sans naviguer, panneau ouvert. */
+  const handleMarkAsRead = (item: NotificationItem) => {
+    markAsRead.mutate(item.id)
+  }
+
   return (
     <div ref={containerRef} className="relative">
       <button
@@ -76,7 +82,7 @@ export function NotificationBell() {
         {unread > 0 && (
           <span
             aria-hidden="true"
-            className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white"
+            className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[0.625rem] font-semibold text-white"
           >
             {unread > 9 ? '9+' : unread}
           </span>
@@ -110,12 +116,12 @@ export function NotificationBell() {
           ) : (
             <ul className="max-h-96 divide-y divide-neutral-100 overflow-y-auto dark:divide-neutral-800">
               {items.map((item) => (
-                <li key={item.id}>
+                <li key={item.id} className="flex items-stretch">
                   <button
                     type="button"
                     onClick={() => handleSelect(item)}
                     className={cn(
-                      'flex w-full flex-col gap-0.5 px-4 py-3 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800',
+                      'flex flex-1 flex-col gap-0.5 px-4 py-3 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800',
                       !item.is_read && 'bg-brand-50/50 dark:bg-neutral-800/40',
                     )}
                   >
@@ -139,9 +145,36 @@ export function NotificationBell() {
                       </time>
                     )}
                   </button>
+                  {/* Marquer lu manuellement, sans naviguer (PRD §3.8.4) : bouton
+                      dédié, à côté (pas dans) le bouton principal — jamais de
+                      bouton imbriqué dans un bouton. */}
+                  {!item.is_read && (
+                    <button
+                      type="button"
+                      onClick={() => handleMarkAsRead(item)}
+                      aria-label="Marquer comme lu"
+                      className="flex shrink-0 items-center px-3 text-neutral-400 hover:bg-neutral-50 hover:text-brand-700 dark:hover:bg-neutral-800 dark:hover:text-brand-300"
+                    >
+                      <Check className="size-4" aria-hidden="true" />
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
+          )}
+
+          {hasNextPage && (
+            <div className="border-t border-neutral-100 px-4 py-2 text-center dark:border-neutral-800">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isFetchingNextPage}
+                onClick={() => void fetchNextPage()}
+              >
+                {isFetchingNextPage ? 'Chargement…' : 'Charger plus'}
+              </Button>
+            </div>
           )}
         </section>
       )}

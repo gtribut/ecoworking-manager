@@ -92,4 +92,57 @@ describe('NotificationBell', () => {
 
     expect(await screen.findByRole('button', { name: 'Notifications' })).toBeInTheDocument()
   })
+
+  it('marque une notification comme lue individuellement sans naviguer', async () => {
+    const user = userEvent.setup()
+    let readId: string | null = null
+    server.use(
+      http.get('/api/notifications', () => HttpResponse.json(response())),
+      http.post('/api/notifications/:id/read', ({ params }) => {
+        readId = params.id as string
+        return HttpResponse.json({ message: 'ok' })
+      }),
+    )
+
+    renderWithProviders(<NotificationBell />, { route: '/' })
+
+    await user.click(await screen.findByRole('button', { name: /1 non lue/i }))
+    await user.click(screen.getByRole('button', { name: 'Marquer comme lu' }))
+
+    await waitFor(() => expect(readId).toBe('n1'))
+    // Le panneau reste ouvert (pas de navigation déclenchée par ce bouton).
+    expect(screen.getByRole('region', { name: 'Notifications' })).toBeInTheDocument()
+  })
+
+  it('charge la page suivante avec « Charger plus »', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.get('/api/notifications', ({ request }) => {
+        const page = new URL(request.url).searchParams.get('page') ?? '1'
+        if (page === '2') {
+          return HttpResponse.json({
+            data: [
+              {
+                id: 'n2',
+                data: { type: 'invoice.issued', message: 'Deuxième page.' },
+                read_at: null,
+                is_read: true,
+                created_at: '2026-06-06T08:00:00+00:00',
+              },
+            ],
+            meta: { current_page: 2, last_page: 2, per_page: 1, total: 2, unread_count: 1 },
+          })
+        }
+        return HttpResponse.json(response({ current_page: 1, last_page: 2, per_page: 1, total: 2 }))
+      }),
+    )
+
+    renderWithProviders(<NotificationBell />)
+
+    await user.click(await screen.findByRole('button', { name: /1 non lue/i }))
+    await user.click(await screen.findByRole('button', { name: 'Charger plus' }))
+
+    expect(await screen.findByText('Deuxième page.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Charger plus' })).not.toBeInTheDocument()
+  })
 })

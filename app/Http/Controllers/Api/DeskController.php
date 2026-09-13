@@ -7,7 +7,9 @@ namespace App\Http\Controllers\Api;
 use App\Enums\DeskOccupationStatus;
 use App\Enums\Period;
 use App\Enums\TicketType;
+use App\Http\Controllers\Api\Concerns\MarksScopedFlag;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\IndexDeskAvailabilityRequest;
 use App\Http\Requests\Api\IndexDeskOccupationsRequest;
 use App\Http\Requests\Api\StoreDeskOccupationRequest;
 use App\Http\Resources\DeskOccupationResource;
@@ -19,7 +21,6 @@ use App\Services\TicketService;
 use App\Support\FrenchHolidays;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -31,28 +32,33 @@ use Illuminate\Support\Facades\Gate;
  */
 final class DeskController extends Controller
 {
+    use MarksScopedFlag;
+
     /**
      * Liste des occupations de bureau du membre. Par défaut : à venir
      * (aujourd'hui inclus), chronologique. `?past=1` : historique, plus
-     * récent d'abord. Comparaisons de date CÔTÉ SQL (`CURRENT_DATE`) — piège
-     * timezone du dépôt, jamais `date->isFuture()` PHP sur une ligne fraîche.
+     * récent d'abord. Comparaison de `date` liée sur `today()->toDateString()`
+     * (PHP, Europe/Paris) — jamais `CURRENT_DATE` (SQL) : la session Postgres
+     * est en UTC, ce qui décalerait la bascule à 00h-02h heure de Paris
+     * (review lot E pt.2, convention `DeskAbsence::scopeNotStartedBefore`).
      */
     public function index(IndexDeskOccupationsRequest $request): AnonymousResourceCollection
     {
         $past = $request->boolean('past');
         $upcoming = ! $past;
         $perPage = min(50, max(1, (int) $request->integer('per_page', 20)));
+        $today = today()->toDateString();
 
         $occupations = DeskOccupation::query()
             ->where('user_id', $request->user()->id)
             ->with(['desk', 'ticket'])
             ->when($upcoming, fn ($query) => $query
                 ->where('status', DeskOccupationStatus::Present->value)
-                ->whereRaw('date >= CURRENT_DATE')
+                ->where('date', '>=', $today)
                 ->orderBy('date')
                 ->orderBy('id'))
             ->when($past, fn ($query) => $query
-                ->whereRaw('date < CURRENT_DATE')
+                ->where('date', '<', $today)
                 ->orderByDesc('date')
                 ->orderByDesc('id'))
             ->paginate($perPage);
@@ -68,13 +74,8 @@ final class DeskController extends Controller
      * false` + `reason: non_working_day` plutôt qu'une liste vide indistincte
      * d'un « complet » (review 08 — le clic menait sinon à un 422 surprise).
      */
-    public function availability(Request $request, DeskAvailabilityService $desks): JsonResponse
+    public function availability(IndexDeskAvailabilityRequest $request, DeskAvailabilityService $desks): JsonResponse
     {
-        $request->validate([
-            'date' => ['required', 'date', 'after_or_equal:today'],
-            'period' => ['required', 'string', 'in:morning,afternoon,full_day'],
-        ]);
-
         $date = CarbonImmutable::parse($request->string('date')->toString());
         $period = Period::from($request->string('period')->toString());
 
@@ -133,25 +134,14 @@ final class DeskController extends Controller
 
     /**
      * Renseigne `DeskOccupation::$cancellable` en UNE requête pour tout le lot
-     * (même pattern que `Booking::$startsLater`, BookingController).
+     * (même pattern que `Booking::$startsLater`). Le scope filtre déjà
+     * `status=present` : une occupation annulée ne redevient jamais
+     * cancellable (review lot E pt.1).
      *
      * @param  list<DeskOccupation>  $occupations
      */
     private function markCancellable(array $occupations): void
     {
-        if ($occupations === []) {
-            return;
-        }
-
-        $cancellableIds = DeskOccupation::query()
-            ->whereKey(array_map(static fn (DeskOccupation $occupation): int => $occupation->id, $occupations))
-            ->cancellable()
-            ->pluck('id')
-            ->all();
-
-        foreach ($occupations as $occupation) {
-            $occupation->cancellable = $occupation->status === DeskOccupationStatus::Present
-                && in_array($occupation->id, $cancellableIds, true);
-        }
+        $this->markWithScope($occupations, 'cancellable', 'cancellable');
     }
 }

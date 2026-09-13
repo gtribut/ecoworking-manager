@@ -25,8 +25,11 @@ final class IndexDeskOccupationsRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Pas de règle `upcoming` : le comportement par défaut du contrôleur
+        // EST « à venir » (seul `past=1` bascule vers l'historique) — un
+        // paramètre `upcoming` accepté puis jamais lu serait mort (review
+        // lot E pt.4). Le front n'envoie donc plus ce paramètre non plus.
         return [
-            'upcoming' => ['sometimes', 'boolean'],
             'past' => ['sometimes', 'boolean'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
         ];

@@ -37,8 +37,9 @@ final class DeskOccupationPolicy
     }
 
     /**
-     * Annulation : propriétaire + délai non dépassé (cf. `DeskOccupation::scopeCancellable`,
-     * même logique que `BookingPolicy::startsLater` transposée aux demi-journées).
+     * Annulation : propriétaire + PRÉSENTE (pas déjà annulée) + délai non
+     * dépassé (cf. `DeskOccupation::scopeCancellable`, même logique que
+     * `BookingPolicy::startsLater` transposée aux demi-journées).
      */
     public function delete(User $user, DeskOccupation $occupation): bool
     {

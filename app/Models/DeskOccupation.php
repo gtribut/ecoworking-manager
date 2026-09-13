@@ -80,22 +80,30 @@ class DeskOccupation extends Model
 
     /**
      * Occupation encore annulable (PRD §3.5.5/§3.5.9, délai Q22 transposé aux
-     * bureaux) : date future, ou date du jour et la demi-journée n'a pas encore
-     * commencé (matin : avant 9h, après-midi : avant 14h, heure de Paris ;
-     * `full_day` suit le seuil du matin, puisqu'elle démarre à 9h).
+     * bureaux) : PRÉSENTE (jamais déjà annulée — review lot E pt.1, sinon une
+     * occupation annulée dans les délais restait « cancellable » et une
+     * double annulation pouvait restituer un ticket déjà repris ailleurs), ET
+     * date future, ou date du jour et la demi-journée n'a pas encore commencé
+     * (matin : avant 9h, après-midi : avant 14h, heure de Paris ; `full_day`
+     * suit le seuil du matin, puisqu'elle démarre à 9h).
      *
-     * Comparaison de la colonne DATE côté SQL (`CURRENT_DATE`) — piège
-     * timezone du dépôt (session Postgres UTC, app Europe/Paris) : une ligne
-     * fraîchement écrite relue en PHP paraît décalée de +2h, donc jamais
-     * `date->isFuture()`. L'heure du jour, elle, vient de l'horloge PHP
-     * courante (`now()->hour`) : ce n'est PAS une lecture de ligne DB, donc pas
-     * sujette au même piège — seule la comparaison de `date` doit rester SQL.
+     * Comparaison de la colonne DATE liée sur `today()->toDateString()` (PHP,
+     * app Europe/Paris) — PAS `CURRENT_DATE` (SQL) : la session Postgres est en
+     * UTC (review lot E pt.2), donc entre 00h et 02h heure de Paris,
+     * `CURRENT_DATE` désigne encore la veille et rouvrirait à tort l'occupation
+     * de la veille. Convention du dépôt (DeskAbsence::scopeNotStartedBefore,
+     * AdminDashboardService, UpdateOverdueInvoicesCommand) : comparer une
+     * colonne DATE à une date PHP bindée, jamais à une fonction SQL liée à la
+     * session. L'heure du jour, elle, vient de l'horloge PHP courante
+     * (`now()->hour`) : ce n'est pas une lecture de ligne DB fraîchement
+     * écrite, donc pas sujette au piège timezone du dépôt.
      *
      * @param  Builder<DeskOccupation>  $query
      */
     public function scopeCancellable(Builder $query): void
     {
         $hour = now()->hour;
+        $today = today()->toDateString();
 
         $periodsNotStarted = match (true) {
             $hour < 9 => [Period::Morning->value, Period::Afternoon->value, Period::FullDay->value],
@@ -103,14 +111,15 @@ class DeskOccupation extends Model
             default => [],
         };
 
-        $query->where(function (Builder $q) use ($periodsNotStarted): void {
-            $q->whereRaw('date > CURRENT_DATE');
+        $query->where('status', DeskOccupationStatus::Present->value)
+            ->where(function (Builder $q) use ($today, $periodsNotStarted): void {
+                $q->where('date', '>', $today);
 
-            if ($periodsNotStarted !== []) {
-                $q->orWhere(function (Builder $qq) use ($periodsNotStarted): void {
-                    $qq->whereRaw('date = CURRENT_DATE')->whereIn('period', $periodsNotStarted);
-                });
-            }
-        });
+                if ($periodsNotStarted !== []) {
+                    $q->orWhere(function (Builder $qq) use ($today, $periodsNotStarted): void {
+                        $qq->where('date', '=', $today)->whereIn('period', $periodsNotStarted);
+                    });
+                }
+            });
     }
 }

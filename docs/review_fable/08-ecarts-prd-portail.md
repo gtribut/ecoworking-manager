@@ -21,7 +21,7 @@ Par ordre d'impact utilisateur, après corrections du 13/09 :
 1. ✅ *soldé 13/09 (lot A, `e14306c`)* — **Calendrier des salles (§3.5.2)** : ce n'était pas un calendrier. Une salle à la fois, un seul jour, liste de créneaux d'1 h, occupants anonymes (ni nom, ni entité, ni libellé, pas de distinction de ses propres résas), pas de navigation semaine, **salle événementielle invisible**. Le PRD en fait l'outil de coordination d'équipe « temps réel ».
 2. ✅ *soldé 13/09 (lot A, `e14306c`)* — **Réservation resident/additional (§3.5.3)** : créneaux figés à 1 h entre 8 h et 20 h. Pas de journée / demi-journée / créneau personnalisé, pas de résa nocturne alors que le back accepte 24/7. **Aucune modification** de résa (ni API ni UI) : annuler + recréer.
 3. ✅ *soldé 13/09 (lot B)* — **Navigation non filtrée par rôle (§2.5)** : « Factures » visible pour tous (page vide trompeuse pour un resident sans rôle billing), « Présence » proposée aux `additional` (qui n'ont pas de bureau), « Réservations/Actualités » pour un `billing_contact` pur.
-4. **Absences (§3.4.6)** : récurrence hebdo **non bornable** (date de fin désactivée), pas d'édition, pas de champ note, liste sans filtre « à venir », bureau attitré et mini-plan non affichés.
+4. ✅ *soldé 13/09 (lot C, sauf mini-plan)* — **Absences (§3.4.6)** : récurrence hebdo **non bornable** (date de fin désactivée), pas d'édition, pas de champ note, liste sans filtre « à venir », bureau attitré et mini-plan non affichés.
 5. **Factures (§3.6.2)** : aucun tri sélectionnable, aucun filtre (mois, année, statut), aucune recherche par numéro. Bloc « Mon entreprise » : mode de paiement et IBAN-4 absents, adresse tronquée, entité déduite du profil et non des entités facturables.
 6. **Annuaire/plan (§3.7)** : aucun tooltip au survol (identité seulement au clic ou via aria-label), photos jamais rendues, staff opt-in sans mention « Équipe Ecoworking ».
 7. **External (§3.5.9, §3.5.6)** : impossible de **voir ou annuler** ses bureaux nomades réservés (route DELETE et hook existent, aucune page) ; pas de plan SVG filtré ; « Mes tickets » sans détail par ticket ; messages « 0 ticket » techniques et sans mailto.
@@ -100,7 +100,7 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 | Feedback par **toast** | 🔀 | `<Alert>` inline |
 | Texte d'aide email « procédure dédiée » | ⚠️ | Vague : dire « contactez Ecoworking » (décision D) |
 | Audit : mot de passe | ❌ | Aucun événement (valeur exclue à raison, mais pas d'entrée « password changed ») |
-| Audit : opt-in newsletter, visibilité annuaire | ❌ | `MemberProfile` n'est pas `Auditable` |
+| Audit : opt-in newsletter, visibilité annuaire | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | `MemberProfile` `Auditable` (liste blanche `show_in_directory`, `newsletter_opt_in`, `desk_id`, `company_id`) |
 | Commentaire `config/fortify.php:153` « email = flux dédié hors MVP » | ⚠️ | Périmé (décision D) — cosmétique |
 
 ### §3.4.6 — Mon bureau & mes absences
@@ -108,17 +108,17 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 | Exigence PRD | Statut | Constat |
 |---|---|---|
 | Accès resident/staff uniquement | ✅ *soldé 13/09 (lot B, `008e3d3`)* | Module masqué et route gardée sans `has_desk` ; Policy stricte côté API |
-| Affichage du bureau attitré (numéro, étage) | ❌ | `PresencePage` ne référence pas `desk` ; `/api/presence` ne le renvoie pas |
-| Mini-aperçu de la position sur le plan | ❌ | Absent |
-| Liste des absences **à venir** | ⚠️ | Toutes les absences renvoyées sans filtre de date (`PresenceController.php:128-130`) |
-| Bouton « Marquer une absence » | 🔀 | Formulaire toujours affiché inline |
-| Récurrence sur une plage : début + **fin** + jour | ⚠️ | `date_end` désactivée et non envoyée en mode weekly (`PresencePage.tsx:185,119-123`) → récurrence sans fin ; le back accepte pourtant une fin |
+| Affichage du bureau attitré (numéro, étage) | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | `GET /api/presence` renvoie `desk` (nom, étage, `svg_desk_id`), affiché en tête de page |
+| Mini-aperçu de la position sur le plan | ❌ *(reporté : `FloorPlanSvg` dépend de `/api/directory/floor-plan` gaté `view-annuaire` ; nécessite un endpoint dédié — à décider)* | Absent |
+| Liste des absences **à venir** | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | Scope SQL `upcoming()` par défaut (NULL-safe), `?all=1` pour l'historique |
+| Bouton « Marquer une absence » | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | Bouton révélant le formulaire (`aria-expanded`, focus entrant et retour au déclencheur) |
+| Récurrence sur une plage : début + **fin** + jour | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | `date_end` saisissable et envoyée en `weekly` (facultative) |
 | Récurrence `daily` | ⚠️ | Enum `none|weekly` seulement (couvert par le mode « plage ») |
-| Note optionnelle | ❌ | Aucun champ de saisie, `notes` absent des règles de `StoreAbsenceRequest` (colonne et service prêts) |
-| Édition d'une absence | ❌ | Aucune route PATCH/PUT ; `DeskAbsencePolicy::update` inutilisée |
-| Suppression possible jusqu'au début | 🔀 | Suppression permise à tout moment |
-| Suppression rétroactive : warning + audit | ❌ | Confirmation générique ; `DeskAbsence` non `Auditable` |
-| Admin voit les absences (§4.8) | ⚠️ | Vue dérivée « Occupation du jour » seulement ; aucune Resource Filament `desk_absences` (ni liste, ni édition) |
+| Note optionnelle | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | `notes` (max 255 = colonne) ; renvoyée au membre seulement s'il l'a écrite lui-même (note admin = interne, préservée au PATCH) |
+| Édition d'une absence | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | `PATCH /api/absences/{id}` (remplacement complet), `UpdateAbsenceRequest`, Policy = propriétaire + `date_start >= CURRENT_DATE` |
+| Suppression possible jusqu'au début | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | Policy `date_start >= CURRENT_DATE` (jour de début inclus) ; `can_edit`/`can_delete` calculés en SQL |
+| Suppression rétroactive : warning + audit | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | Interprétation : refusée au membre (403 + message) ; l'admin supprime via Filament, tracé (`DeskAbsence` `Auditable`) |
+| Admin voit les absences (§4.8) | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | `DeskAbsenceResource` (liste, filtre ternaire, création/édition/suppression via `PresenceService`, `canAccess` = `declare-presence-for-others`, sans notification Q25) |
 | Lien depuis l'accueil **si absence imminente** | ⚠️ | Tuile « Ma présence » toujours affichée, sans logique |
 
 ## §3.5 — Réservation de ressources
@@ -271,6 +271,7 @@ Regrouper en lots, chacun = une branche + tests :
 | A — Calendrier salles | ✅ livré 13/09 (branche `feature/portail-lot-a`) | `241405a`, `6f6f512`, `e14306c`, `3f5f320`, `7e93083`, `74eff8a` | 501 Pest / 121 Vitest verts (Playwright non exécuté : specs `bookings`/`a11y` adaptées, à rejouer). Corrigé au passage : `BookingPolicy` comparait `starts_at->isFuture()` en PHP → une résa **déjà commencée** restait annulable ~2 h (piège timezone). Reste **hors lot** : vérification d'**abonnement actif** (§3.5.3) non implémentée ; décalage de fuseau à l'écriture (cf. « Écarts hors lot ») |
 | B — Rôles & navigation | ✅ mergé 13/09 | `008e3d3` (merge) | 477 Pest / 99 Vitest / e2e 19-20 verts. Écarts hors lot relevés : `/api/announcements`, `/api/tickets`, `/api/desks/*` sans permission de rôle (auto-scopés) ; route `/tickets` non gardée ; e2e « session expirée » flaky **sur main aussi** (échoue seul, dépend de l'ordre des specs) |
 | A — Calendrier salles | ✅ mergé 13/09 | `967a60e` (merge ; `241405a`, `6f6f512`, `e14306c`, `3f5f320`, `7e93083`, `74eff8a`) | 507 Pest / 128 Vitest / e2e 23/23. Review Opus : 9 findings corrigés (occupant borné à `view-annuaire` + opt-out, `requires_admin` côté écriture, infobulle → panneau détail, vue liste 7 jours, `cancellable` par créneau, clés TanStack, ticket offert non débité, suggestion 409 sur dispo fraîche, erreurs 422 routées). **À trancher (Guillaume)** : ⏸️ règle opt-out annuaire dans le calendrier (implémenté : nom masqué, entité conservée) ; ⏸️ fuseau Postgres (session UTC vs app Paris : `now()` lié +2 h, cf. sonde 13/09) ; bornes Journée 9-18 / Matin 9-13 / AM 14-18 résidents ; abonnement actif non vérifié à la résa (§3.5.3) |
+| C — Absences | ✅ mergé 13/09 | `1d1dd51` (merge ; `607b832`, `2f5ea01`, `00edbfd`, `f3fa7c2`, `afa5fc1`, `7a54be7`) | 534 Pest / 135 Vitest / e2e 22-23. Review Opus : 10 findings, 9 corrigés (scope NULL-safe, `canAccess`, `update` aligné sur `>=`, faux positif audit booléens, `notes` admin internes, focus, messages, test suppression tracée, docblock PATCH). Reporté : mini-plan du bureau (endpoint dédié à décider). Hors lot relevé : `DeskOccupationPolicy::viewAny/create` sans condition de rôle (→ lot E) ; notes des absences `DemoSeeder` sans `created_by` invisibles côté portail (voulu) |
 
 ### Écarts hors lot découverts (non corrigés)
 

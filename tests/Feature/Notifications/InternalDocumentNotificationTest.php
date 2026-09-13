@@ -111,3 +111,26 @@ it('respecte le toggle email coupé sur le document à valider (in-app seul)', f
         return $channels === ['database'];
     });
 });
+
+it('fige titre et version à la construction (review — piège de sérialisation en queue)', function () {
+    $resident = User::factory()->resident()->create();
+    $document = InternalDocument::factory()->create(['title' => 'Charte', 'version' => '1.0']);
+
+    // Notification v1 « en file » : construite avant la republication.
+    $v1 = new InternalDocumentPublishedNotification($document);
+
+    // Republication rapprochée : la ligne en base passe en v2 pendant que la
+    // notification v1 est encore en queue (SerializesModels ne réhydrate
+    // qu'un identifiant — sans figeage, `toDatabase()` relirait la v2 pour
+    // LES DEUX notifications).
+    $document->update(['title' => 'Charte (corrigée)', 'version' => '2.0']);
+    $v2 = new InternalDocumentPublishedNotification($document->fresh());
+
+    $payloadV1 = $v1->toDatabase($resident);
+    $payloadV2 = $v2->toDatabase($resident);
+
+    expect($payloadV1['title'])->toBe('Charte')
+        ->and($payloadV1['version'])->toBe('1.0')
+        ->and($payloadV2['title'])->toBe('Charte (corrigée)')
+        ->and($payloadV2['version'])->toBe('2.0');
+});

@@ -959,7 +959,7 @@ GOOGLE_CALENDAR_ID=
 GOOGLE_SERVICE_ACCOUNT_JSON=           # path ou JSON inline
 
 # Notifications in-app (PRD §3.8.4)
-NOTIFICATIONS_RETENTION_DAYS=90        # rétention de l'historique, purge quotidienne
+# NOTIFICATIONS_RETENTION_DAYS=90       # optionnel, défaut 90 j (config/notifications.php) — rétention de l'historique, purge quotidienne
 HEALTHCHECK_NOTIFICATIONS_PURGE_URL=   # check Healthchecks du cron notifications:purge
 ```
 

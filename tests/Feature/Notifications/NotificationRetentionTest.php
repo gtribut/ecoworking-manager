@@ -68,6 +68,22 @@ it('accepte une rétention ponctuelle en option de commande', function () {
     expect(DatabaseNotification::query()->whereKey($notification->id)->exists())->toBeFalse();
 });
 
+it('rejette une option --days invalide sans rien supprimer (review)', function (string $invalid) {
+    $user = User::factory()->create();
+    $notification = agedNotification($user, 200);
+
+    $this->artisan("notifications:purge --days={$invalid}")->assertFailed();
+
+    // `(int) '' === 0` bornait auparavant silencieusement à 1 jour (purge
+    // quasi totale) : on vérifie qu'aucune ligne n'a été supprimée.
+    expect(DatabaseNotification::query()->whereKey($notification->id)->exists())->toBeTrue();
+})->with([
+    'vide' => [''],
+    'non numérique' => ['abc'],
+    'zéro' => ['0'],
+    'négatif' => ['-5'],
+]);
+
 it('planifie la purge quotidiennement', function () {
     $events = collect(app(Schedule::class)->events())
         ->filter(fn ($event): bool => str_contains((string) $event->command, 'notifications:purge'));

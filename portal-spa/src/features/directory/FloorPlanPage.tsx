@@ -1,6 +1,6 @@
-import { isAxiosError } from 'axios'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { QueryError } from '@/components/QueryError'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -49,9 +49,8 @@ export function FloorPlanPage() {
   const [date, setDate] = useState(() => toIsoDate(new Date()))
   const [floor, setFloor] = useState(1)
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const { data, isLoading, isError, error } = useFloorPlan(date)
+  const { data, isLoading, isError, error, refetch } = useFloorPlan(date)
 
-  const forbidden = isAxiosError(error) && error.response?.status === 403
   const selectedDesk = data?.desks.find((desk) => desk.resource_id === selectedId) ?? null
 
   // Un bureau sélectionné sur l'autre étage (via la liste) suit le switch.
@@ -99,11 +98,11 @@ export function FloorPlanPage() {
 
       {isLoading && <Spinner label="Chargement du plan…" />}
       {isError && (
-        <Alert variant="error">
-          {forbidden
-            ? 'Le plan des étages n’est pas accessible avec votre profil.'
-            : 'Impossible de charger le plan des étages.'}
-        </Alert>
+        <QueryError
+          error={error}
+          fallback="Impossible de charger le plan des étages."
+          onRetry={() => void refetch()}
+        />
       )}
 
       {data && !data.is_working_day && (

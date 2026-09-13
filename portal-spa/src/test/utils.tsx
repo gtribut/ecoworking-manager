@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type RenderResult, render } from '@testing-library/react'
 import type { ReactElement, ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
+import { Toaster } from 'sonner'
 import { AuthProvider } from '@/features/auth/AuthContext'
 import type { AuthUser } from '@/features/auth/types'
 
@@ -25,7 +26,12 @@ export function renderWithProviders(
     const tree = withAuth ? <AuthProvider>{children}</AuthProvider> : children
     return (
       <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={[route]}>{tree}</MemoryRouter>
+        <MemoryRouter initialEntries={[route]}>
+          {tree}
+          {/* Monté systématiquement : les toasts (PRD §3.1/§3.8.4, lot G) sont
+              assertables via `screen.findByText(...)` sans configuration par test. */}
+          <Toaster />
+        </MemoryRouter>
       </QueryClientProvider>
     )
   }

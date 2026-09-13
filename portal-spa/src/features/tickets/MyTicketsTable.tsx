@@ -1,4 +1,5 @@
-import { Alert } from '@/components/ui/Alert'
+import { Ticket as TicketIcon } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
 import type { Ticket, TicketStatus, TicketType } from './types'
 
 const TYPE_LABELS: Record<TicketType, string> = {
@@ -44,7 +45,7 @@ export function MyTicketsTable({ tickets }: { tickets: Ticket[] }) {
       </h2>
 
       {sorted.length === 0 ? (
-        <Alert variant="info">Aucun ticket pour le moment.</Alert>
+        <EmptyState icon={TicketIcon} title="Aucun ticket pour le moment." />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
           <table className="w-full text-left text-sm">

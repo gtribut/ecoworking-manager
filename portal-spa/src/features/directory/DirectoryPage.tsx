@@ -1,7 +1,7 @@
-import { isAxiosError } from 'axios'
-import { Linkedin, Search } from 'lucide-react'
+import { Linkedin, Search, Users } from 'lucide-react'
 import { useState } from 'react'
-import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/EmptyState'
+import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
@@ -27,9 +27,7 @@ export function DirectoryPage() {
   const [page, setPage] = useState(1)
   const [q, setQ] = useState('')
   const [searchInput, setSearchInput] = useState('')
-  const { data, isLoading, isError, error } = useDirectory(page, q)
-
-  const forbidden = isAxiosError(error) && error.response?.status === 403
+  const { data, isLoading, isError, error, refetch } = useDirectory(page, q)
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -64,19 +62,22 @@ export function DirectoryPage() {
 
       {isLoading && <Spinner label="Chargement de l’annuaire…" />}
       {isError && (
-        <Alert variant="error">
-          {forbidden
-            ? 'L’annuaire n’est pas accessible avec votre profil.'
-            : 'Impossible de charger l’annuaire.'}
-        </Alert>
+        <QueryError
+          error={error}
+          fallback="Impossible de charger l’annuaire."
+          onRetry={() => void refetch()}
+        />
       )}
 
       {data && data.data.length === 0 && (
-        <Alert variant="info">
-          {q === ''
-            ? 'Aucun coworker ne s’affiche dans l’annuaire pour le moment.'
-            : `Aucun coworker ne correspond à « ${q} ».`}
-        </Alert>
+        <EmptyState
+          icon={Users}
+          title={
+            q === ''
+              ? 'Aucun coworker ne s’affiche dans l’annuaire pour le moment.'
+              : `Aucun coworker ne correspond à « ${q} ».`
+          }
+        />
       )}
 
       {data && data.data.length > 0 && (

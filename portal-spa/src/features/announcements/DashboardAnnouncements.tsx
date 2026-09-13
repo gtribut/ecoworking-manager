@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Alert } from '@/components/ui/Alert'
+import { QueryError } from '@/components/QueryError'
 import { Spinner } from '@/components/ui/Spinner'
 import { AnnouncementBadge } from './AnnouncementBadge'
 import { excerpt, formatAnnouncementDate } from './AnnouncementsPage'
@@ -10,7 +10,7 @@ import { useAnnouncements } from './useAnnouncements'
  * annonces publiées visibles du membre, badge Info/Événement, lien détail.
  */
 export function DashboardAnnouncements() {
-  const { data, isLoading, isError } = useAnnouncements(1)
+  const { data, isLoading, isError, refetch } = useAnnouncements(1)
 
   const latest = data?.data.slice(0, 3) ?? []
 
@@ -21,7 +21,12 @@ export function DashboardAnnouncements() {
       </h2>
 
       {isLoading && <Spinner label="Chargement des actualités…" />}
-      {isError && <Alert variant="error">Impossible de charger les actualités.</Alert>}
+      {isError && (
+        <QueryError
+          message="Impossible de charger les actualités."
+          onRetry={() => void refetch()}
+        />
+      )}
 
       {data && latest.length === 0 && (
         <p className="text-sm text-neutral-500 dark:text-neutral-400">

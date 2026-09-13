@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Alert } from '@/components/ui/Alert'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { CalendarSubscription } from '@/features/calendar/CalendarSubscription'
@@ -15,7 +16,9 @@ const EVENT_ROOM_MAILTO =
 const TICKETS_MAILTO =
   'mailto:contact@ecoworking.fr?subject=[backend ecowo] Tickets salle de réunion'
 
-type Notice = { kind: 'success' | 'info'; message: string; mailto?: string } | null
+// Messages persistants (nécessitent un lien mailto visible) : Alert, pas un
+// toast éphémère. Le succès d'une réservation, lui, est un toast (PRD §3.1).
+type Notice = { message: string; mailto?: string } | null
 
 export function BookingsPage() {
   usePageTitle('Réservations — Portail Ecoworking')
@@ -50,7 +53,6 @@ export function BookingsPage() {
     // External sans ticket : on le dit avant de proposer le formulaire (§3.5.3).
     if (isExternal && roomTickets === 0) {
       setNotice({
-        kind: 'info',
         message:
           'Vous n’avez plus de ticket salle de réunion. Contactez Ecoworking pour en obtenir.',
         mailto: TICKETS_MAILTO,
@@ -86,7 +88,7 @@ export function BookingsPage() {
       <h1 className="text-2xl font-semibold">Réservations</h1>
 
       {notice !== null && (
-        <Alert variant={notice.kind === 'success' ? 'success' : 'info'}>
+        <Alert variant="info">
           {notice.message}
           {notice.mailto !== undefined && (
             <a
@@ -110,7 +112,6 @@ export function BookingsPage() {
         onPick={onPick}
         onPickEventRoom={() =>
           setNotice({
-            kind: 'info',
             message: 'Pour réserver cette salle, contactez-nous.',
             mailto: EVENT_ROOM_MAILTO,
           })
@@ -121,7 +122,7 @@ export function BookingsPage() {
         target={target}
         isExternal={isExternal}
         onClose={() => setTarget(null)}
-        onSuccess={(message) => setNotice({ kind: 'success', message })}
+        onSuccess={(message) => toast.success(message)}
       />
 
       <MyBookingsList isExternal={isExternal} onEdit={onEditFromList} />

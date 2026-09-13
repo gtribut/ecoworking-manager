@@ -1,6 +1,6 @@
 import { Download } from 'lucide-react'
 import { Link } from 'react-router'
-import { Alert } from '@/components/ui/Alert'
+import { QueryError } from '@/components/QueryError'
 import { Spinner } from '@/components/ui/Spinner'
 import { invoicePdfUrl } from './api'
 import { formatInvoiceDate, InvoiceStatusBadge } from './status'
@@ -13,7 +13,7 @@ import { useInvoices } from './useInvoices'
  * les contacts facturation — le parent gate sur `view-entity-invoices`.
  */
 export function DashboardInvoices() {
-  const { data, isLoading, isError } = useInvoices(DEFAULT_INVOICE_FILTERS)
+  const { data, isLoading, isError, refetch } = useInvoices(DEFAULT_INVOICE_FILTERS)
   const invoices = data?.data.slice(0, 3) ?? []
 
   return (
@@ -23,7 +23,9 @@ export function DashboardInvoices() {
       </h2>
 
       {isLoading && <Spinner label="Chargement des factures…" />}
-      {isError && <Alert variant="error">Impossible de charger vos factures.</Alert>}
+      {isError && (
+        <QueryError message="Impossible de charger vos factures." onRetry={() => void refetch()} />
+      )}
 
       {data && invoices.length === 0 && (
         <p className="text-sm text-neutral-500 dark:text-neutral-400">

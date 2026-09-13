@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Alert } from '@/components/ui/Alert'
+import { QueryError } from '@/components/QueryError'
 import { Spinner } from '@/components/ui/Spinner'
 import { InternalDocumentItem } from './InternalDocumentItem'
 import { useInternalDocuments } from './useDocuments'
@@ -12,7 +12,7 @@ import { useInternalDocuments } from './useDocuments'
  * masqué (recette R-06) — la page Documents garde le récapitulatif complet.
  */
 export function DashboardDocumentsToValidate() {
-  const { data, isLoading, isError } = useInternalDocuments()
+  const { data, isLoading, isError, refetch } = useInternalDocuments()
 
   const toValidate = data?.data.filter((document) => !document.is_validated) ?? []
 
@@ -27,7 +27,9 @@ export function DashboardDocumentsToValidate() {
       </h2>
 
       {isLoading && <Spinner label="Chargement des documents…" />}
-      {isError && <Alert variant="error">Impossible de charger vos documents.</Alert>}
+      {isError && (
+        <QueryError message="Impossible de charger vos documents." onRetry={() => void refetch()} />
+      )}
 
       {toValidate.length > 0 && (
         <>

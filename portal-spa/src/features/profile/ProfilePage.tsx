@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
-import { Alert } from '@/components/ui/Alert'
+import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
@@ -39,11 +40,8 @@ function nullable(value: string | undefined): string | null {
 export function ProfilePage() {
   usePageTitle('Mon profil — Portail Ecoworking')
 
-  const { data, isLoading, isError } = useProfile()
+  const { data, isLoading, isError, refetch } = useProfile()
   const updateProfile = useUpdateProfile()
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
-    null,
-  )
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -85,13 +83,14 @@ export function ProfilePage() {
     return <Spinner label="Chargement du profil…" />
   }
   if (isError || !data) {
-    return <Alert variant="error">Impossible de charger votre profil.</Alert>
+    return (
+      <QueryError message="Impossible de charger votre profil." onRetry={() => void refetch()} />
+    )
   }
 
   const hasProfile = data.profile !== null
 
   const onSubmit = form.handleSubmit(async (values) => {
-    setFeedback(null)
     try {
       await updateProfile.mutateAsync({
         theme: values.theme === '' ? null : values.theme,
@@ -110,17 +109,15 @@ export function ProfilePage() {
             }
           : {}),
       })
-      setFeedback({ type: 'success', message: 'Profil mis à jour.' })
+      toast.success('Profil mis à jour.')
     } catch (error) {
-      setFeedback({ type: 'error', message: getApiErrorMessage(error) })
+      toast.error(getApiErrorMessage(error))
     }
   })
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <h1 className="text-2xl font-semibold">Mon profil</h1>
-
-      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       <form onSubmit={onSubmit} className="space-y-8" noValidate>
         <fieldset className="space-y-4">

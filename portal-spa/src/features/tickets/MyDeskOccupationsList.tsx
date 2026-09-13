@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
-import { Alert } from '@/components/ui/Alert'
+import { Armchair } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { toast } from 'sonner'
+import { EmptyState } from '@/components/EmptyState'
+import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { ConfirmButton } from '@/components/ui/ConfirmButton'
 import { Spinner } from '@/components/ui/Spinner'
@@ -33,21 +36,13 @@ function formatDate(isoDate: string): string {
 export function MyDeskOccupationsList() {
   const [scope, setScope] = useState<Scope>('upcoming')
   const [page, setPage] = useState(1)
-  const { data, isLoading, isError } = useDeskOccupations(scope, page)
+  const { data, isLoading, isError, refetch } = useDeskOccupations(scope, page)
   const cancelOccupation = useCancelDeskOccupation()
-  const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(
-    null,
-  )
   // La ligne annulée disparaît de la liste (refetch) : son bouton « Annuler »
-  // est démonté, ce qui perdrait le focus. On le reporte sur l'encart de
-  // confirmation plutôt que de le laisser retomber sur <body> (RGAA 12.x).
-  const feedbackRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (feedback !== null) {
-      feedbackRef.current?.focus()
-    }
-  }, [feedback])
+  // est démonté, ce qui perdrait le focus. On le reporte sur le titre de
+  // section plutôt que de le laisser retomber sur <body> (RGAA 12.x) ; le
+  // résultat de l'action, lui, est annoncé par le toast (PRD §3.1).
+  const headingRef = useRef<HTMLHeadingElement>(null)
 
   function switchScope(next: Scope) {
     setScope(next)
@@ -55,21 +50,23 @@ export function MyDeskOccupationsList() {
   }
 
   async function onCancel(occupation: DeskOccupation) {
-    setFeedback(null)
     try {
       await cancelOccupation.mutateAsync(occupation.id)
-      setFeedback({
-        type: 'success',
-        message: `Réservation du bureau « ${occupation.desk_name} » annulée.`,
-      })
+      toast.success(`Réservation du bureau « ${occupation.desk_name} » annulée.`)
+      headingRef.current?.focus()
     } catch (error) {
-      setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Annulation impossible.') })
+      toast.error(getApiErrorMessage(error, 'Annulation impossible.'))
     }
   }
 
   return (
     <section aria-labelledby="my-desks-heading" className="space-y-4">
-      <h2 id="my-desks-heading" className="text-lg font-medium">
+      <h2
+        id="my-desks-heading"
+        ref={headingRef}
+        tabIndex={-1}
+        className="text-lg font-medium focus:outline-none"
+      >
         {scope === 'upcoming' ? 'Mes bureaux réservés' : 'Historique de mes bureaux réservés'}
       </h2>
 
@@ -92,23 +89,23 @@ export function MyDeskOccupationsList() {
         </Button>
       </div>
 
-      {feedback && (
-        <div ref={feedbackRef} tabIndex={-1}>
-          <Alert variant={feedback.type === 'success' ? 'success' : 'error'}>
-            {feedback.message}
-          </Alert>
-        </div>
+      {isLoading && <Spinner label="Chargement de vos bureaux réservés…" />}
+      {isError && (
+        <QueryError
+          message="Impossible de charger vos bureaux réservés."
+          onRetry={() => void refetch()}
+        />
       )}
 
-      {isLoading && <Spinner label="Chargement de vos bureaux réservés…" />}
-      {isError && <Alert variant="error">Impossible de charger vos bureaux réservés.</Alert>}
-
       {data && data.data.length === 0 && (
-        <Alert variant="info">
-          {scope === 'upcoming'
-            ? 'Aucun bureau réservé à venir.'
-            : 'Aucun bureau réservé passé pour le moment.'}
-        </Alert>
+        <EmptyState
+          icon={Armchair}
+          title={
+            scope === 'upcoming'
+              ? 'Aucun bureau réservé à venir.'
+              : 'Aucun bureau réservé passé pour le moment.'
+          }
+        />
       )}
 
       {data && data.data.length > 0 && (

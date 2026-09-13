@@ -1,7 +1,8 @@
-import { CalendarDays, MapPin, Users } from 'lucide-react'
+import { CalendarDays, MapPin, Megaphone, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/EmptyState'
+import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePageTitle } from '@/lib/usePageTitle'
@@ -35,17 +36,22 @@ export function AnnouncementsPage() {
   usePageTitle('Actualités — Portail Ecoworking')
 
   const [page, setPage] = useState(1)
-  const { data, isLoading, isError } = useAnnouncements(page)
+  const { data, isLoading, isError, refetch } = useAnnouncements(page)
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-2xl font-semibold">Actualités Ecoworking</h1>
 
       {isLoading && <Spinner label="Chargement des actualités…" />}
-      {isError && <Alert variant="error">Impossible de charger les actualités.</Alert>}
+      {isError && (
+        <QueryError
+          message="Impossible de charger les actualités."
+          onRetry={() => void refetch()}
+        />
+      )}
 
       {data && data.data.length === 0 && (
-        <Alert variant="info">Aucune actualité pour le moment.</Alert>
+        <EmptyState icon={Megaphone} title="Aucune actualité pour le moment." />
       )}
 
       {data && data.data.length > 0 && (

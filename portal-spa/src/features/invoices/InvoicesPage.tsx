@@ -1,5 +1,6 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, Download } from 'lucide-react'
-import { Alert } from '@/components/ui/Alert'
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Receipt } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
+import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { EntityBlocks } from '@/features/billing/EntityBlock'
@@ -76,7 +77,7 @@ export function InvoicesPage() {
   usePageTitle('Factures — Portail Ecoworking')
 
   const { filters, apply, setPage, toggleSort, reset, hasActiveFilters } = useInvoiceFilters()
-  const { data, isLoading, isError } = useInvoices(filters)
+  const { data, isLoading, isError, refetch } = useInvoices(filters)
   // Bloc entité du module administratif (PRD §3.6.4) ; masqué si l'utilisateur
   // n'a aucune entité facturable.
   const entities = useBillingEntities()
@@ -98,15 +99,25 @@ export function InvoicesPage() {
       </p>
 
       {isLoading && <Spinner label="Chargement des factures…" />}
-      {isError && <Alert variant="error">Impossible de charger vos factures.</Alert>}
+      {isError && (
+        <QueryError message="Impossible de charger vos factures." onRetry={() => void refetch()} />
+      )}
 
       {data && data.data.length === 0 && (
         <div className="space-y-3">
-          <Alert variant="info">
-            {hasActiveFilters
-              ? 'Aucune facture ne correspond à ces filtres.'
-              : 'Aucune facture pour le moment.'}
-          </Alert>
+          <EmptyState
+            icon={Receipt}
+            title={
+              hasActiveFilters
+                ? 'Aucune facture ne correspond à ces filtres.'
+                : 'Aucune facture pour le moment.'
+            }
+            description={
+              hasActiveFilters
+                ? undefined
+                : 'Les factures apparaîtront ici dès qu’elles seront émises.'
+            }
+          />
           {hasActiveFilters && (
             <Button variant="secondary" size="sm" onClick={reset}>
               Réinitialiser les filtres

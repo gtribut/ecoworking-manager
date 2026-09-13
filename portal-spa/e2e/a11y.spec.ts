@@ -30,6 +30,11 @@ test.describe('Audit a11y — écrans sans spec dédiée', () => {
   test('présence (résident)', async ({ page, checkA11y }) => {
     await page.goto('/presence')
     await expect(page.getByRole('heading', { level: 1, name: 'Ma présence' })).toBeVisible()
+    // Bureau attitré du membre e2e (E2eSeeder : `desk-2`).
+    await expect(page.getByText(/Votre bureau attitré/)).toBeVisible()
+    // Le formulaire est révélé par le bouton (lot C) : on l'ouvre pour que
+    // l'audit couvre aussi ses champs.
+    await page.getByRole('button', { name: 'Marquer une absence' }).click()
     await expect(page.getByLabel('Date de début')).toBeVisible()
     await checkA11y('presence')
   })

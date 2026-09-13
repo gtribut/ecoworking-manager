@@ -40,7 +40,9 @@ test.describe('Session membre', () => {
     await page.goto('/')
     await expect(page.getByRole('heading', { level: 1, name: /Bonjour/ })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Déconnexion' }).click()
+    // La déconnexion vit désormais dans le menu profil (PRD §3.2, lot G).
+    await page.getByRole('button', { name: new RegExp(seed.member.firstName) }).click()
+    await page.getByRole('menuitem', { name: 'Déconnexion' }).click()
 
     await expect(page).toHaveURL(/\/login/)
     await expect(page.getByRole('button', { name: 'Se connecter' })).toBeVisible()

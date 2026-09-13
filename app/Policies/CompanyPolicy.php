@@ -37,7 +37,10 @@ final class CompanyPolicy
 
     /**
      * Détail de facturation d'UNE entité (mode de paiement, IBAN-4) : rôle
-     * `billing_contact` **et** périmètre de l'entité (CLAUDE.md §3.1).
+     * `billing_contact` **et mandat explicite sur cette entité**
+     * (`contacts.role = billing`), pas le simple rattachement de membre
+     * (CLAUDE.md §3.1). Sans ça, un contact facturation d'Alpha, résident de
+     * Beta, lirait les coordonnées bancaires de Beta.
      */
     public function viewBillingDetails(User $user, Company $company): bool
     {
@@ -45,7 +48,8 @@ final class CompanyPolicy
             return true;
         }
 
-        return $user->isBillingContact() && $user->canBillFor($company);
+        return $user->isBillingContact()
+            && $user->billingContactCompanyIds()->contains($company->getKey());
     }
 
     public function create(User $user): bool

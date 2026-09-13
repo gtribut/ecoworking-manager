@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\Role;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\MemberProfile;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -107,7 +108,7 @@ it('masque le mode de paiement et l\'IBAN-4 au membre qui n\'est pas contact fac
         ->not->toContain('payment_method', 'iban_last4');
 });
 
-it('expose le mode de paiement et l\'IBAN-4 au contact facturation de l\'entité', function () {
+it('expose le mode de paiement et l\'IBAN-4 au contact facturation déclaré de l\'entité', function () {
     $this->seed(PermissionSeeder::class);
     $company = Company::factory()->create([
         'preferred_payment_method' => 'transfer',
@@ -116,6 +117,9 @@ it('expose le mode de paiement et l\'IBAN-4 au contact facturation de l\'entité
     $user = User::factory()->resident()->create();
     $user->assignRole(Role::BillingContact->value);
     MemberProfile::factory()->for($user)->create(['company_id' => $company->id]);
+    // Mandat explicite : sans lui, le rattachement de membre ne donne pas accès
+    // aux coordonnées bancaires (review lot D).
+    Contact::factory()->billing()->create(['user_id' => $user->id, 'company_id' => $company->id]);
 
     $this->actingAs($user)->getJson('/api/profile')->assertOk()
         ->assertJsonPath('company.payment_method', 'transfer')

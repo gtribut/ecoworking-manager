@@ -34,15 +34,16 @@ final class BillingEntityController extends Controller
         // Hors rôle billing : 403 explicite, comme les factures (PRD §3.6.1).
         Gate::authorize('viewAnyBillingDetails', Company::class);
 
+        // Périmètre : les entités dont il est explicitement contact facturation
+        // (`contacts.role = billing`) — être rattaché comme résident ne suffit
+        // pas pour des coordonnées bancaires. CompanyResource reste l'unique
+        // autorité sur les champs rendus (CompanyPolicy::viewBillingDetails).
         $companies = Company::query()
-            ->whereIn('id', $user->linkedCompanyIds())
+            ->whereIn('id', $user->billingContactCompanyIds())
             ->orderBy('legal_name')
             ->orderBy('last_name')
             ->orderBy('id')
-            ->get()
-            // Filet : la Policy reste l'autorité sur chaque entité rendue.
-            ->filter(fn (Company $company): bool => Gate::allows('viewBillingDetails', $company))
-            ->values();
+            ->get();
 
         return CompanyResource::collection($companies);
     }

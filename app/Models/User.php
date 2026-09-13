@@ -170,6 +170,18 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     }
 
     /**
+     * Périmètres d'entités mémoïsés le temps de la requête : ils sont relus par
+     * chaque Policy et chaque Resource d'une même réponse (CompanyResource en
+     * multi-entités). `forgetCompanyScopes()` les invalide.
+     *
+     * @var Collection<int, int>|null
+     */
+    private ?Collection $linkedCompanyIds = null;
+
+    /** @var Collection<int, int>|null */
+    private ?Collection $billingContactCompanyIds = null;
+
+    /**
      * Identifiants des entités juridiques (`companies`) rattachées à l'utilisateur :
      * son entité de membre (`member_profiles.company_id`) et les entités dont il est
      * contact facturation (`contacts.role = billing`). PRD §2.5 / §3.6.
@@ -182,14 +194,43 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
      */
     public function linkedCompanyIds(): Collection
     {
-        return $this->contacts()
+        // `merge` et non `push` : `push` muterait la collection mémoïsée des
+        // contacts facturation.
+        return $this->linkedCompanyIds ??= $this->billingContactCompanyIds()
+            ->merge(array_filter([$this->memberProfile?->company_id]))
+            ->unique()
+            ->values();
+    }
+
+    /**
+     * Identifiants des entités dont l'utilisateur est **explicitement** contact
+     * de facturation (`contacts.role = billing`) — sans son entité de membre.
+     *
+     * C'est le périmètre des **données bancaires** (mode de paiement, IBAN-4,
+     * PRD §3.6.4) : être rattaché à une entité comme simple résident n'y donne
+     * pas accès, seul le mandat de contact facturation le fait
+     * (`CompanyPolicy::viewBillingDetails`).
+     *
+     * @return Collection<int, int>
+     */
+    public function billingContactCompanyIds(): Collection
+    {
+        return $this->billingContactCompanyIds ??= $this->contacts()
             ->where('role', ContactRole::Billing->value)
             ->whereNotNull('company_id')
             ->pluck('company_id')
-            ->push($this->memberProfile?->company_id)
-            ->filter()
             ->unique()
             ->values();
+    }
+
+    /**
+     * Vide les périmètres mémoïsés — à appeler après avoir créé/supprimé un
+     * contact facturation ou changé l'entité du profil sur une instance vivante.
+     */
+    public function forgetCompanyScopes(): void
+    {
+        $this->linkedCompanyIds = null;
+        $this->billingContactCompanyIds = null;
     }
 
     /**

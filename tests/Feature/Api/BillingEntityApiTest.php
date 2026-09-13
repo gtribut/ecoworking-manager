@@ -153,12 +153,55 @@ it('isole les entités entre contacts facturation (A ne voit pas l\'entité de B
     expect($names)->toEqual(collect(['Alpha SAS']));
 });
 
-it('inclut l\'entité du profil membre quand le résident est aussi contact facturation', function () {
+it('inclut l\'entité du profil membre quand le résident en est aussi contact facturation déclaré', function () {
     $company = Company::factory()->create(['legal_name' => 'Alpha SAS']);
     $user = User::factory()->resident()->create();
     $user->assignRole(Role::BillingContact->value);
     MemberProfile::factory()->for($user)->create(['company_id' => $company->id]);
+    billingContactOf($user, $company);
 
     $this->actingAs($user)->getJson('/api/billing/entity')->assertOk()
         ->assertJsonPath('data.0.legal_name', 'Alpha SAS');
+});
+
+it('exclut l\'entité où l\'utilisateur n\'est que résident, sans mandat de facturation', function () {
+    // Faille corrigée (review lot D) : `linkedCompanyIds()` inclut l'entité du
+    // profil membre — un contact facturation d'Alpha, résident de Beta, lisait
+    // les coordonnées bancaires de Beta. Les données bancaires exigent un
+    // `contacts.role = billing` sur CETTE entité.
+    $alpha = Company::factory()->create(['legal_name' => 'Alpha SAS']);
+    $beta = Company::factory()->create([
+        'legal_name' => 'Beta SARL',
+        'preferred_payment_method' => 'sepa',
+        'sepa_iban_last4' => '4242',
+    ]);
+
+    $user = User::factory()->resident()->create();
+    $user->assignRole(Role::BillingContact->value);
+    billingContactOf($user, $alpha);
+    MemberProfile::factory()->for($user)->create(['company_id' => $beta->id]);
+
+    $response = $this->actingAs($user)->getJson('/api/billing/entity')->assertOk();
+
+    expect(collect($response->json('data'))->pluck('legal_name'))->toEqual(collect(['Alpha SAS']))
+        ->and($response->getContent())->not->toContain('4242');
+});
+
+it('n\'expose pas les coordonnées bancaires de l\'entité où l\'utilisateur n\'est que résident (profil)', function () {
+    $beta = Company::factory()->create([
+        'preferred_payment_method' => 'sepa',
+        'sepa_iban_last4' => '4242',
+    ]);
+    $alpha = Company::factory()->create();
+
+    $user = User::factory()->resident()->create();
+    $user->assignRole(Role::BillingContact->value);
+    billingContactOf($user, $alpha); // contact facturation d'une AUTRE entité
+    MemberProfile::factory()->for($user)->create(['company_id' => $beta->id]);
+
+    $response = $this->actingAs($user)->getJson('/api/profile')->assertOk();
+
+    expect(array_keys((array) $response->json('company')))
+        ->not->toContain('payment_method', 'iban_last4')
+        ->and($response->getContent())->not->toContain('4242');
 });

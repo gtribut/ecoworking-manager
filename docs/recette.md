@@ -42,7 +42,11 @@
   - **mode dev** (HMR) : `cd portal-spa && ./node_modules/.bin/vite` puis http://portail.ecoworking.test:5173
 - [x] Back-office : http://admin.ecoworking.test
 - [x] Mailpit : http://localhost:8025 (vider la boîte avant de commencer)
-- [x] Worker de queue **non requis** pour la démo ; pour tester les jobs « comme en prod » (§7) : `sail artisan queue:work --stop-when-empty`
+- [ ] **Worker de queue OBLIGATOIRE pendant la recette** (R-02) : `QUEUE_CONNECTION=database` en dev → sans worker, aucun mail ne part (magic link, reset mot de passe, facture émise…) et aucun PDF n'est généré hors seed. Dans un second terminal, laisser tourner :
+  ```bash
+  sail artisan queue:listen --tries=1
+  ```
+  (le seed, lui, force la queue en `sync` : il n'en a pas besoin)
 
 > ⚠️ WSL : si `localhost` ne répond pas depuis Windows, utiliser l'IP de la VM WSL (`hostname -I`) — piège connu.
 
@@ -103,7 +107,7 @@ Tester avec **Claire**, puis **Julien** (additional), puis **Léa** (external sa
 - [-] Bloc **Mes prochaines réservations** : 3 max, ressource + date + créneau ; résa annulée **absente**
 - [ ] États vides chez Léa : messages rassurants (aucune facture / résa / actualité restreinte aux résidents non visible)
 - [-] Bouton **Nous contacter** = `mailto:contact@ecoworking.fr` avec sujet pré-rempli
-- [ ] Skeletons pendant le chargement (throttling réseau « Slow 3G » dans DevTools), jamais de spinner plein écran
+- [x] Skeletons pendant le chargement (throttling réseau « Slow 3G » dans DevTools), jamais de spinner plein écran
 
 ### 3.2 Profil (PRD §3.4)
 

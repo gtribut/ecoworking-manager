@@ -6,7 +6,7 @@ import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { ConfirmButton } from '@/components/ui/ConfirmButton'
 import { Spinner } from '@/components/ui/Spinner'
-import { getApiErrorMessage } from '@/lib/errors'
+import { getApiErrorMessage, getApiFieldErrors } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { AbsenceForm, WEEKDAYS } from './AbsenceForm'
 import type { Absence, AbsencePeriod, CreateAbsenceInput } from './types'
@@ -93,7 +93,12 @@ function PresenceContent() {
       }
       closeForm()
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Enregistrement impossible.'))
+      // `AbsenceForm` rattache déjà les erreurs 422 à leurs champs (son propre
+      // catch, plus bas) : un toast en plus ferait lire le même message deux
+      // fois (review). On ne toaste que ce que le formulaire ne montre pas déjà.
+      if (Object.keys(getApiFieldErrors(error)).length === 0) {
+        toast.error(getApiErrorMessage(error, 'Enregistrement impossible.'))
+      }
       throw error // le formulaire route les erreurs 422 vers ses champs
     }
   }

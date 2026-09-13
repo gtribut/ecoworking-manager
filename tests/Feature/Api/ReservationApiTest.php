@@ -309,3 +309,24 @@ it('supprime sa propre absence, mais pas celle d\'un autre membre (403)', functi
 
     expect(DeskAbsence::query()->count())->toBe(0);
 });
+
+it('refuse d\'annuler une réservation déjà commencée (403, comparaison SQL)', function () {
+    // Piège timezone du repo : une ligne fraîche relue en PHP paraît ~2 h dans
+    // le futur → `starts_at->isFuture()` autoriserait l'annulation d'un créneau
+    // en cours. La Policy doit comparer côté SQL.
+    $owner = User::factory()->resident()->create();
+    $room = Resource::factory()->meetingRoom()->create();
+    $booking = Booking::factory()->create([
+        'user_id' => $owner->id,
+        'resource_id' => $room->id,
+        'starts_at' => now()->subMinutes(30),
+        'ends_at' => now()->addMinutes(30),
+        'status' => BookingStatus::Confirmed->value,
+    ]);
+
+    $this->actingAs($owner)
+        ->deleteJson("/api/bookings/{$booking->id}")
+        ->assertForbidden();
+
+    expect($booking->fresh()->status)->toBe(BookingStatus::Confirmed);
+});

@@ -42,6 +42,7 @@ function billingContactFor(Company $company): User
 // ---------------------------------------------------------------------------
 
 it('interdit à un membre de voir/modifier/supprimer la réservation d\'un autre', function () {
+    $this->seed(PermissionSeeder::class); // resident → permission manage-own-booking
     $alice = User::factory()->resident()->create();
     $bob = User::factory()->resident()->create();
     $booking = Booking::factory()->for($alice)->create();

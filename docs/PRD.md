@@ -371,6 +371,8 @@ Page d'accueil après connexion. Vue récapitulative qui agrège les infos perti
 - Lien en pied de bloc : "Voir toutes mes factures →" vers le module Administratif/Facturation
 - 🟡 Affichage **conditionné** au rôle `billing_contact` ou si la facturation concerne le user en nom propre — sinon le bloc est masqué (un additional sans billing n'a pas accès aux factures)
 
+> ✅ **Acté 2026-09-13** (Guillaume) : la facturation « en nom propre » ne crée **aucune** exception. Un particulier facturé à son nom est une entité (`billable` perso) dont il est **le** `billing_contact` — une seule personne par entité, entreprise ou perso. Sans ce rôle, aucun accès au module facturation ni au bloc « Mes dernières factures » (cf. §3.6.1, `InvoicePolicy::viewAny`). Le rôle est attribué par l'admin à la création.
+
 **Bloc 3 dernières infos/events**
 - Titre du bloc : "Actualités Ecoworking"
 - 3 cards format : titre, date, mini-description (max 100 caractères), lien "Voir →"

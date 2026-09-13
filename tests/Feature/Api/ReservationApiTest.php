@@ -17,10 +17,18 @@ use App\Support\FrenchHolidays;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Seeders\PermissionSeeder;
+use Illuminate\Support\Carbon;
 
 /** C4.4 / C4.5 — API portail réservation salle, tickets, bureaux & présence. */
 beforeEach(function () {
     $this->seed(PermissionSeeder::class); // câble rôles → permissions
+});
+
+// Filet : si un test fige l'horloge (délai d'annulation bureau) et échoue
+// avant de la relâcher, les tests suivants ne doivent jamais hériter d'un
+// « now() » figé.
+afterEach(function () {
+    Carbon::setTestNow();
 });
 
 function apiNextWorkingDay(): CarbonImmutable
@@ -256,10 +264,17 @@ it('annule sa propre occupation de bureau, mais pas celle d\'un autre (403)', fu
     $owner = User::factory()->external()->create();
     $intruder = User::factory()->external()->create();
     $ticket = Ticket::factory()->for($owner)->used()->create(['type' => TicketType::DeskHalfDay->value]);
+    // Date future déterministe (au-delà du délai d'annulation, jamais « aujourd'hui »
+    // aléatoire) : la Policy vérifie désormais le délai (cf. tests dédiés plus bas).
     $occupation = DeskOccupation::factory()->create([
         'user_id' => $owner->id,
         'ticket_id' => $ticket->id,
+        'date' => apiNextWorkingDay()->toDateString(),
     ]);
+    // Réciproque de `ticket_id` : `TicketService::consume()` la renseigne à la
+    // réservation réelle (cf. review lot E pt.1 — la restitution ne se fait
+    // désormais que si le ticket pointe ENCORE sur cette occupation).
+    $ticket->update(['desk_occupation_id' => $occupation->id]);
 
     $this->actingAs($intruder)
         ->deleteJson("/api/desk-occupations/{$occupation->id}")
@@ -270,7 +285,343 @@ it('annule sa propre occupation de bureau, mais pas celle d\'un autre (403)', fu
         ->assertOk();
 
     expect($occupation->fresh()->status)->toBe(DeskOccupationStatus::Cancelled)
+        ->and($occupation->fresh()->ticket_id)->toBeNull()
         ->and($ticket->fresh()->status)->toBe(TicketStatus::Available); // restitué
+});
+
+// --- C4.5 Bureaux nomades — liste « Mes bureaux réservés » (lot E) -------
+
+it('liste les occupations à venir du membre, pas celles d\'un autre (isolation A/B)', function () {
+    $memberA = User::factory()->external()->create();
+    $memberB = User::factory()->external()->create();
+    $day = apiNextWorkingDay();
+    $occupationA = DeskOccupation::factory()->create(['user_id' => $memberA->id, 'date' => $day->toDateString()]);
+    DeskOccupation::factory()->create(['user_id' => $memberB->id, 'date' => $day->toDateString()]);
+
+    $response = $this->actingAs($memberA)->getJson('/api/desk-occupations')->assertOk();
+    $ids = collect($response->json('data'))->pluck('id');
+
+    expect($ids)->toContain($occupationA->id)->toHaveCount(1);
+});
+
+it('n\'expose pas les occupations annulées dans « à venir », mais les garde dans l\'historique', function () {
+    $user = User::factory()->external()->create();
+    $future = DeskOccupation::factory()->create([
+        'user_id' => $user->id,
+        'date' => apiNextWorkingDay()->toDateString(),
+    ]);
+    $cancelled = DeskOccupation::factory()->cancelled()->create([
+        'user_id' => $user->id,
+        'date' => apiNextWorkingDay()->toDateString(),
+    ]);
+    $past = DeskOccupation::factory()->create([
+        'user_id' => $user->id,
+        'date' => CarbonImmutable::yesterday()->toDateString(),
+    ]);
+
+    $upcomingIds = collect(
+        $this->actingAs($user)->getJson('/api/desk-occupations')->assertOk()->json('data')
+    )->pluck('id');
+    $pastIds = collect(
+        $this->actingAs($user)->getJson('/api/desk-occupations?past=1')->assertOk()->json('data')
+    )->pluck('id');
+
+    expect($upcomingIds)->toContain($future->id)
+        ->not->toContain($cancelled->id)
+        ->not->toContain($past->id)
+        ->and($pastIds)->toContain($past->id)
+        ->not->toContain($future->id);
+});
+
+it('refuse la liste des bureaux réservés à un résident (pas de create-paid-booking)', function () {
+    $this->actingAs(User::factory()->resident()->create())
+        ->getJson('/api/desk-occupations')
+        ->assertForbidden();
+});
+
+it('marque une occupation d\'aujourd\'hui après-midi annulable à 10h, plus à 15h', function () {
+    $user = User::factory()->external()->create();
+    $occupation = DeskOccupation::factory()->create([
+        'user_id' => $user->id,
+        'date' => CarbonImmutable::today()->toDateString(),
+        'period' => 'afternoon',
+    ]);
+
+    Carbon::setTestNow(Carbon::today()->setTime(10, 0));
+    $this->actingAs($user)
+        ->deleteJson("/api/desk-occupations/{$occupation->id}")
+        ->assertOk();
+
+    Carbon::setTestNow();
+});
+
+it('refuse d\'annuler une occupation d\'aujourd\'hui après-midi à 15h (délai dépassé)', function () {
+    $user = User::factory()->external()->create();
+    $occupation = DeskOccupation::factory()->create([
+        'user_id' => $user->id,
+        'date' => CarbonImmutable::today()->toDateString(),
+        'period' => 'afternoon',
+    ]);
+
+    Carbon::setTestNow(Carbon::today()->setTime(15, 0));
+    $this->actingAs($user)
+        ->deleteJson("/api/desk-occupations/{$occupation->id}")
+        ->assertForbidden();
+
+    Carbon::setTestNow();
+
+    expect($occupation->fresh()->status)->toBe(DeskOccupationStatus::Present);
+});
+
+it('refuse d\'annuler une occupation passée (403)', function () {
+    $user = User::factory()->external()->create();
+    $occupation = DeskOccupation::factory()->create([
+        'user_id' => $user->id,
+        'date' => CarbonImmutable::yesterday()->toDateString(),
+    ]);
+
+    $this->actingAs($user)
+        ->deleteJson("/api/desk-occupations/{$occupation->id}")
+        ->assertForbidden();
+});
+
+it('refuse d\'annuler une journée complète (full_day) à 10h : déjà commencée à 9h', function () {
+    $user = User::factory()->external()->create();
+    $occupation = DeskOccupation::factory()->create([
+        'user_id' => $user->id,
+        'date' => CarbonImmutable::today()->toDateString(),
+        'period' => 'full_day',
+    ]);
+
+    Carbon::setTestNow(Carbon::today()->setTime(10, 0));
+    $this->actingAs($user)
+        ->deleteJson("/api/desk-occupations/{$occupation->id}")
+        ->assertForbidden();
+    Carbon::setTestNow();
+
+    expect($occupation->fresh()->status)->toBe(DeskOccupationStatus::Present);
+});
+
+it('n\'expose l\'historique (?past=1) d\'aucun autre membre (isolation A/B)', function () {
+    $memberA = User::factory()->external()->create();
+    $memberB = User::factory()->external()->create();
+    $pastA = DeskOccupation::factory()->create([
+        'user_id' => $memberA->id,
+        'date' => CarbonImmutable::yesterday()->toDateString(),
+    ]);
+    DeskOccupation::factory()->create([
+        'user_id' => $memberB->id,
+        'date' => CarbonImmutable::yesterday()->toDateString(),
+    ]);
+
+    $ids = collect(
+        $this->actingAs($memberA)->getJson('/api/desk-occupations?past=1')->assertOk()->json('data')
+    )->pluck('id');
+
+    expect($ids)->toContain($pastA->id)->toHaveCount(1);
+});
+
+it('expose `cancellable` dans le JSON, cohérent avec l\'autorisation réelle d\'annuler', function () {
+    $user = User::factory()->external()->create();
+    $future = DeskOccupation::factory()->create([
+        'user_id' => $user->id,
+        'date' => apiNextWorkingDay()->toDateString(),
+    ]);
+
+    $response = $this->actingAs($user)->getJson('/api/desk-occupations')->assertOk();
+    $entry = collect($response->json('data'))->firstWhere('id', $future->id);
+
+    expect($entry['cancellable'])->toBeTrue();
+
+    $this->actingAs($user)->deleteJson("/api/desk-occupations/{$future->id}")->assertOk();
+});
+
+// --- C4.5 Bureaux nomades — double annulation (review lot E pt.1) --------
+
+it(
+    'empêche la double annulation de restituer un ticket déjà repris par une autre réservation',
+    function () {
+        $user = User::factory()->external()->create();
+        $deskA = Resource::factory()->desk()->create();
+        $deskB = Resource::factory()->desk()->create();
+        Ticket::factory()->for($user)->create(['type' => TicketType::DeskHalfDay->value]);
+        $day = apiNextWorkingDay();
+
+        // 1. Réserve deskA (consomme l'unique ticket dispo).
+        $firstId = $this->actingAs($user)->postJson('/api/desk-occupations', [
+            'desk_id' => $deskA->id,
+            'date' => $day->toDateString(),
+            'period' => 'morning',
+        ])->assertCreated()->json('data.id');
+        $ticketId = DeskOccupation::findOrFail($firstId)->ticket_id;
+
+        // 2. Annule : le ticket redevient disponible.
+        $this->actingAs($user)->deleteJson("/api/desk-occupations/{$firstId}")->assertOk();
+        expect(Ticket::findOrFail($ticketId)->status)->toBe(TicketStatus::Available);
+
+        // 3. Re-réserve deskB avec le MÊME ticket (seul dispo).
+        $secondId = $this->actingAs($user)->postJson('/api/desk-occupations', [
+            'desk_id' => $deskB->id,
+            'date' => $day->toDateString(),
+            'period' => 'morning',
+        ])->assertCreated()->json('data.id');
+
+        expect(Ticket::findOrFail($ticketId)->status)->toBe(TicketStatus::Used)
+            ->and(Ticket::findOrFail($ticketId)->desk_occupation_id)->toBe($secondId);
+
+        // 4. Rejoue DELETE sur la 1re occupation, déjà annulée : refusé — la
+        // Policy filtre désormais `status=present` (scopeCancellable). Sans
+        // ce correctif, le ticket aurait été restitué UNE SECONDE fois alors
+        // que la 2e occupation reste active (ticket gratuit, review lot E).
+        $this->actingAs($user)->deleteJson("/api/desk-occupations/{$firstId}")->assertForbidden();
+
+        expect(DeskOccupation::findOrFail($secondId)->status)->toBe(DeskOccupationStatus::Present)
+            ->and(Ticket::findOrFail($ticketId)->status)->toBe(TicketStatus::Used);
+    }
+);
+
+it('refuse à l\'admin de restituer deux fois le même ticket via une double annulation', function () {
+    // L'admin contourne la Policy (super-pouvoir §2.6) : le garde-fou doit donc
+    // vivre dans le Service, pas seulement dans la Policy (review lot E pt.1).
+    $admin = User::factory()->admin()->create();
+    $owner = User::factory()->external()->create();
+    $ticket = Ticket::factory()->for($owner)->create(['type' => TicketType::DeskHalfDay->value]);
+    $day = apiNextWorkingDay();
+    $deskA = Resource::factory()->desk()->create();
+    $deskB = Resource::factory()->desk()->create();
+
+    $firstId = $this->actingAs($owner)->postJson('/api/desk-occupations', [
+        'desk_id' => $deskA->id,
+        'date' => $day->toDateString(),
+        'period' => 'morning',
+    ])->assertCreated()->json('data.id');
+
+    $this->actingAs($admin)->deleteJson("/api/desk-occupations/{$firstId}")->assertOk();
+
+    $secondId = $this->actingAs($owner)->postJson('/api/desk-occupations', [
+        'desk_id' => $deskB->id,
+        'date' => $day->toDateString(),
+        'period' => 'morning',
+    ])->assertCreated()->json('data.id');
+
+    // Double annulation ADMIN de la même occupation, déjà annulée : idempotent
+    // côté service (DeskAvailabilityService::cancelExternal), pas de seconde
+    // restitution.
+    $this->actingAs($admin)->deleteJson("/api/desk-occupations/{$firstId}")->assertOk();
+
+    expect(Ticket::findOrFail($ticket->id)->status)->toBe(TicketStatus::Used)
+        ->and(Ticket::findOrFail($ticket->id)->desk_occupation_id)->toBe($secondId)
+        ->and(DeskOccupation::findOrFail($secondId)->status)->toBe(DeskOccupationStatus::Present);
+});
+
+// --- C4.5 Bureaux nomades — piège fuseau à cheval sur minuit (review pt.2) -
+
+it(
+    'à 00h30 heure de Paris, une occupation de la veille est non annulable et absente d\'« à venir »',
+    function () {
+        // Piège du dépôt : la session Postgres est en UTC. Entre 00h et ~02h
+        // heure de Paris, `CURRENT_DATE` (SQL) désigne ENCORE la veille — une
+        // comparaison SQL brute rouvrirait à tort l'occupation de la veille
+        // (review lot E pt.2). Le correctif lie `today()->toDateString()`
+        // (PHP, Europe/Paris) comme paramètre, jamais une fonction SQL liée à
+        // la session.
+        Carbon::setTestNow(Carbon::today()->setTime(0, 30));
+
+        $user = User::factory()->external()->create();
+        $occupation = DeskOccupation::factory()->create([
+            'user_id' => $user->id,
+            'date' => CarbonImmutable::yesterday()->toDateString(),
+            'period' => 'morning',
+        ]);
+
+        $upcomingIds = collect(
+            $this->actingAs($user)->getJson('/api/desk-occupations')->assertOk()->json('data')
+        )->pluck('id');
+        $pastIds = collect(
+            $this->actingAs($user)->getJson('/api/desk-occupations?past=1')->assertOk()->json('data')
+        )->pluck('id');
+
+        expect($upcomingIds)->not->toContain($occupation->id)
+            ->and($pastIds)->toContain($occupation->id);
+
+        $this->actingAs($user)
+            ->deleteJson("/api/desk-occupations/{$occupation->id}")
+            ->assertForbidden();
+
+        Carbon::setTestNow();
+    }
+);
+
+// --- C4.5 Tickets — détail par ticket (lot E) -----------------------------
+
+it('expose le détail par ticket : statut, crédit, utilisation associée', function () {
+    $user = User::factory()->external()->create();
+    $desk = Resource::factory()->desk()->create(['name' => 'Bureau Rhône']);
+    $day = apiNextWorkingDay();
+    $usedTicket = Ticket::factory()->for($user)->used()->create(['type' => TicketType::DeskHalfDay->value]);
+    $occupation = DeskOccupation::factory()->create([
+        'user_id' => $user->id,
+        'desk_id' => $desk->id,
+        'ticket_id' => $usedTicket->id,
+        'date' => $day->toDateString(),
+        'period' => 'morning',
+    ]);
+    // Réciproque de `ticket_id` : `TicketService::consume()` la renseigne à la
+    // réservation réelle, on la simule ici pour isoler l'assertion sur l'API.
+    $usedTicket->update(['desk_occupation_id' => $occupation->id]);
+    Ticket::factory()->for($user)->credited('Geste commercial')->create(['type' => TicketType::DeskHalfDay->value]);
+
+    $tickets = collect(
+        $this->actingAs($user)->getJson('/api/tickets')->assertOk()->json('tickets')
+    );
+
+    $usedEntry = $tickets->firstWhere('id', $usedTicket->id);
+    expect($usedEntry['status'])->toBe(TicketStatus::Used->value)
+        ->and($usedEntry['usage']['kind'])->toBe('desk_occupation')
+        ->and($usedEntry['usage']['resource_name'])->toBe('Bureau Rhône')
+        ->and($usedEntry['usage']['date'])->toBe($day->toDateString())
+        ->and($usedEntry['credited_at'])->not->toBeNull();
+
+    $creditedEntry = $tickets->firstWhere('status', TicketStatus::Available->value);
+    expect($creditedEntry['usage'])->toBeNull();
+});
+
+// --- C4.5 Disponibilité bureau — jours non ouvrés (lot E) -----------------
+
+it('signale un jour férié comme non ouvré sur la dispo bureau (au lieu d\'une liste vide indistincte)', function () {
+    $user = User::factory()->external()->create();
+    $bastilleDay = CarbonImmutable::create((int) CarbonImmutable::today()->addYear()->year, 7, 14);
+
+    $response = $this->actingAs($user)
+        ->getJson("/api/desks/availability?date={$bastilleDay->toDateString()}&period=morning")
+        ->assertOk();
+
+    expect($response->json('available'))->toBeFalse()
+        ->and($response->json('reason'))->toBe('non_working_day')
+        ->and($response->json('count'))->toBe(0);
+});
+
+it('signale un week-end comme non ouvré sur la dispo bureau', function () {
+    $user = User::factory()->external()->create();
+    $saturday = apiNextWorkingDay()->next(CarbonInterface::SATURDAY);
+
+    $this->actingAs($user)
+        ->getJson("/api/desks/availability?date={$saturday->toDateString()}&period=morning")
+        ->assertOk()
+        ->assertJsonPath('available', false)
+        ->assertJsonPath('reason', 'non_working_day');
+});
+
+it('renvoie available=true sur un jour ouvré avec des bureaux libres', function () {
+    $user = User::factory()->external()->create();
+    Resource::factory()->desk()->create();
+    $day = apiNextWorkingDay();
+
+    $this->actingAs($user)
+        ->getJson("/api/desks/availability?date={$day->toDateString()}&period=morning")
+        ->assertOk()
+        ->assertJsonPath('available', true)
+        ->assertJsonPath('reason', null);
 });
 
 // --- C4.5 Présence résident ----------------------------------------------

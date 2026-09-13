@@ -158,6 +158,34 @@ it('laisse les salles et réservations aux rôles d\'usage', function (string $t
 })->with(['resident', 'additional', 'external', 'staff']);
 
 // ---------------------------------------------------------------------------
+// Tickets & bureaux nomades — réservés à l'external (ou l'admin, lot E pt.3)
+// ---------------------------------------------------------------------------
+
+it('refuse tickets et disponibilité bureau (403) aux rôles sans create-paid-booking', function (string $trait) {
+    $user = User::factory()->{$trait}()->create();
+    $date = now()->addDay()->toDateString();
+
+    $this->actingAs($user)->getJson('/api/tickets')->assertForbidden();
+    $this->actingAs($user)->getJson("/api/desks/availability?date={$date}&period=morning")->assertForbidden();
+})->with(['resident', 'additional', 'staff']);
+
+it('refuse tickets et disponibilité bureau (403) à un contact facturation pur', function () {
+    $user = gatingBillingOnly();
+    $date = now()->addDay()->toDateString();
+
+    $this->actingAs($user)->getJson('/api/tickets')->assertForbidden();
+    $this->actingAs($user)->getJson("/api/desks/availability?date={$date}&period=morning")->assertForbidden();
+});
+
+it('ouvre tickets et disponibilité bureau à l\'external', function () {
+    $user = User::factory()->external()->create();
+    $date = now()->addDay()->toDateString();
+
+    $this->actingAs($user)->getJson('/api/tickets')->assertOk();
+    $this->actingAs($user)->getJson("/api/desks/availability?date={$date}&period=morning")->assertOk();
+});
+
+// ---------------------------------------------------------------------------
 // Facturation — module refusé (403) sans le rôle billing_contact
 // ---------------------------------------------------------------------------
 

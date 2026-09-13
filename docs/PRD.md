@@ -98,6 +98,8 @@ Issus des specs initiales et décisions actées :
   - Switcher utilisateur (icône ☀️/🌙 dans le header)
   - Persistance de la préférence en localStorage côté SPA portail + en base côté admin (selon contexte)
 
+> ✅ **Acté 2026-09-13** : côté portail, la préférence de thème est finalement persistée en base via `/api/profile` (colonne `theme` du profil), à la place du localStorage évoqué ci-dessus — raison : elle suit ainsi l'utilisateur d'un appareil à l'autre.
+
 > ✅ **Résolu (Q7.2-1)** : primaires figées — violet `#481944`, vert `#6AB024`. À décliner en échelles de teintes (50→950) pour le bloc `@theme` Tailwind v4 côté SPA et le thème Filament côté admin.
 
 ---
@@ -287,6 +289,10 @@ Cf. §1.4. Points spécifiques au portail :
 - Mobile-first sur certaines vues (résa en mode jour notamment)
 - PWA : installable (icône bureau + écran d'accueil mobile), cache assets statiques
 
+> ✅ **Acté 2026-09-13** : la navigation principale est finalement une nav horizontale dans le header + un menu hamburger en mobile, à la place de la sidebar desktop + bottom nav mobile décrites ci-dessus (cf. aussi §3.9).
+
+> ✅ **Acté 2026-09-13** : les états de chargement utilisent un composant `Spinner` par bloc, à la place des Skeletons shadcn/ui décrites ci-dessus — toujours pas de spinner plein écran.
+
 #### Accessibilité — exigence RGAA (importante)
 
 Le portail vise une **conformité RGAA (Référentiel Général d'Amélioration de l'Accessibilité) au maximum** dès le MVP — pas seulement WCAG. C'est un référentiel français basé sur WCAG 2.1 niveau AA, avec un cadre méthodologique et juridique spécifique à la France. Approprié pour un site français destiné à des clients français.
@@ -336,6 +342,8 @@ Le portail vise une **conformité RGAA (Référentiel Général d'Amélioration 
 - Bouton dans le menu profil
 - Détruit la session côté serveur
 - Redirige vers `/login`
+
+> ✅ **Acté 2026-09-13** : bouton « Déconnexion » direct accepté dans le header, à la place d'une entrée dans un menu profil ; si un menu profil est ajouté (lot G), la déconnexion pourra y migrer sans que ce soit un écart.
 
 **Sécurité**
 - Rate limiting Fortify (5 tentatives login/60s/IP)
@@ -671,6 +679,8 @@ Pour réserver un bureau, l'external doit avoir des **tickets bureau crédités*
 - Clic sur "Télécharger" ouvre/télécharge le PDF
 - 🟡 Lien direct vers `/api/invoices/{id}/download` protégé par auth + policy (seul le billing_contact de l'entité concernée peut télécharger)
 
+> ✅ **Acté 2026-09-13** : la route retenue est `GET /api/invoices/{id}/pdf` (auth Sanctum + policy), à la place de `/download` évoqué ci-dessus.
+
 #### 3.6.3 Section "Mes documents administratifs"
 
 - Listing des documents administratifs rattachés à l'entité juridique : contrats, avenants, contrat de domiciliation
@@ -704,6 +714,8 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
 - Chaque bureau est un bloc interactif sur une map statique (SVG recommandé 🟡)
 - Chaque bloc a un `id` correspondant à l'id du bureau en DB (`resources` de type `desk`)
 
+> ✅ **Acté 2026-09-13** : les blocs sont finalement identifiés par `id="desk-N"` + `data-desk="N"`, mappés à la ressource via la colonne `resources.svg_desk_id`, à la place d'un `id` = id DB direct du bureau — ça découple le SVG statique des ids de base.
+
 **Typologie des bureaux** (cf. §3.5.1) :
 - **Bureau attitré résident** (`assigned_resident`) : occupé par le résident. **L'occupation par un `additional` de la même entité juridique n'est pas suivie dans l'app** (libre placement informel).
 - **Bureau attitré staff** (`assigned_staff`) : occupé par le personnel Ecoworking (manageuse, stagiaire/alternant). 1-2 bureaux concernés. Strictement réservé.
@@ -731,6 +743,8 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
 | Bureau non attitré, **occupé par un external** (ticket consommé) | Couleur "external présent" | Tooltip : prénom, nom, entreprise. Clic : modal détaillée si opt-in |
 | Bureau non attitré, **libre** | Couleur "disponible" | Tooltip : "Bureau libre" |
 | Bureau hors service | Couleur "désactivée" | Tooltip : "Hors service" |
+
+> ✅ **Acté 2026-09-13** : un statut supplémentaire `partial` a été ajouté (bureau occupé une demi-journée seulement sur la date sélectionnée), représenté par une couleur unique dédiée, en complément des états du tableau ci-dessus.
 
 #### 3.7.4 Interactions
 
@@ -776,6 +790,8 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
 - Mise à jour du plan : tâche admin (upload nouvelle SVG si réagencement)
 - 🟡 Format recommandé : SVG avec attributs `data-desk-id="123"` sur chaque path/rect cliquable
 
+> ✅ **Acté 2026-09-13** : format retenu = `id="desk-N"` + `data-desk="N"` sur chaque bloc, mappé via la colonne `resources.svg_desk_id`, à la place de `data-desk-id="123"` — découple le SVG statique des ids de base.
+
 > 🟡 **Ajout à valider** :
 > - Plan SVG **statique défini une fois pour toutes** (Q13 résolue) — pas d'édition admin via UI. Si le plan évolue, l'admin remplace le fichier SVG dans le repo et redéploie
 > - Performance : viser <500 Ko optimisé pour le SVG
@@ -789,6 +805,8 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
 - **Skeletons** sur les blocs en cours de chargement (pas de spinner full-screen)
 - **Lazy loading** des images (photos profil, plan)
 - **Suspense React** pour les composants asynchrones
+
+> ✅ **Acté 2026-09-13** : implémenté avec un composant `Spinner` par bloc, à la place des Skeletons décrites ci-dessus — toujours pas de spinner plein écran.
 
 #### 3.8.2 États d'erreur
 
@@ -865,6 +883,8 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
 ```
 
 > 🟡 **Ajout à valider** : icônes exactes, ordre, comportement actif
+
+> ✅ **Acté 2026-09-13** : les schémas desktop (§3.9.1) et mobile (§3.9.2) ci-dessus sont obsolètes sur la navigation — l'implémentation retient une nav horizontale dans le header (desktop) + un menu hamburger (mobile), à la place de la sidebar desktop et de la bottom nav mobile décrites.
 
 ---
 

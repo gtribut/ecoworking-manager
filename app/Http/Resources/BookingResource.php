@@ -24,7 +24,10 @@ final class BookingResource extends JsonResource
         return [
             'id' => $this->id,
             'resource_id' => $this->resource_id,
-            'resource_name' => $this->whenLoaded('resource', fn () => $this->resource->name),
+            // Piège JsonResource : `$this->resource` désigne le modèle encapsulé
+            // (le Booking), pas la relation `resource` — d'où le double saut
+            // `$this->resource->resource` pour atteindre la salle (R-07).
+            'resource_name' => $this->whenLoaded('resource', fn () => $this->resource->resource->name),
             'title' => $this->title,
             'starts_at' => $this->starts_at?->toIso8601String(),
             'ends_at' => $this->ends_at?->toIso8601String(),

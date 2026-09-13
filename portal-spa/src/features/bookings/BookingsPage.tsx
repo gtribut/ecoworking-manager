@@ -1,166 +1,131 @@
 import { useState } from 'react'
 import { Alert } from '@/components/ui/Alert'
-import { Button } from '@/components/ui/Button'
-import { ConfirmButton } from '@/components/ui/ConfirmButton'
-import { Spinner } from '@/components/ui/Spinner'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { CalendarSubscription } from '@/features/calendar/CalendarSubscription'
-import { getApiErrorMessage } from '@/lib/errors'
+import { useTickets } from '@/features/tickets/useTickets'
 import { usePageTitle } from '@/lib/usePageTitle'
-import { BookingForm } from './BookingForm'
-import { formatBookingRange as formatRange } from './format'
-import type { Booking, BookingStatus } from './types'
-import { useBookings, useCancelBooking } from './useBookings'
+import { BookingDialog, type DialogTarget } from './BookingDialog'
+import { MyBookingsList } from './MyBookingsList'
+import { type PickedSlot, RoomsCalendar } from './RoomsCalendar'
+import type { Booking } from './types'
 
-const STATUS_LABELS: Record<BookingStatus, string> = {
-  confirmed: 'Confirmée',
-  cancelled: 'Annulée',
-  no_show: 'Absence',
-}
+/** PRD §3.5.4 / §3.5.6 : pas d'achat en ligne en MVP, on invite à écrire. */
+const EVENT_ROOM_MAILTO =
+  'mailto:contact@ecoworking.fr?subject=[backend ecowo] Réservation salle événementielle'
+const TICKETS_MAILTO =
+  'mailto:contact@ecoworking.fr?subject=[backend ecowo] Tickets salle de réunion'
 
-const STATUS_CLASSES: Record<BookingStatus, string> = {
-  confirmed: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
-  cancelled: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
-  no_show: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
-}
+type Notice = { kind: 'success' | 'info'; message: string; mailto?: string } | null
 
 export function BookingsPage() {
   usePageTitle('Réservations — Portail Ecoworking')
 
   const { isExternal } = usePermissions()
-  const [page, setPage] = useState(1)
-  const { data, isLoading, isError } = useBookings(page)
-  const cancelBooking = useCancelBooking()
-  const [cancelError, setCancelError] = useState<string | null>(null)
+  const tickets = useTickets()
+  const [notice, setNotice] = useState<Notice>(null)
+  const [target, setTarget] = useState<DialogTarget | null>(null)
 
-  async function onCancel(booking: Booking) {
-    setCancelError(null)
-    try {
-      await cancelBooking.mutateAsync(booking.id)
-    } catch (error) {
-      setCancelError(getApiErrorMessage(error, 'Annulation impossible.'))
+  const roomTickets = tickets.data?.balances.meeting_room_half_day ?? null
+
+  function onPick(picked: PickedSlot) {
+    setNotice(null)
+
+    // Sa propre réservation → modale « Modifier / Supprimer » (PRD §3.5.5).
+    if (picked.slot !== null && picked.slot.booking_id !== null) {
+      setTarget({
+        mode: 'edit',
+        bookingId: picked.slot.booking_id,
+        roomId: picked.room.id,
+        roomName: picked.room.name,
+        startsAt: picked.slot.starts_at,
+        endsAt: picked.slot.ends_at,
+        title: picked.slot.label,
+        cancellable: true,
+        slots: picked.room.slots,
+      })
+      return
     }
+
+    // External sans ticket : on le dit avant de proposer le formulaire (§3.5.3).
+    if (isExternal && roomTickets === 0) {
+      setNotice({
+        kind: 'info',
+        message:
+          'Vous n’avez plus de ticket salle de réunion. Contactez Ecoworking pour en obtenir.',
+        mailto: TICKETS_MAILTO,
+      })
+      return
+    }
+
+    setTarget({
+      mode: 'create',
+      roomId: picked.room.id,
+      roomName: picked.room.name,
+      date: picked.date,
+      startHour: picked.hour,
+      slots: picked.room.slots,
+    })
+  }
+
+  function onEditFromList(booking: Booking) {
+    setNotice(null)
+    setTarget({
+      mode: 'edit',
+      bookingId: booking.id,
+      roomId: booking.resource_id,
+      roomName: booking.resource_name,
+      startsAt: booking.starts_at,
+      endsAt: booking.ends_at,
+      title: booking.title,
+      cancellable: booking.cancellable,
+      slots: [],
+    })
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-10">
+    <div className="mx-auto max-w-5xl space-y-10">
       <h1 className="text-2xl font-semibold">Réservations</h1>
 
-      <BookingForm isExternal={isExternal} onBooked={() => setPage(1)} />
+      {notice !== null && (
+        <Alert variant={notice.kind === 'success' ? 'success' : 'info'}>
+          {notice.message}
+          {notice.mailto !== undefined && (
+            <a
+              href={notice.mailto}
+              className="ml-2 font-medium underline underline-offset-2 hover:no-underline"
+            >
+              Nous contacter
+            </a>
+          )}
+        </Alert>
+      )}
 
-      <section aria-labelledby="my-bookings-heading" className="space-y-4">
-        <h2 id="my-bookings-heading" className="text-lg font-medium">
-          Mes réservations
-        </h2>
+      {isExternal && roomTickets !== null && (
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">
+          Tickets salle de réunion disponibles : <strong>{roomTickets}</strong>
+        </p>
+      )}
 
-        {isLoading && <Spinner label="Chargement des réservations…" />}
-        {isError && <Alert variant="error">Impossible de charger vos réservations.</Alert>}
-        {cancelError && <Alert variant="error">{cancelError}</Alert>}
+      <RoomsCalendar
+        isExternal={isExternal}
+        onPick={onPick}
+        onPickEventRoom={() =>
+          setNotice({
+            kind: 'info',
+            message: 'Pour réserver cette salle, contactez-nous.',
+            mailto: EVENT_ROOM_MAILTO,
+          })
+        }
+      />
 
-        {data && data.data.length === 0 && (
-          <Alert variant="info">Aucune réservation pour le moment.</Alert>
-        )}
+      <BookingDialog
+        target={target}
+        isExternal={isExternal}
+        onClose={() => setTarget(null)}
+        onSuccess={(message) => setNotice({ kind: 'success', message })}
+      />
 
-        {data && data.data.length > 0 && (
-          <>
-            <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-              <table className="w-full text-left text-sm">
-                <caption className="sr-only">Liste de mes réservations de salle</caption>
-                <thead className="bg-neutral-50 text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
-                  <tr>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Salle
-                    </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Créneau
-                    </th>
-                    <th scope="col" className="px-4 py-3 font-medium">
-                      Statut
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right font-medium">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {data.data.map((booking) => (
-                    <tr key={booking.id}>
-                      <th scope="row" className="px-4 py-3 font-medium">
-                        {booking.resource_name}
-                        {booking.title && (
-                          <span className="block text-xs font-normal text-neutral-500 dark:text-neutral-400">
-                            {booking.title}
-                          </span>
-                        )}
-                        {booking.is_paid && (
-                          <span className="ml-1 text-xs text-neutral-500 dark:text-neutral-400">
-                            (payante)
-                          </span>
-                        )}
-                      </th>
-                      <td className="px-4 py-3">
-                        {formatRange(booking.starts_at, booking.ends_at)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[booking.status]}`}
-                        >
-                          {STATUS_LABELS[booking.status]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {booking.cancellable ? (
-                          <ConfirmButton
-                            variant="danger"
-                            size="sm"
-                            disabled={cancelBooking.isPending}
-                            confirmMessage="Annuler cette réservation ?"
-                            confirmLabel="Oui, annuler"
-                            cancelLabel="Non"
-                            onConfirm={() => void onCancel(booking)}
-                          >
-                            Annuler
-                            <span className="sr-only"> la réservation {booking.resource_name}</span>
-                          </ConfirmButton>
-                        ) : (
-                          <span className="text-neutral-500 dark:text-neutral-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {data.meta.last_page > 1 && (
-              <nav
-                className="flex items-center justify-between"
-                aria-label="Pagination des réservations"
-              >
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  Précédent
-                </Button>
-                <span aria-live="polite" className="text-sm text-neutral-600 dark:text-neutral-300">
-                  Page {data.meta.current_page} sur {data.meta.last_page}
-                </span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={page >= data.meta.last_page}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Suivant
-                </Button>
-              </nav>
-            )}
-          </>
-        )}
-      </section>
+      <MyBookingsList isExternal={isExternal} onEdit={onEditFromList} />
 
       <CalendarSubscription />
     </div>

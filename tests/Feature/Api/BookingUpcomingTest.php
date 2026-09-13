@@ -100,3 +100,14 @@ it('expose le ticket consommé par réservation (traçabilité external)', funct
         ->assertJsonPath('data.0.ticket.id', $ticket->id)
         ->assertJsonPath('data.0.ticket.type', TicketType::MeetingRoomHalfDay->value);
 });
+
+it('expose le nom de la salle de chaque réservation (R-07)', function () {
+    $user = User::factory()->resident()->create();
+    $room = Resource::factory()->meetingRoom()->create(['name' => 'Salle Rhône']);
+    Booking::factory()->create(['user_id' => $user->id, 'resource_id' => $room->id,
+        'starts_at' => now()->addDay()->setTime(9, 0), 'ends_at' => now()->addDay()->setTime(10, 0)]);
+
+    $this->actingAs($user)->getJson('/api/bookings?upcoming=1')
+        ->assertOk()
+        ->assertJsonPath('data.0.resource_name', 'Salle Rhône');
+});

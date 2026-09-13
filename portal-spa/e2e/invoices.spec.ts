@@ -47,7 +47,7 @@ test.describe('Mes factures', () => {
     await expect(row).toBeVisible()
 
     // Filtre statut non concordant : état vide filtré + réinitialisation.
-    await page.getByLabel('Statut').selectOption('paid')
+    await page.getByLabel('Statut', { exact: true }).selectOption('paid')
     await expect(page.getByText('Aucune facture ne correspond à ces filtres.')).toBeVisible()
     await page.getByRole('button', { name: 'Réinitialiser les filtres' }).first().click()
     await expect(row).toBeVisible()

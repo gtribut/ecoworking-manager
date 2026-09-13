@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { Avatar } from './Avatar'
 
@@ -31,6 +31,15 @@ describe('Avatar', () => {
       'src',
       '/api/users/7/photo/400',
     )
+  })
+
+  it('retombe sur les initiales si l’image ne charge pas', () => {
+    render(<Avatar firstName="Emma" lastName="Membre" photo={photo} />)
+
+    fireEvent.error(screen.getByRole('img', { name: 'Emma Membre' }))
+
+    expect(screen.getByText('EM')).toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
   it('grise la photo d’un résident absent (PRD §3.7.3)', () => {

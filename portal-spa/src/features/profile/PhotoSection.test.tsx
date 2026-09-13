@@ -112,6 +112,9 @@ describe('PhotoSection', () => {
     await user.click(screen.getByRole('button', { name: 'Supprimer la photo' }))
 
     expect(await screen.findByText('Photo de profil supprimée.')).toBeInTheDocument()
+    // Le bouton qui portait le focus vient d'être démonté : le focus doit
+    // revenir sur le champ, pas retomber sur <body> (RGAA 12.x).
+    expect(screen.getByLabelText('Choisir une photo')).toHaveFocus()
   })
 
   it('remonte l’erreur de validation du serveur (422)', async () => {

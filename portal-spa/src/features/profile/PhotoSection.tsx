@@ -67,6 +67,9 @@ export function PhotoSection({ firstName, lastName, photo }: PhotoSectionProps) 
     onSuccess: (payload) => {
       applyPhoto(payload)
       setFeedback({ type: 'success', message: 'Photo de profil supprimée.' })
+      // Le bouton « Supprimer » disparaît avec la photo : sans cela le focus
+      // repart sur <body> et la navigation clavier redémarre de zéro.
+      inputRef.current?.focus()
     },
     onError: (error) => {
       setFeedback({

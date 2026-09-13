@@ -194,9 +194,22 @@ export function ProfilePage() {
             </div>
             <div>
               <div className="flex items-center justify-between">
-                <Label id="bio-label" htmlFor="bio">
-                  Présentation
-                </Label>
+                {/* En mode Aperçu le textarea est démonté : `htmlFor="bio"`
+                    désignerait un élément inexistant (RGAA 11.1). On garde
+                    l'identifiant, qui nomme la zone d'aperçu, mais plus la
+                    liaison de formulaire. */}
+                {bioPreview ? (
+                  <span
+                    id="bio-label"
+                    className="mb-1 block text-sm font-medium text-neutral-800 dark:text-neutral-200"
+                  >
+                    Présentation
+                  </span>
+                ) : (
+                  <Label id="bio-label" htmlFor="bio">
+                    Présentation
+                  </Label>
+                )}
                 <Button
                   type="button"
                   variant="secondary"

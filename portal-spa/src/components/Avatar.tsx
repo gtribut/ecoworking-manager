@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 /** URLs des trois rendus servis par l'API (80 / 200 / 400 px), ou null. */
@@ -50,14 +51,25 @@ export function Avatar({
   className,
 }: AvatarProps) {
   const { box, text, source } = BOXES[size]
+  const [broken, setBroken] = useState(false)
 
-  if (photo) {
+  // Nouvelle photo (ou suppression) : on redonne sa chance au chargement.
+  const src = photo?.[source] ?? null
+  // biome-ignore lint/correctness/useExhaustiveDependencies: réinitialise l'état d'erreur quand la source change, pas à chaque rendu.
+  useEffect(() => {
+    setBroken(false)
+  }, [src])
+
+  if (photo && !broken) {
     return (
       <img
         src={photo[source]}
         alt={`${firstName} ${lastName}`}
         loading="lazy"
         decoding="async"
+        // Fichier absent ou non résoluble (photo héritée, purge de stockage) :
+        // on retombe sur les initiales plutôt que sur une image cassée.
+        onError={() => setBroken(true)}
         className={cn(
           box,
           'shrink-0 rounded-full object-cover',

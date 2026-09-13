@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use PragmaRX\Google2FA\Google2FA;
 
 use function Pest\Laravel\postJson;
@@ -141,4 +142,73 @@ it('déconnecte et détruit la session (POST /logout)', function () {
     $this->actingAs($user)->postJson('/logout')->assertSuccessful();
 
     $this->assertGuest();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Lot F — Changement de mot de passe portail (PRD §3.4.2 / §3.4.5)
+|--------------------------------------------------------------------------
+|
+| `PUT /user/password` (Fortify, feature `updatePasswords`) : ré-authentification
+| obligatoire (mot de passe actuel), réponses JSON 200/422 pour la SPA.
+*/
+
+it('change le mot de passe avec le mot de passe actuel et une confirmation valides', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])->assertSuccessful();
+
+    expect(Hash::check('nouveau-mot-de-passe-2026', $user->fresh()->password))->toBeTrue();
+});
+
+it('rejette un changement de mot de passe si le mot de passe actuel est faux (422)', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'mauvais-mot-de-passe',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('current_password');
+
+    expect(Hash::check('password', $user->fresh()->password))->toBeTrue();
+});
+
+it('rejette un changement de mot de passe si la confirmation diffère (422)', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'autre-chose',
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('password');
+
+    expect(Hash::check('password', $user->fresh()->password))->toBeTrue();
+});
+
+it('rejette un changement de mot de passe trop court (422, politique Password::default = min 8)', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'court1',
+        'password_confirmation' => 'court1',
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('password');
+});
+
+it('refuse le changement de mot de passe à un visiteur anonyme (401)', function () {
+    $this->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])->assertUnauthorized();
 });

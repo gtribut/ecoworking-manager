@@ -126,3 +126,26 @@ it('journalise les opt-in du profil membre (newsletter, annuaire)', function () 
         // Jamais de PII inutile dans le journal (CLAUDE.md §3.4).
         ->and($activity->attribute_changes['attributes'])->not->toHaveKeys(['bio', 'birth_date', 'photo_path', 'admin_notes']);
 });
+
+/**
+ * Lot F (PRD §3.4.5) : le changement de mot de passe (portail, `PUT
+ * /user/password`) est audité — sans aucune valeur (ni ancien ni nouveau
+ * mot de passe, ni hash) puisque `password` est hors liste blanche
+ * `auditLogAttributes()` de `User`.
+ */
+it('journalise le changement de mot de passe sans aucun secret', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])->assertSuccessful();
+
+    $activity = Activity::forSubject($user)->forEvent('password_changed')->latest('id')->first();
+
+    expect($activity)->not->toBeNull()
+        ->and($activity->properties->toArray())->not->toHaveKeys([
+            'password', 'current_password', 'password_confirmation', 'attributes', 'old',
+        ]);
+});

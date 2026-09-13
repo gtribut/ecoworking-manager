@@ -33,5 +33,14 @@ class UpdateUserPassword implements UpdatesUserPasswords
         $user->forceFill([
             'password' => Hash::make($input['password']),
         ])->save();
+
+        // Audit RGPD (CLAUDE.md §3.4 / PRD §3.4.5) : trace du changement, sans
+        // valeur ni diff — `password` est hors liste blanche `auditLogAttributes()`
+        // pour ne jamais journaliser le hash (même le nouveau).
+        activity()
+            ->performedOn($user)
+            ->causedBy($user)
+            ->event('password_changed')
+            ->log('Mot de passe modifié.');
     }
 }

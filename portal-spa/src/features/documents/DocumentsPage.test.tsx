@@ -15,6 +15,7 @@ function member(permissions: string[] = ['validate-internal-document']): AuthUse
     last_name: 'Martin',
     email: 'alex@ex.fr',
     theme: null,
+    has_desk: false,
     two_factor_enabled: false,
     roles: [],
     permissions,

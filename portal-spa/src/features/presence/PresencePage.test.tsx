@@ -14,6 +14,7 @@ function resident(): AuthUser {
     last_name: 'Martin',
     email: 'alex@ex.fr',
     theme: null,
+    has_desk: true,
     two_factor_enabled: false,
     roles: [],
     permissions: ['create-own-booking'],
@@ -24,7 +25,7 @@ describe('PresencePage', () => {
   it('refuse l’accès aux non-résidents avec un message explicatif', async () => {
     server.use(
       http.get('/api/user', () =>
-        HttpResponse.json({ ...resident(), permissions: ['create-paid-booking'] }),
+        HttpResponse.json({ ...resident(), has_desk: false, permissions: ['create-paid-booking'] }),
       ),
     )
 

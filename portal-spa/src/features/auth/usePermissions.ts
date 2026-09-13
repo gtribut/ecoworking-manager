@@ -21,8 +21,21 @@ export function usePermissions() {
     canCreatePaidBooking: has('create-paid-booking'),
     /** Annuaire + plan des étages (C12.5) : resident/additional/staff, jamais external. */
     canViewDirectory: has('view-annuaire'),
-    /** Résident = dispose d'un bureau attitré (peut déclarer ses absences). */
-    isResident: has('create-own-booking'),
+    /** Module administratif (factures + documents d'entité) : billing_contact. */
+    canViewBilling: has('view-billing-section'),
+    /** Calendrier des salles et réservations : tous les rôles d'usage, jamais un billing pur. */
+    canViewBookings: has('view-bookings-calendar'),
+    /**
+     * Actualités & événements : la permission la plus proche de la matrice
+     * PRD §2.5 (« S'inscrire aux events : billing_contact pur ❌ »).
+     */
+    canViewAnnouncements: has('register-event'),
+    /**
+     * Résident = dispose d'un bureau attitré (PRD §2.5), seul à pouvoir déclarer
+     * ses absences. Vient du serveur (`has_desk`) : la permission
+     * `create-own-booking` ne discrimine pas (un `additional` l'a aussi).
+     */
+    isResident: user?.has_desk === true,
     /** External = pas de bureau attitré, paie ses réservations. */
     isExternal: has('create-paid-booking') && !has('create-own-booking'),
   }

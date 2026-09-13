@@ -6,6 +6,8 @@ export interface AuthUser {
   email: string
   theme: 'light' | 'dark' | null
   two_factor_enabled: boolean
+  /** Dispose d'un bureau attitré : conditionne le module « Ma présence » (PRD §2.5). */
+  has_desk: boolean
   roles: string[]
   permissions: string[]
 }

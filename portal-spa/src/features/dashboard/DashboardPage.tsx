@@ -31,7 +31,7 @@ export function DashboardPage() {
   usePageTitle('Accueil — Portail Ecoworking')
 
   const { user } = useAuth()
-  const { has, isResident, isExternal } = usePermissions()
+  const { has, isResident, isExternal, canViewBookings, canViewAnnouncements } = usePermissions()
   // Bloc factures conditionné au rôle billing_contact (PRD §3.3.2) — le
   // serveur reste l'autorité (InvoicePolicy), l'UI évite juste un bloc vide.
   const canSeeInvoices = has('view-entity-invoices')
@@ -75,11 +75,10 @@ export function DashboardPage() {
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="space-y-8">
           {canSeeInvoices && <DashboardInvoices />}
-          <DashboardUpcomingBookings />
+          {/* Réservations et actualités : masquées au contact facturation pur (PRD §2.5). */}
+          {canViewBookings && <DashboardUpcomingBookings />}
         </div>
-        <div className="space-y-8">
-          <DashboardAnnouncements />
-        </div>
+        <div className="space-y-8">{canViewAnnouncements && <DashboardAnnouncements />}</div>
       </div>
 
       <section aria-labelledby="dashboard-quick-links-title" className="space-y-3">

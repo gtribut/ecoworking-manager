@@ -14,6 +14,7 @@ function member(twoFactorEnabled: boolean): AuthUser {
     last_name: 'Fontaine',
     email: 'claire@example.test',
     theme: null,
+    has_desk: false,
     two_factor_enabled: twoFactorEnabled,
     roles: ['resident'],
     permissions: [],

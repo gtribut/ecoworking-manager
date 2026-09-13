@@ -4,6 +4,7 @@ import { NotFound } from '@/components/NotFound'
 import { AnnouncementDetailPage } from '@/features/announcements/AnnouncementDetailPage'
 import { AnnouncementsPage } from '@/features/announcements/AnnouncementsPage'
 import { LoginPage } from '@/features/auth/LoginPage'
+import { RequireAccess } from '@/features/auth/RequireAccess'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { BookingsPage } from '@/features/bookings/BookingsPage'
@@ -32,17 +33,67 @@ export function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="profile" element={<ProfilePage />} />
-        <Route path="invoices" element={<InvoicesPage />} />
+        {/* Modules gardés par rôle (PRD §2.5) : masqués de la nav ET de l'URL. */}
+        <Route
+          path="invoices"
+          element={
+            <RequireAccess permission="view-billing-section">
+              <InvoicesPage />
+            </RequireAccess>
+          }
+        />
         {/* C12.4 — Documents (internes à valider + administratifs) */}
         <Route path="documents" element={<DocumentsPage />} />
-        <Route path="bookings" element={<BookingsPage />} />
-        <Route path="announcements" element={<AnnouncementsPage />} />
-        <Route path="announcements/:id" element={<AnnouncementDetailPage />} />
+        <Route
+          path="bookings"
+          element={
+            <RequireAccess permission="view-bookings-calendar">
+              <BookingsPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="announcements"
+          element={
+            <RequireAccess permission="register-event">
+              <AnnouncementsPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="announcements/:id"
+          element={
+            <RequireAccess permission="register-event">
+              <AnnouncementDetailPage />
+            </RequireAccess>
+          }
+        />
         <Route path="tickets" element={<TicketsPage />} />
-        <Route path="presence" element={<PresencePage />} />
+        <Route
+          path="presence"
+          element={
+            <RequireAccess requiresDesk>
+              <PresencePage />
+            </RequireAccess>
+          }
+        />
         {/* C12.5 — Annuaire des coworkers + plan des étages */}
-        <Route path="directory" element={<DirectoryPage />} />
-        <Route path="directory/plan" element={<FloorPlanPage />} />
+        <Route
+          path="directory"
+          element={
+            <RequireAccess permission="view-annuaire">
+              <DirectoryPage />
+            </RequireAccess>
+          }
+        />
+        <Route
+          path="directory/plan"
+          element={
+            <RequireAccess permission="view-annuaire">
+              <FloorPlanPage />
+            </RequireAccess>
+          }
+        />
       </Route>
 
       <Route path="*" element={<NotFound />} />

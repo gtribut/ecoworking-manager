@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-09-13 (soir) — C13.6 lot B mergé, lot A en cours. Reprise 12/09 après 2 mois. MVP COMPLET ✅ depuis le 03/07 (444 Pest + 72 Vitest + 26 e2e). Chantier ouvert : C13 recette manuelle** (`docs/recette.md` + `DemoSeeder`, livrés le 12/09, validés le 13/09 : 446 Pest verts). Ensuite : corrections issues de la recette, puis V1.5 (Clever Cloud, import Cosoft) — cf. `todo_guillaume.md`.
+> **Dernière mise à jour : 2026-09-13 (soir) — C13.6 lot B mergé, lot A livré (branche `feature/portail-lot-a`, à relire + rejouer Playwright). Reprise 12/09 après 2 mois. MVP COMPLET ✅ depuis le 03/07 (444 Pest + 72 Vitest + 26 e2e). Chantier ouvert : C13 recette manuelle** (`docs/recette.md` + `DemoSeeder`, livrés le 12/09, validés le 13/09 : 446 Pest verts). Ensuite : corrections issues de la recette, puis V1.5 (Clever Cloud, import Cosoft) — cf. `todo_guillaume.md`.
 
 ---
 
@@ -205,7 +205,7 @@
 | C13.3 | Exécution de la recette (Guillaume) | ⬜ | Cocher au fil de l'eau, remplir le journal §9 |
 | C13.4 | Corrections des anomalies `R-nn` | 🚧 | R-01→R-06 corrigées le 13/09 (`5dc146a`, `b1a2959`, `18f622f`, `e44a036`) : 429 FR, bloc docs masqué, worker queue documenté, mot de passe oublié, 2FA membre, accueil PRD §3.3. Suites : 453 Pest + 84 Vitest verts |
 | C13.5 | Passe d'écarts PRD §3 portail ↔ code | ✅ | [`review_fable/08-ecarts-prd-portail.md`](./review_fable/08-ecarts-prd-portail.md) — ≈ 55 % conforme ; lots A→G proposés, **à trancher par Guillaume** avant de coder |
-| C13.6 | Lots de conformité PRD §3 (A→G) via session orchestrateur | 🚧 | Prompt : [`review_fable/09-prompt-orchestrateur-lots.md`](./review_fable/09-prompt-orchestrateur-lots.md) — ordre B → A → C → D → E → F → G, une branche/worktree par lot (`.worktrees/lot-<x>`, wrapper `./sail` sur base `testing_lot<x>`). **PRD** : 7 écarts 🔀 actés (`fff53c3`). **Lot B ✅ 13/09** (`008e3d3`) : `has_desk`, nav/routes/tuiles gatées, Policies strictes, écran « Accès refusé » — 477 Pest + 99 Vitest. Suivi détaillé par lot en fin du doc 08 |
+| C13.6 | Lots de conformité PRD §3 (A→G) via session orchestrateur | 🚧 | Prompt : [`review_fable/09-prompt-orchestrateur-lots.md`](./review_fable/09-prompt-orchestrateur-lots.md) — ordre B → A → C → D → E → F → G, une branche/worktree par lot (`.worktrees/lot-<x>`, wrapper `./sail` sur base `testing_lot<x>`). **PRD** : 7 écarts 🔀 actés (`fff53c3`). **Lot B ✅ 13/09** (`008e3d3`) : `has_desk`, nav/routes/tuiles gatées, Policies strictes, écran « Accès refusé » — 477 Pest + 99 Vitest. **Lot A ✅ 13/09** (`241405a`, `6f6f512`, `e14306c`, branche `feature/portail-lot-a`) : calendrier multi-salles semaine/jour avec occupants (Q4), salle event en lecture seule, modale de résa (journée/demi-journée/perso), `PATCH /api/bookings/{id}`, liste « à venir » + historique, correction du piège timezone dans `BookingPolicy` — 501 Pest + 121 Vitest. Suivi détaillé par lot en fin du doc 08 |
 
 ---
 

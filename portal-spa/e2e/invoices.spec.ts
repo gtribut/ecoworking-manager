@@ -9,7 +9,8 @@ test.describe('Mes factures', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Mes factures' })).toBeVisible()
     await expect(page.getByRole('rowheader', { name: seed.invoice.number })).toBeVisible()
-    await expect(page.getByText('En attente')).toBeVisible()
+    // Cibler la cellule : « En attente » est aussi une option du filtre statut.
+    await expect(page.getByRole('cell', { name: 'En attente' })).toBeVisible()
 
     // Téléchargement réel du PDF généré à l'émission (flux argent critique).
     const downloadPromise = page.waitForEvent('download')
@@ -28,8 +29,9 @@ test.describe('Mes factures', () => {
     await expect(row).toBeVisible()
 
     // Bloc « Mon entreprise » du module administratif.
-    await expect(page.getByRole('heading', { level: 2, name: 'Mon entreprise' })).toBeVisible()
-    await expect(page.getByText(seed.entity.legalName)).toBeVisible()
+    const entityBlock = page.getByRole('region', { name: 'Mon entreprise' })
+    await expect(entityBlock.getByRole('heading', { level: 2 })).toBeVisible()
+    await expect(entityBlock.getByText(seed.entity.legalName)).toBeVisible()
 
     // Tri par numéro : l'en-tête porte l'état via aria-sort.
     await page.getByRole('button', { name: /Numéro/ }).click()

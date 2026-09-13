@@ -33,9 +33,10 @@ test.describe('Mes factures', () => {
     await expect(entityBlock.getByRole('heading', { level: 2 })).toBeVisible()
     await expect(entityBlock.getByText(seed.entity.legalName)).toBeVisible()
 
-    // Tri par numéro : l'en-tête porte l'état via aria-sort.
-    await page.getByRole('button', { name: /Numéro/ }).click()
-    await expect(page.getByRole('columnheader', { name: /Numéro/ })).toHaveAttribute(
+    // Tri par numéro : le bouton porte un aria-label explicite, la cellule
+    // d'en-tête porte l'état via aria-sort.
+    await page.getByRole('button', { name: 'Trier par numéro' }).click()
+    await expect(page.getByRole('columnheader', { name: /trier par numéro/i })).toHaveAttribute(
       'aria-sort',
       'ascending',
     )

@@ -109,6 +109,56 @@ describe('InvoicesPage', () => {
     })
   })
 
+  it('conserve le focus dans le champ de recherche après validation', async () => {
+    const user = userEvent.setup()
+    server.use(http.get('/api/invoices', () => page([makeInvoice()])))
+
+    renderWithProviders(<InvoicesPage />)
+    await screen.findByText('EW-2026-00001')
+
+    const input = screen.getByLabelText('Numéro de facture')
+    await user.type(input, '00042{Enter}')
+
+    // Champ contrôlé : le nœud n'est pas remonté, le focus reste dedans.
+    await waitFor(() => expect(screen.getByLabelText('Numéro de facture')).toHaveFocus())
+    expect(screen.getByLabelText('Numéro de facture')).toHaveValue('00042')
+  })
+
+  it('n’affiche l’aide du filtre mois que tant qu’aucune année n’est choisie', async () => {
+    const user = userEvent.setup()
+    server.use(http.get('/api/invoices', () => page([makeInvoice()])))
+
+    renderWithProviders(<InvoicesPage />)
+    await screen.findByText('EW-2026-00001')
+
+    expect(screen.getByText('Choisissez d’abord une année.')).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('Année'), String(new Date().getFullYear()))
+
+    await waitFor(() =>
+      expect(screen.queryByText('Choisissez d’abord une année.')).not.toBeInTheDocument(),
+    )
+    expect(screen.getByLabelText('Mois')).not.toHaveAttribute('aria-describedby')
+  })
+
+  it('annonce le résultat trié aux lecteurs d’écran', async () => {
+    const user = userEvent.setup()
+    server.use(http.get('/api/invoices', () => page([makeInvoice()])))
+
+    renderWithProviders(<InvoicesPage />)
+    await screen.findByText('EW-2026-00001')
+
+    expect(
+      screen.getByText('1 facture, triée par date d’émission, ordre décroissant.'),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Trier par numéro' }))
+
+    await waitFor(() =>
+      expect(screen.getByText('1 facture, triée par numéro, ordre croissant.')).toBeInTheDocument(),
+    )
+  })
+
   it('trie sur demande et reflète l’état dans aria-sort', async () => {
     const user = userEvent.setup()
     const calls: string[] = []
@@ -128,7 +178,7 @@ describe('InvoicesPage', () => {
       'descending',
     )
 
-    await user.click(screen.getByRole('button', { name: /numéro/i }))
+    await user.click(screen.getByRole('button', { name: 'Trier par numéro' }))
 
     await waitFor(() => {
       expect(screen.getByRole('columnheader', { name: /numéro/i })).toHaveAttribute(
@@ -138,7 +188,7 @@ describe('InvoicesPage', () => {
     })
     expect(screen.getByRole('columnheader', { name: /date/i })).toHaveAttribute('aria-sort', 'none')
     // Le focus reste sur l'en-tête activé (navigation clavier, CLAUDE.md §3.5).
-    expect(screen.getByRole('button', { name: /numéro/i })).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Trier par numéro' })).toHaveFocus()
     await waitFor(() => {
       const last = calls.at(-1) ?? ''
       expect(last).toContain('sort=number')

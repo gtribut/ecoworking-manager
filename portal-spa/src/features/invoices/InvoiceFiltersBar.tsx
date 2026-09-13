@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import { type FormEvent, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
@@ -40,10 +40,19 @@ interface Props {
  * validation (Entrée ou bouton) pour ne pas requêter à chaque frappe.
  */
 export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters }: Props) {
+  // Champ contrôlé : un `key` qui change (input non contrôlé) remonterait le
+  // nœud et ferait perdre le focus après validation. Resynchronisé pendant le
+  // rendu quand l'URL change (réinitialisation, retour arrière).
+  const [search, setSearch] = useState(filters.q)
+  const [lastAppliedSearch, setLastAppliedSearch] = useState(filters.q)
+  if (filters.q !== lastAppliedSearch) {
+    setLastAppliedSearch(filters.q)
+    setSearch(filters.q)
+  }
+
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const value = new FormData(event.currentTarget).get('q')
-    onChange({ q: typeof value === 'string' ? value.trim() : '' })
+    onChange({ q: search.trim() })
   }
 
   return (
@@ -75,7 +84,7 @@ export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters
             id="invoice-month"
             value={filters.month}
             disabled={!filters.year}
-            aria-describedby="invoice-month-help"
+            aria-describedby={filters.year ? undefined : 'invoice-month-help'}
             onChange={(event) => onChange({ month: event.target.value })}
           >
             <option value="">Tous</option>
@@ -85,12 +94,14 @@ export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters
               </option>
             ))}
           </Select>
-          <p
-            id="invoice-month-help"
-            className="mt-1 text-xs text-neutral-500 dark:text-neutral-400"
-          >
-            Choisissez d’abord une année.
-          </p>
+          {!filters.year && (
+            <p
+              id="invoice-month-help"
+              className="mt-1 text-xs text-neutral-500 dark:text-neutral-400"
+            >
+              Choisissez d’abord une année.
+            </p>
+          )}
         </div>
 
         <div>
@@ -116,9 +127,8 @@ export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters
               id="invoice-search"
               type="search"
               name="q"
-              // Réinitialise le champ non contrôlé quand l'URL change (reset).
-              key={filters.q}
-              defaultValue={filters.q}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
               placeholder="EW-2026-…"
             />
             <Button type="submit" variant="secondary">

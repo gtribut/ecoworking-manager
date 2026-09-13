@@ -1,6 +1,6 @@
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
-import { getApiErrorMessage } from '@/lib/errors'
+import { getApiErrorMessage, getApiStatus } from '@/lib/errors'
 
 interface QueryErrorProps {
   /** Erreur brute (objet Axios) : dérive le message via `getApiErrorMessage`. */
@@ -27,12 +27,17 @@ export function QueryError({
   className,
 }: QueryErrorProps) {
   const text = message ?? getApiErrorMessage(error, fallback)
+  // Contrat du composant (docstring ci-dessus) appliqué ici plutôt que laissé
+  // à chaque appelant (review) : un 403 n'est jamais transitoire, « Réessayer »
+  // échouerait à l'identique — le bouton est retiré même si l'appelant a
+  // fourni `onRetry`, dès que l'erreur brute est disponible et vaut 403.
+  const canRetry = onRetry !== undefined && getApiStatus(error) !== 403
 
   return (
     <Alert variant="error" className={className}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span>{text}</span>
-        {onRetry && (
+        {canRetry && (
           <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
             Réessayer
           </Button>

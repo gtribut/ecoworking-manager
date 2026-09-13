@@ -23,14 +23,7 @@ describe('QueryError', () => {
   })
 
   it('affiche « Accès refusé » pour une erreur 403 plutôt que le message serveur brut', () => {
-    const error = new AxiosError('Forbidden', '403', undefined, undefined, {
-      status: 403,
-      data: { message: 'Vous n’avez pas la permission edit-anything.' },
-      statusText: 'Forbidden',
-      headers: {},
-      // biome-ignore lint/suspicious/noExplicitAny: config Axios minimal pour le test
-      config: {} as any,
-    })
+    const error = forbiddenError()
 
     render(<QueryError error={error} />)
 
@@ -39,4 +32,23 @@ describe('QueryError', () => {
       screen.queryByText('Vous n’avez pas la permission edit-anything.'),
     ).not.toBeInTheDocument()
   })
+
+  it('ne propose jamais « Réessayer » sur un 403, même si l’appelant fournit onRetry (review — contrat du composant)', () => {
+    const onRetry = vi.fn()
+
+    render(<QueryError error={forbiddenError()} onRetry={onRetry} />)
+
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
 })
+
+function forbiddenError(): AxiosError {
+  return new AxiosError('Forbidden', '403', undefined, undefined, {
+    status: 403,
+    data: { message: 'Vous n’avez pas la permission edit-anything.' },
+    statusText: 'Forbidden',
+    headers: {},
+    // biome-ignore lint/suspicious/noExplicitAny: config Axios minimal pour le test
+    config: {} as any,
+  })
+}

@@ -86,7 +86,11 @@ $magicLinkRoutes = function (): void {
     // `welcome` (table et durée dédiées) : POST seulement, donc aucun conflit
     // avec la page `GET /reset-password/{token}` servie par la SPA.
     Route::post('reset-password/welcome', WelcomePasswordController::class.'@store')
-        ->middleware(['guest'])
+        // Même limiteur que le magic link (5/min par email|IP) : un lien
+        // d'accueil vit 3 jours, il ne doit pas offrir 3 jours de brute force
+        // sur le jeton. Fortify ne limite pas `password.update` non plus, mais
+        // ses jetons expirent en 1 h — ici la fenêtre est 72 fois plus large.
+        ->middleware(['guest', 'throttle:magic-link'])
         ->name('welcome.password.update');
 };
 

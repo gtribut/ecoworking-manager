@@ -116,6 +116,9 @@ return [
             'provider' => 'users',
             'table' => 'welcome_invitation_tokens',
             'expire' => 4320, // 3 jours
+            // Lu par WelcomeInvitationService::recentlySent() — `createToken()`
+            // ne consulte pas cette clé de lui-même, contrairement au flux
+            // `sendResetLink()` du broker par défaut.
             'throttle' => 60,
         ],
     ],

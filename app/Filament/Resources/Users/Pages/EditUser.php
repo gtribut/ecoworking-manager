@@ -11,6 +11,7 @@ use App\Services\Auth\WelcomeInvitationService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\RestoreAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
@@ -37,9 +38,23 @@ class EditUser extends EditRecord
                 ->modalDescription('Le membre recevra un lien de définition de mot de passe valable 3 jours. Le lien envoyé précédemment cessera de fonctionner. Aucun mot de passe n\'est transmis.')
                 ->modalSubmitActionLabel('Envoyer')
                 ->action(function (User $record, WelcomeInvitationService $invitations): void {
-                    $invitations->send($record);
-                })
-                ->successNotificationTitle('Email d\'accueil envoyé'),
+                    if ($invitations->send($record)) {
+                        Notification::make()
+                            ->success()
+                            ->title('Email d\'accueil envoyé')
+                            ->send();
+
+                        return;
+                    }
+
+                    // Chaque envoi périme le lien précédent : un second clic
+                    // dans la minute condamnerait le lien qui vient de partir.
+                    Notification::make()
+                        ->warning()
+                        ->title('Email d\'accueil déjà envoyé')
+                        ->body('Un lien vient d\'être envoyé à ce membre. Patientez une minute avant d\'en générer un nouveau : le renvoi annulerait celui qu\'il a reçu.')
+                        ->send();
+                }),
 
             // Anonymisation RGPD (PRD §5.6, C12.7) : écrase la PII, révoque
             // les accès et soft-delete. Factures conservées (10 ans). Logique

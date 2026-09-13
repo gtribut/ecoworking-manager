@@ -202,6 +202,9 @@ it('renvoie l\'email d\'accueil depuis la fiche admin et invalide le lien préc�
     app(WelcomeInvitationService::class)->send($member);
     $firstToken = tokenFromUrl(welcomeUrlSentTo('renvoi@example.test'));
 
+    // Le dépôt throttle à 60 s : sans cela le renvoi serait refusé.
+    $this->travel(61)->seconds();
+
     Livewire::test(EditUser::class, ['record' => $member->getRouteKey()])
         ->callAction('resendWelcome')
         ->assertHasNoActionErrors();
@@ -218,4 +221,58 @@ it('n\'envoie aucun email d\'accueil à un compte anonymisé', function () {
     expect(app(WelcomeInvitationService::class)->send($user))->toBeFalse();
 
     Mail::assertNothingQueued();
+});
+
+it('refuse un renvoi dans la minute, pour ne pas périmer le lien qui vient de partir', function () {
+    $user = User::factory()->resident()->create(['email' => 'pressee@example.test']);
+
+    expect(app(WelcomeInvitationService::class)->send($user))->toBeTrue()
+        ->and(app(WelcomeInvitationService::class)->send($user))->toBeFalse();
+
+    Mail::assertQueued(WelcomeMail::class, 1);
+
+    // Le premier lien reste valide : rien n'a été régénéré.
+    $token = tokenFromUrl(welcomeUrlSentTo('pressee@example.test'));
+    expect(Password::broker(WelcomeInvitationService::BROKER)->tokenExists($user, $token))->toBeTrue();
+});
+
+it('ne consomme un lien d\'accueil qu\'une seule fois', function () {
+    $user = User::factory()->resident()->create(['email' => 'rejeu@example.test']);
+    app(WelcomeInvitationService::class)->send($user);
+    $token = tokenFromUrl(welcomeUrlSentTo('rejeu@example.test'));
+
+    $payload = fn (string $password): array => [
+        'token' => $token,
+        'email' => 'rejeu@example.test',
+        'password' => $password,
+        'password_confirmation' => $password,
+    ];
+
+    $this->postJson('/reset-password/welcome', $payload('Premier-mot-de-passe-42'))->assertOk();
+
+    // Rejeu du même lien (mail transféré, historique du navigateur…) : refusé,
+    // et surtout sans écraser le mot de passe que le membre vient de choisir.
+    $this->postJson('/reset-password/welcome', $payload('Second-mot-de-passe-42'))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
+
+    expect(Hash::check('Premier-mot-de-passe-42', $user->fresh()->password))->toBeTrue();
+});
+
+it('limite les tentatives sur le point d\'entrée d\'accueil (429)', function () {
+    $user = User::factory()->resident()->create(['email' => 'brute@example.test']);
+    app(WelcomeInvitationService::class)->send($user);
+
+    $attempt = fn () => $this->postJson('/reset-password/welcome', [
+        'token' => 'jeton-devine',
+        'email' => 'brute@example.test',
+        'password' => 'Mon-mot-de-passe-42',
+        'password_confirmation' => 'Mon-mot-de-passe-42',
+    ]);
+
+    for ($i = 0; $i < 5; $i++) {
+        $attempt()->assertUnprocessable();
+    }
+
+    $attempt()->assertStatus(429);
 });

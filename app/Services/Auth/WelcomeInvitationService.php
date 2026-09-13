@@ -31,12 +31,30 @@ final class WelcomeInvitationService
     public const string BROKER = 'welcome';
 
     /**
+     * Un jeton d'accueil a-t-il été émis il y a moins de `throttle` secondes ?
+     * S'appuie sur le dépôt du broker (`auth.passwords.welcome.throttle`) :
+     * c'est ce qui rend cette clé de config effective, `createToken()` ne la
+     * consultant pas de lui-même.
+     */
+    public function recentlySent(User $user): bool
+    {
+        return $this->broker()->getRepository()->recentlyCreatedToken($user);
+    }
+
+    /**
      * Émet un nouveau jeton d'accueil (invalidant le précédent) et envoie le
-     * mail en queue. Les comptes anonymisés sont ignorés silencieusement.
+     * mail en queue. Retourne false sans rien faire si le compte est inéligible
+     * (anonymisé, supprimé) ou si un envoi vient d'avoir lieu — l'action admin
+     * « Renvoyer » est déclenchable en boucle, et chaque envoi périmant le lien
+     * précédent, un double-clic condamnerait le lien qui vient de partir.
      */
     public function send(User $user): bool
     {
         if ($user->anonymized_at !== null || $user->trashed()) {
+            return false;
+        }
+
+        if ($this->recentlySent($user)) {
             return false;
         }
 

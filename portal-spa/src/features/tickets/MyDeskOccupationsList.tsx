@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { ConfirmButton } from '@/components/ui/ConfirmButton'
@@ -38,6 +38,16 @@ export function MyDeskOccupationsList() {
   const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(
     null,
   )
+  // La ligne annulée disparaît de la liste (refetch) : son bouton « Annuler »
+  // est démonté, ce qui perdrait le focus. On le reporte sur l'encart de
+  // confirmation plutôt que de le laisser retomber sur <body> (RGAA 12.x).
+  const feedbackRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (feedback !== null) {
+      feedbackRef.current?.focus()
+    }
+  }, [feedback])
 
   function switchScope(next: Scope) {
     setScope(next)
@@ -83,9 +93,11 @@ export function MyDeskOccupationsList() {
       </div>
 
       {feedback && (
-        <Alert variant={feedback.type === 'success' ? 'success' : 'error'}>
-          {feedback.message}
-        </Alert>
+        <div ref={feedbackRef} tabIndex={-1}>
+          <Alert variant={feedback.type === 'success' ? 'success' : 'error'}>
+            {feedback.message}
+          </Alert>
+        </div>
       )}
 
       {isLoading && <Spinner label="Chargement de vos bureaux réservés…" />}

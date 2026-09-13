@@ -50,17 +50,23 @@ describe('TicketsPage', () => {
     expect(screen.getByText('2')).toBeInTheDocument()
   })
 
-  it('affiche un message avec mailto pour chaque type de ticket épuisé', async () => {
+  it('affiche un seul message avec mailto par type de ticket épuisé (pas de doublon)', async () => {
     setup({ balances: { desk_half_day: 0, meeting_room_half_day: 0 } })
 
     renderWithProviders(<TicketsPage />, { withAuth: true })
 
-    expect(await screen.findByText(/ticket bureau : contactez/)).toBeInTheDocument()
-    expect(screen.getByText(/ticket salle de réunion : contactez/)).toBeInTheDocument()
+    // Salle : un seul encart, dans la section soldes (pas de flux de résa
+    // dédié sur cette page).
+    expect(await screen.findByText(/ticket salle de réunion : contactez/)).toBeInTheDocument()
+    // Bureau : un seul encart, juste avant le formulaire de réservation — PAS
+    // dans la section soldes en plus (review lot E pt.8).
+    expect(screen.getByText(/Vous n’avez plus de ticket bureau nomade\./)).toBeInTheDocument()
+    expect(screen.queryByText(/ticket bureau : contactez/)).not.toBeInTheDocument()
+
     const mailtoLinks = screen
       .getAllByRole('link', { name: 'Nous contacter' })
       .filter((link) => link.getAttribute('href')?.startsWith('mailto:'))
-    expect(mailtoLinks.length).toBeGreaterThanOrEqual(2)
+    expect(mailtoLinks).toHaveLength(2)
     for (const link of mailtoLinks) {
       expect(link).toHaveAttribute(
         'href',
@@ -311,9 +317,12 @@ describe('TicketsPage', () => {
     await user.click(screen.getByRole('button', { name: /^Annuler/ }))
     await user.click(await screen.findByRole('button', { name: 'Oui, annuler' }))
 
-    expect(
-      await screen.findByText('Réservation du bureau « Bureau 12 » annulée.'),
-    ).toBeInTheDocument()
+    const confirmation = await screen.findByText('Réservation du bureau « Bureau 12 » annulée.')
+    expect(confirmation).toBeInTheDocument()
+    // La ligne annulée est démontée (refetch « à venir ») : le focus ne doit
+    // pas retomber sur <body>, il est reporté sur l'encart de confirmation
+    // (review lot E pt.9).
+    await waitFor(() => expect(confirmation.parentElement).toHaveFocus())
   })
 
   it('affiche un message explicatif au lieu du bouton Annuler quand le délai est dépassé', async () => {

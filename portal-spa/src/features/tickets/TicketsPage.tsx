@@ -102,12 +102,9 @@ export function TicketsPage() {
               </li>
             </ul>
 
-            {data.balances.desk_half_day === 0 && (
-              <Alert variant="info">
-                Vous n’avez plus de ticket bureau : contactez Ecoworking pour en obtenir.
-                <ContactLink mailto={TICKETS_MAILTO} label="Nous contacter" />
-              </Alert>
-            )}
+            {/* Le 0-ticket bureau n'est signalé qu'une fois, juste avant le
+                formulaire de réservation (DeskBookingForm) — pas ici en plus
+                (review lot E pt.8, un seul encart + un seul mailto). */}
             {data.balances.meeting_room_half_day === 0 && (
               <Alert variant="info">
                 Vous n’avez plus de ticket salle de réunion : contactez Ecoworking pour en obtenir.
@@ -118,9 +115,12 @@ export function TicketsPage() {
 
           <MyTicketsTable tickets={data.tickets} />
 
-          <DeskBookingForm deskTicketBalance={data.balances.desk_half_day} />
-
-          {isExternal && <MyDeskOccupationsList />}
+          {isExternal && (
+            <>
+              <DeskBookingForm deskTicketBalance={data.balances.desk_half_day} />
+              <MyDeskOccupationsList />
+            </>
+          )}
         </>
       )}
     </div>

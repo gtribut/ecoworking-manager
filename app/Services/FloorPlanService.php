@@ -14,6 +14,7 @@ use App\Models\DeskOccupation;
 use App\Models\MemberProfile;
 use App\Models\Resource;
 use App\Models\User;
+use App\Services\Profile\ProfilePhotoService;
 use App\Support\FrenchHolidays;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -169,7 +170,7 @@ final class FloorPlanService
             'member_profile_id' => $profile->id,
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
-            'photo_path' => $profile->photo_path,
+            'photo' => ProfilePhotoService::urls($profile->photo_path, $user->id),
             'job_title' => $profile->job_title,
             'bio' => $profile->bio,
             'interests' => $profile->interests,

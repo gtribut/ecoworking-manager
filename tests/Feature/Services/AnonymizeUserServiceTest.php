@@ -19,10 +19,13 @@ use function Pest\Laravel\postJson;
  * conservation comptable, révocation des accès, audit sans PII.
  */
 it('efface la PII du compte et du profil membre (PRD §5.6)', function () {
-    // Même disque que les uploads Filament (FileUpload sans ->disk() explicite).
-    $uploadDisk = config('filament.default_filesystem_disk', 'public');
+    // Disque de stockage des photos (ProfilePhotoService) : les trois rendus
+    // vivent sous le préfixe porté par `photo_path`.
+    $uploadDisk = config('filesystems.default');
     Storage::fake($uploadDisk);
-    Storage::disk($uploadDisk)->put('member-photos/jean.jpg', 'fake-image');
+    foreach ([80, 200, 400] as $size) {
+        Storage::disk($uploadDisk)->put("profile-photos/jean-uuid/{$size}.webp", 'fake-image');
+    }
 
     $user = User::factory()->member()->create([
         'first_name' => 'Jean',
@@ -34,7 +37,7 @@ it('efface la PII du compte et du profil membre (PRD §5.6)', function () {
         'two_factor_confirmed_at' => now(),
     ]);
     $profile = MemberProfile::factory()->for($user)->create([
-        'photo_path' => 'member-photos/jean.jpg',
+        'photo_path' => 'profile-photos/jean-uuid',
         'birth_date' => '1990-05-12',
         'job_title' => 'Développeur',
         'bio' => 'Ma biographie personnelle',
@@ -74,7 +77,9 @@ it('efface la PII du compte et du profil membre (PRD §5.6)', function () {
         ->and($profile->newsletter_opt_in)->toBeFalse();
 
     // Photo supprimée du disque (PRD §5.6-2).
-    Storage::disk($uploadDisk)->assertMissing('member-photos/jean.jpg');
+    Storage::disk($uploadDisk)->assertMissing('profile-photos/jean-uuid/80.webp');
+    Storage::disk($uploadDisk)->assertMissing('profile-photos/jean-uuid/200.webp');
+    Storage::disk($uploadDisk)->assertMissing('profile-photos/jean-uuid/400.webp');
 });
 
 it('conserve les factures et leurs lignes à l\'identique (conformité fiscale 10 ans)', function () {

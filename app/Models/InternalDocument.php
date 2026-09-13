@@ -6,8 +6,10 @@ namespace App\Models;
 
 use App\Enums\Audience;
 use App\Enums\InternalDocumentType;
+use App\Observers\InternalDocumentObserver;
 use Database\Factories\InternalDocumentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'type', 'title', 'version', 'body', 'pdf_path', 'audience',
     'published_at', 'is_active', 'created_by',
 ])]
+#[ObservedBy(InternalDocumentObserver::class)]
 class InternalDocument extends Model
 {
     /** @use HasFactory<InternalDocumentFactory> */
@@ -62,6 +65,32 @@ class InternalDocument extends Model
     }
 
     /**
+     * Document actif dont la date de publication est atteinte — source unique
+     * de la règle « publié », partagée par le chemin de lecture portail et la
+     * diffusion des notifications (lot G).
+     *
+     * @param  Builder<InternalDocument>  $query
+     */
+    public function scopePublished(Builder $query): void
+    {
+        $query->active()
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now());
+    }
+
+    /**
+     * Le document est-il publié ? Évalué CÔTÉ SQL (`exists()`) et non en PHP :
+     * une ligne fraîchement écrite est relue décalée du fuseau (piège timezone
+     * du dépôt), donc `published_at->isPast()` mentirait à la publication.
+     * Une publication PROGRAMMÉE (date future) ne notifie donc pas : elle
+     * deviendra visible sans notification (limite connue, cf. rapport lot G).
+     */
+    public function isPublished(): bool
+    {
+        return static::query()->whereKey($this->getKey())->published()->exists();
+    }
+
+    /**
      * Chemin de lecture portail (C12.4, CLAUDE.md §3.1) : documents actifs,
      * publiés, dont l'audience couvre les rôles du membre. Ce sont eux qui
      * apparaissent dans « Documents à valider » (PRD §3.3.2, §5.3).
@@ -70,9 +99,7 @@ class InternalDocument extends Model
      */
     public function scopeApplicableTo(Builder $query, User $user): void
     {
-        $query->active()
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', now());
+        $query->published();
 
         if ($user->isAdmin()) {
             return;

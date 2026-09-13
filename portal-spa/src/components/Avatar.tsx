@@ -62,6 +62,7 @@ export function Avatar({
 
   if (photo && !broken) {
     return (
+      // biome-ignore lint/a11y/noNoninteractiveElementInteractions: `onError` est un événement de cycle de vie du chargement de l'image (pas une interaction utilisateur) — aucun élément interactif natif ne s'y substitue pour un <img>.
       <img
         src={photo[source]}
         alt={`${firstName} ${lastName}`}

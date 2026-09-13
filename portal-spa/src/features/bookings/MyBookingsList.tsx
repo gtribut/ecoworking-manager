@@ -1,5 +1,7 @@
+import { CalendarPlus } from 'lucide-react'
 import { useState } from 'react'
-import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/EmptyState'
+import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatBookingRange } from './format'
@@ -37,7 +39,7 @@ interface MyBookingsListProps {
 export function MyBookingsList({ isExternal, onEdit }: MyBookingsListProps) {
   const [scope, setScope] = useState<Scope>('upcoming')
   const [page, setPage] = useState(1)
-  const { data, isLoading, isError } = useBookings(scope, page)
+  const { data, isLoading, isError, refetch } = useBookings(scope, page)
 
   function switchScope(next: Scope) {
     setScope(next)
@@ -70,14 +72,25 @@ export function MyBookingsList({ isExternal, onEdit }: MyBookingsListProps) {
       </div>
 
       {isLoading && <Spinner label="Chargement des réservations…" />}
-      {isError && <Alert variant="error">Impossible de charger vos réservations.</Alert>}
+      {isError && (
+        <QueryError
+          message="Impossible de charger vos réservations."
+          onRetry={() => void refetch()}
+        />
+      )}
 
       {data && data.data.length === 0 && (
-        <Alert variant="info">
-          {scope === 'upcoming'
-            ? 'Aucune réservation à venir.'
-            : 'Aucune réservation passée pour le moment.'}
-        </Alert>
+        <EmptyState
+          icon={CalendarPlus}
+          title={
+            scope === 'upcoming'
+              ? 'Aucune réservation à venir.'
+              : 'Aucune réservation passée pour le moment.'
+          }
+          {...(scope === 'upcoming'
+            ? { cta: { label: 'Réservez votre première salle', to: '#rooms-calendar-heading' } }
+            : {})}
+        />
       )}
 
       {data && data.data.length > 0 && (

@@ -1,9 +1,12 @@
+import { CalendarOff } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { Alert } from '@/components/ui/Alert'
+import { toast } from 'sonner'
+import { EmptyState } from '@/components/EmptyState'
+import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { ConfirmButton } from '@/components/ui/ConfirmButton'
 import { Spinner } from '@/components/ui/Spinner'
-import { getApiErrorMessage } from '@/lib/errors'
+import { getApiErrorMessage, getApiFieldErrors } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { AbsenceForm, WEEKDAYS } from './AbsenceForm'
 import type { Absence, AbsencePeriod, CreateAbsenceInput } from './types'
@@ -57,22 +60,18 @@ export function PresencePage() {
 function PresenceContent() {
   const [range] = useState(defaultRange)
   const [showHistory, setShowHistory] = useState(false)
-  const { data, isLoading, isError } = usePresence(range.from, range.to, showHistory)
+  const { data, isLoading, isError, refetch } = usePresence(range.from, range.to, showHistory)
   const createAbsence = useCreateAbsence()
   const updateAbsence = useUpdateAbsence()
   const deleteAbsence = useDeleteAbsence()
   // `null` = formulaire fermé ; `{ absence: null }` = déclaration ; sinon édition.
   const [editing, setEditing] = useState<{ absence: Absence | null } | null>(null)
-  const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(
-    null,
-  )
   // Élément ayant ouvert le formulaire (« Marquer une absence » ou le bouton
   // « Modifier » d'une ligne) : le focus lui revient à la fermeture, plutôt
   // qu'au seul bouton de déclaration (RGAA, retour de contexte).
   const openerRef = useRef<HTMLElement | null>(null)
 
   function openForm(absence: Absence | null, opener: HTMLElement | null) {
-    setFeedback(null)
     openerRef.current = opener
     setEditing({ absence })
   }
@@ -83,33 +82,33 @@ function PresenceContent() {
   }
 
   async function onSubmit(payload: CreateAbsenceInput) {
-    setFeedback(null)
     const target = editing?.absence ?? null
     try {
       if (target === null) {
         await createAbsence.mutateAsync(payload)
-        setFeedback({ type: 'success', message: 'Absence enregistrée.' })
+        toast.success('Absence enregistrée.')
       } else {
         await updateAbsence.mutateAsync({ id: target.id, input: payload })
-        setFeedback({ type: 'success', message: 'Absence modifiée.' })
+        toast.success('Absence modifiée.')
       }
       closeForm()
     } catch (error) {
-      setFeedback({
-        type: 'error',
-        message: getApiErrorMessage(error, 'Enregistrement impossible.'),
-      })
+      // `AbsenceForm` rattache déjà les erreurs 422 à leurs champs (son propre
+      // catch, plus bas) : un toast en plus ferait lire le même message deux
+      // fois (review). On ne toaste que ce que le formulaire ne montre pas déjà.
+      if (Object.keys(getApiFieldErrors(error)).length === 0) {
+        toast.error(getApiErrorMessage(error, 'Enregistrement impossible.'))
+      }
       throw error // le formulaire route les erreurs 422 vers ses champs
     }
   }
 
   async function onDelete(absence: Absence) {
-    setFeedback(null)
     try {
       await deleteAbsence.mutateAsync(absence.id)
-      setFeedback({ type: 'success', message: 'Absence supprimée.' })
+      toast.success('Absence supprimée.')
     } catch (error) {
-      setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Suppression impossible.') })
+      toast.error(getApiErrorMessage(error, 'Suppression impossible.'))
     }
   }
 
@@ -126,12 +125,6 @@ function PresenceContent() {
           </p>
         )}
       </div>
-
-      {feedback && (
-        <Alert variant={feedback.type === 'success' ? 'success' : 'error'}>
-          {feedback.message}
-        </Alert>
-      )}
 
       <section aria-labelledby="absence-form-heading" className="space-y-4">
         <h2 id="absence-form-heading" className="text-lg font-medium">
@@ -185,12 +178,18 @@ function PresenceContent() {
         </div>
 
         {isLoading && <Spinner label="Chargement de vos absences…" />}
-        {isError && <Alert variant="error">Impossible de charger vos absences.</Alert>}
+        {isError && (
+          <QueryError
+            message="Impossible de charger vos absences."
+            onRetry={() => void refetch()}
+          />
+        )}
 
         {data && data.absences.length === 0 && (
-          <Alert variant="info">
-            {showHistory ? 'Aucune absence déclarée.' : 'Aucune absence à venir.'}
-          </Alert>
+          <EmptyState
+            icon={CalendarOff}
+            title={showHistory ? 'Aucune absence déclarée.' : 'Aucune absence à venir.'}
+          />
         )}
 
         {data && data.absences.length > 0 && (

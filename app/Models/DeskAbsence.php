@@ -7,8 +7,10 @@ namespace App\Models;
 use App\Enums\DeskAbsenceRecurrence;
 use App\Enums\Period;
 use App\Models\Concerns\Auditable;
+use App\Observers\DeskAbsenceObserver;
 use Database\Factories\DeskAbsenceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'desk_id', 'user_id', 'date_start', 'date_end', 'period',
     'recurrence_type', 'recurrence_day_of_week', 'notes', 'created_by',
 ])]
+#[ObservedBy(DeskAbsenceObserver::class)]
 class DeskAbsence extends Model
 {
     /** @use HasFactory<DeskAbsenceFactory> */

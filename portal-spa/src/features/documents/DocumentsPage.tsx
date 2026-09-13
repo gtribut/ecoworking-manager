@@ -1,6 +1,7 @@
-import { Download } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
 import { useState } from 'react'
-import { Alert } from '@/components/ui/Alert'
+import { EmptyState } from '@/components/EmptyState'
+import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePermissions } from '@/features/auth/usePermissions'
@@ -50,7 +51,12 @@ export function DocumentsPage() {
         </p>
 
         {internal.isLoading && <Spinner label="Chargement des documents…" />}
-        {internal.isError && <Alert variant="error">Impossible de charger vos documents.</Alert>}
+        {internal.isError && (
+          <QueryError
+            message="Impossible de charger vos documents."
+            onRetry={() => void internal.refetch()}
+          />
+        )}
 
         {internal.data && toValidate.length === 0 && (
           <p className="text-sm text-neutral-500 dark:text-neutral-400" role="status">
@@ -88,11 +94,14 @@ export function DocumentsPage() {
 
           {administrative.isLoading && <Spinner label="Chargement des documents administratifs…" />}
           {administrative.isError && (
-            <Alert variant="error">Impossible de charger vos documents administratifs.</Alert>
+            <QueryError
+              message="Impossible de charger vos documents administratifs."
+              onRetry={() => void administrative.refetch()}
+            />
           )}
 
           {administrative.data && administrative.data.data.length === 0 && (
-            <Alert variant="info">Aucun document administratif pour le moment.</Alert>
+            <EmptyState icon={FileText} title="Aucun document administratif pour le moment." />
           )}
 
           {administrative.data && administrative.data.data.length > 0 && (

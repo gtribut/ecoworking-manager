@@ -1,6 +1,6 @@
 import { ArrowLeft, CalendarDays, MapPin, Users } from 'lucide-react'
 import { Link, useParams } from 'react-router'
-import { Alert } from '@/components/ui/Alert'
+import { QueryError } from '@/components/QueryError'
 import { Spinner } from '@/components/ui/Spinner'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { AnnouncementBadge } from './AnnouncementBadge'
@@ -31,7 +31,7 @@ export function AnnouncementDetailPage() {
 
       {isLoading && <Spinner label="Chargement de l’actualité…" />}
       {isError && (
-        <Alert variant="error">Cette actualité est introuvable ou n’est plus disponible.</Alert>
+        <QueryError message="Cette actualité est introuvable ou n’est plus disponible." />
       )}
 
       {announcement && (

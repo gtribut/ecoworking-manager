@@ -25,7 +25,7 @@ final class InvoiceOverdueNotification extends PortalNotification
             ->greeting('Bonjour,')
             ->line("La facture {$number} ({$this->amount()} € TTC), échue le "
                 .($this->invoice->due_at?->format('d/m/Y') ?? '—').", n'a pas encore été réglée.")
-            ->action('Régulariser', $this->portalUrl('/factures'))
+            ->action('Régulariser', $this->portalUrl('/invoices'))
             ->line('Si le règlement a déjà été effectué, merci d\'ignorer ce message.');
     }
 
@@ -40,7 +40,8 @@ final class InvoiceOverdueNotification extends PortalNotification
             'invoice_number' => $this->invoice->number,
             'amount_ttc' => $this->amount(),
             'message' => "Facture {$this->invoice->number} en retard de paiement.",
-            'url' => '/factures',
+            // Route réelle du portail (App.tsx) : /invoices, pas /factures (lot G).
+            'url' => '/invoices',
         ];
     }
 

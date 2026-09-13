@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react'
-import { Alert } from '@/components/ui/Alert'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { ConfirmButton } from '@/components/ui/ConfirmButton'
 import { Input } from '@/components/ui/Input'
@@ -22,7 +22,7 @@ type Mode =
   | { kind: 'idle' }
   | { kind: 'confirm-password'; pending: () => Promise<void> }
   | { kind: 'setup'; qrSvg: string; secretKey: string }
-  | { kind: 'recovery-codes'; codes: string[]; justActivated: boolean }
+  | { kind: 'recovery-codes'; codes: string[] }
 
 /**
  * Double authentification TOTP du membre (PRD §3.2 : optionnelle, jamais
@@ -37,13 +37,11 @@ export function TwoFactorSection() {
 
   const [mode, setMode] = useState<Mode>({ kind: 'idle' })
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
 
   /** Exécute une action 2FA ; un 423 la met en attente derrière la confirmation du mot de passe. */
   async function run(action: () => Promise<void>) {
-    setError(null)
     setBusy(true)
     try {
       await action()
@@ -51,7 +49,7 @@ export function TwoFactorSection() {
       if (needsPasswordConfirmation(err)) {
         setMode({ kind: 'confirm-password', pending: action })
       } else {
-        setError(getApiErrorMessage(err))
+        toast.error(getApiErrorMessage(err))
       }
     } finally {
       setBusy(false)
@@ -73,7 +71,7 @@ export function TwoFactorSection() {
     run(async () => {
       if (regenerate) await regenerateRecoveryCodes()
       const codes = await fetchRecoveryCodes()
-      setMode({ kind: 'recovery-codes', codes, justActivated: false })
+      setMode({ kind: 'recovery-codes', codes })
     })
 
   const disable = () =>
@@ -87,7 +85,6 @@ export function TwoFactorSection() {
     event.preventDefault()
     if (mode.kind !== 'confirm-password') return
     const { pending } = mode
-    setError(null)
     setBusy(true)
     try {
       await confirmPassword(password)
@@ -95,7 +92,7 @@ export function TwoFactorSection() {
       setMode({ kind: 'idle' })
       await run(pending)
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Mot de passe incorrect.'))
+      toast.error(getApiErrorMessage(err, 'Mot de passe incorrect.'))
     } finally {
       setBusy(false)
     }
@@ -107,7 +104,8 @@ export function TwoFactorSection() {
       await confirmTwoFactor(code)
       const codes = await fetchRecoveryCodes()
       await refetchUser()
-      setMode({ kind: 'recovery-codes', codes, justActivated: true })
+      setMode({ kind: 'recovery-codes', codes })
+      toast.success('Double authentification activée.')
     })
   }
 
@@ -135,8 +133,6 @@ export function TwoFactorSection() {
         d’authentification (Google Authenticator, Aegis, 1Password…) vous sera demandé à chaque
         connexion.
       </p>
-
-      {error && <Alert variant="error">{error}</Alert>}
 
       {mode.kind === 'confirm-password' && (
         <form onSubmit={onConfirmPassword} className="space-y-3" noValidate>
@@ -206,7 +202,6 @@ export function TwoFactorSection() {
 
       {mode.kind === 'recovery-codes' && (
         <div className="space-y-3">
-          {mode.justActivated && <Alert variant="success">Double authentification activée.</Alert>}
           <p className="text-sm">
             Conservez ces codes de récupération en lieu sûr : chacun permet de vous connecter une
             seule fois si vous perdez l’accès à votre application.

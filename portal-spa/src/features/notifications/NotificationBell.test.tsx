@@ -92,4 +92,116 @@ describe('NotificationBell', () => {
 
     expect(await screen.findByRole('button', { name: 'Notifications' })).toBeInTheDocument()
   })
+
+  it('marque une notification comme lue individuellement sans naviguer', async () => {
+    const user = userEvent.setup()
+    let readId: string | null = null
+    server.use(
+      http.get('/api/notifications', () => HttpResponse.json(response())),
+      http.post('/api/notifications/:id/read', ({ params }) => {
+        readId = params.id as string
+        return HttpResponse.json({ message: 'ok' })
+      }),
+    )
+
+    renderWithProviders(<NotificationBell />, { route: '/' })
+
+    await user.click(await screen.findByRole('button', { name: /1 non lue/i }))
+    await user.click(screen.getByRole('button', { name: 'Marquer comme lu' }))
+
+    await waitFor(() => expect(readId).toBe('n1'))
+    // Le panneau reste ouvert (pas de navigation déclenchée par ce bouton).
+    expect(screen.getByRole('region', { name: 'Notifications' })).toBeInTheDocument()
+  })
+
+  it('conserve le focus sur la ligne après un marquage lu (review — bouton démonté, focus perdu sur <body>)', async () => {
+    const user = userEvent.setup()
+    // Handler à état : le marquage lu doit se refléter au refetch, sinon le
+    // bouton « Marquer comme lu » resterait actif indéfiniment dans ce test.
+    let isRead = false
+    server.use(
+      http.get('/api/notifications', () => {
+        const payload = response({ unread_count: isRead ? 0 : 1 })
+        const [first] = payload.data
+        if (first) first.is_read = isRead
+        return HttpResponse.json(payload)
+      }),
+      http.post('/api/notifications/:id/read', () => {
+        isRead = true
+        return HttpResponse.json({ message: 'ok' })
+      }),
+    )
+
+    renderWithProviders(<NotificationBell />)
+
+    await user.click(await screen.findByRole('button', { name: /1 non lue/i }))
+    const markAsReadButton = screen.getByRole('button', { name: 'Marquer comme lu' })
+    await user.click(markAsReadButton)
+
+    // Le bouton se désactive (au lieu de disparaître) et le focus reste dans
+    // le panneau — sur la ligne, jamais sur <body>.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Notification déjà lue' })).toBeDisabled(),
+    )
+    expect(document.activeElement).not.toBe(document.body)
+    expect(screen.getByRole('region', { name: 'Notifications' })).toContainElement(
+      document.activeElement as HTMLElement,
+    )
+
+    // Confirmation annoncée par la région live.
+    expect(await screen.findByText(/marquée comme lue/i)).toBeInTheDocument()
+  })
+
+  it('affiche une erreur de chargement avec un bouton Réessayer', async () => {
+    const user = userEvent.setup()
+    let calls = 0
+    server.use(
+      http.get('/api/notifications', () => {
+        calls += 1
+        return calls === 1
+          ? HttpResponse.json({ message: 'Erreur serveur' }, { status: 500 })
+          : HttpResponse.json(response())
+      }),
+    )
+
+    renderWithProviders(<NotificationBell />)
+
+    await user.click(await screen.findByRole('button', { name: 'Notifications' }))
+    expect(await screen.findByText('Impossible de charger les notifications.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Réessayer' }))
+    expect(await screen.findByText('Nouvelle facture EW-2026-00001.')).toBeInTheDocument()
+  })
+
+  it('charge la page suivante avec « Charger plus »', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.get('/api/notifications', ({ request }) => {
+        const page = new URL(request.url).searchParams.get('page') ?? '1'
+        if (page === '2') {
+          return HttpResponse.json({
+            data: [
+              {
+                id: 'n2',
+                data: { type: 'invoice.issued', message: 'Deuxième page.' },
+                read_at: null,
+                is_read: true,
+                created_at: '2026-06-06T08:00:00+00:00',
+              },
+            ],
+            meta: { current_page: 2, last_page: 2, per_page: 1, total: 2, unread_count: 1 },
+          })
+        }
+        return HttpResponse.json(response({ current_page: 1, last_page: 2, per_page: 1, total: 2 }))
+      }),
+    )
+
+    renderWithProviders(<NotificationBell />)
+
+    await user.click(await screen.findByRole('button', { name: /1 non lue/i }))
+    await user.click(await screen.findByRole('button', { name: 'Charger plus' }))
+
+    expect(await screen.findByText('Deuxième page.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Charger plus' })).not.toBeInTheDocument()
+  })
 })

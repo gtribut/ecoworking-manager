@@ -1,5 +1,7 @@
 import { Armchair, Ticket as TicketIcon } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
+import { QueryError } from '@/components/QueryError'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -62,14 +64,16 @@ export function TicketsPage() {
   usePageTitle('Tickets & bureaux nomades — Portail Ecoworking')
 
   const { isExternal } = usePermissions()
-  const { data, isLoading, isError } = useTickets()
+  const { data, isLoading, isError, refetch } = useTickets()
 
   return (
     <div className="mx-auto max-w-4xl space-y-10">
       <h1 className="text-2xl font-semibold">Tickets & bureaux nomades</h1>
 
       {isLoading && <Spinner label="Chargement de vos tickets…" />}
-      {isError && <Alert variant="error">Impossible de charger vos tickets.</Alert>}
+      {isError && (
+        <QueryError message="Impossible de charger vos tickets." onRetry={() => void refetch()} />
+      )}
 
       {data && (
         <>
@@ -131,9 +135,6 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
   const [date, setDate] = useState(nextBookableDateIso())
   const [period, setPeriod] = useState<DeskPeriod>('full_day')
   const [submitted, setSubmitted] = useState(false)
-  const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(
-    null,
-  )
 
   // Validation client (en plus du Form Request côté back) : pas de date
   // passée, pas de week-end (jours ouvrés uniquement, décision 2026-07-03).
@@ -151,17 +152,15 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
 
   function onSearch(event: React.FormEvent) {
     event.preventDefault()
-    setFeedback(null)
     setSubmitted(true)
   }
 
   async function onBook(desk: Desk) {
-    setFeedback(null)
     try {
       await createOccupation.mutateAsync({ desk_id: desk.id, date, period })
-      setFeedback({ type: 'success', message: `Bureau « ${desk.name} » réservé.` })
+      toast.success(`Bureau « ${desk.name} » réservé.`)
     } catch (error) {
-      setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Réservation impossible.') })
+      toast.error(getApiErrorMessage(error, 'Réservation impossible.'))
     }
   }
 
@@ -186,12 +185,6 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
       <h2 id="desk-booking-heading" className="text-lg font-medium">
         Réserver un bureau nomade
       </h2>
-
-      {feedback && (
-        <Alert variant={feedback.type === 'success' ? 'success' : 'error'}>
-          {feedback.message}
-        </Alert>
-      )}
 
       <form onSubmit={onSearch} className="grid gap-4 sm:grid-cols-3 sm:items-end" noValidate>
         <div>
@@ -236,7 +229,10 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
         <div aria-live="polite">
           {availability.isLoading && <Spinner label="Recherche des bureaux disponibles…" />}
           {availability.isError && (
-            <Alert variant="error">Impossible de charger les disponibilités.</Alert>
+            <QueryError
+              message="Impossible de charger les disponibilités."
+              onRetry={() => void availability.refetch()}
+            />
           )}
           {/* Jour non ouvré détecté côté serveur (férié — le week-end est déjà
               bloqué côté client ci-dessus) : message dédié, pas un « 0 dispo ». */}

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\IndexNotificationsRequest;
 use App\Http\Resources\NotificationResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,12 +19,17 @@ use Illuminate\Http\Request;
  */
 final class NotificationController extends Controller
 {
-    /** Liste paginée + compteur de non-lues (badge de la cloche). */
-    public function index(Request $request): JsonResponse
+    /**
+     * Liste paginée + compteur de non-lues (badge de la cloche). La SPA
+     * accumule les pages (« Charger plus ») : `per_page` est borné par le Form
+     * Request. `unread_count` compte TOUTES les non-lues du membre, pas
+     * seulement celles de la page courante.
+     */
+    public function index(IndexNotificationsRequest $request): JsonResponse
     {
         $user = $request->user();
 
-        $notifications = $user->notifications()->paginate(20);
+        $notifications = $user->notifications()->paginate($request->perPage());
 
         return NotificationResource::collection($notifications)
             ->additional(['meta' => ['unread_count' => $user->unreadNotifications()->count()]])

@@ -20,6 +20,12 @@ export function getApiErrorMessage(error: unknown, fallback = 'Une erreur est su
         ? `Trop de tentatives. Réessayez dans ${retryAfter} seconde${retryAfter > 1 ? 's' : ''}.`
         : 'Trop de tentatives. Réessayez dans quelques instants.'
     }
+    // 403 : jamais le message serveur brut (PRD §3.8.2, lot G) — libellé
+    // générique identique à l'écran <Forbidden> plutôt qu'une phrase métier
+    // qui pourrait varier d'une policy à l'autre.
+    if (error.response?.status === 403) {
+      return 'Accès refusé.'
+    }
     const body = error.response?.data as LaravelErrorBody | undefined
     if (body?.message) {
       return body.message

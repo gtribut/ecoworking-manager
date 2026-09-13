@@ -25,7 +25,7 @@ final class InvoiceIssuedNotification extends PortalNotification
             ->greeting('Bonjour,')
             ->line("La facture {$number} d'un montant de {$this->amount()} € TTC vient d'être émise.")
             ->line('Échéance de paiement : '.($this->invoice->due_at?->format('d/m/Y') ?? 'à réception').'.')
-            ->action('Voir mes factures', $this->portalUrl('/factures'))
+            ->action('Voir mes factures', $this->portalUrl('/invoices'))
             ->line('Merci de votre confiance.');
     }
 
@@ -40,7 +40,8 @@ final class InvoiceIssuedNotification extends PortalNotification
             'invoice_number' => $this->invoice->number,
             'amount_ttc' => $this->amount(),
             'message' => "Nouvelle facture {$this->invoice->number} ({$this->amount()} € TTC).",
-            'url' => '/factures',
+            // Route réelle du portail (App.tsx) : /invoices, pas /factures (lot G).
+            'url' => '/invoices',
         ];
     }
 

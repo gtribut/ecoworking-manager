@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import { z } from 'zod'
 import { MarkdownContent } from '@/components/MarkdownContent'
-import { Alert } from '@/components/ui/Alert'
+import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
@@ -44,11 +45,8 @@ function nullable(value: string | undefined): string | null {
 export function ProfilePage() {
   usePageTitle('Mon profil — Portail Ecoworking')
 
-  const { data, isLoading, isError } = useProfile()
+  const { data, isLoading, isError, refetch } = useProfile()
   const updateProfile = useUpdateProfile()
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
-    null,
-  )
   const [bioPreview, setBioPreview] = useState(false)
 
   const form = useForm<FormValues>({
@@ -69,9 +67,17 @@ export function ProfilePage() {
   })
 
   const { reset } = form
+  // Lu ici (pas seulement dans l'effet) : c'est cet accès, pendant le rendu,
+  // qui abonne react-hook-form à `isDirty` (proxy de `formState`).
+  const { isDirty } = form.formState
 
   useEffect(() => {
     if (!data) return
+    // Défense en profondeur (review) : le thème change désormais par une
+    // mutation dédiée qui ne touche plus ce cache (cf. useUpdateTheme), mais
+    // toute autre invalidation de `profileQueryKey` ne doit jamais écraser
+    // une saisie en cours (bio, etc.) pendant que l'utilisateur édite.
+    if (isDirty) return
     reset({
       theme: data.user.theme ?? '',
       job_title: data.profile?.job_title ?? '',
@@ -85,20 +91,21 @@ export function ProfilePage() {
       notify_email: data.user.notify_email,
       notify_in_app: data.user.notify_in_app,
     })
-  }, [data, reset])
+  }, [data, reset, isDirty])
 
   if (isLoading) {
     return <Spinner label="Chargement du profil…" />
   }
   if (isError || !data) {
-    return <Alert variant="error">Impossible de charger votre profil.</Alert>
+    return (
+      <QueryError message="Impossible de charger votre profil." onRetry={() => void refetch()} />
+    )
   }
 
   const hasProfile = data.profile !== null
   const bioValue = form.watch('bio') ?? ''
 
   const onSubmit = form.handleSubmit(async (values) => {
-    setFeedback(null)
     try {
       await updateProfile.mutateAsync({
         theme: values.theme === '' ? null : values.theme,
@@ -117,17 +124,15 @@ export function ProfilePage() {
             }
           : {}),
       })
-      setFeedback({ type: 'success', message: 'Profil mis à jour.' })
+      toast.success('Profil mis à jour.')
     } catch (error) {
-      setFeedback({ type: 'error', message: getApiErrorMessage(error) })
+      toast.error(getApiErrorMessage(error))
     }
   })
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <h1 className="text-2xl font-semibold">Mon profil</h1>
-
-      {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
 
       {hasProfile && (
         <PhotoSection
@@ -239,8 +244,8 @@ export function ProfilePage() {
                   id="bio"
                   rows={4}
                   maxLength={BIO_MAX_LENGTH}
-                  aria-invalid={Boolean(form.formState.errors.bio)}
-                  aria-describedby="bio-help bio-counter"
+                  describedBy="bio-help bio-counter"
+                  error={form.formState.errors.bio?.message}
                   {...form.register('bio')}
                 />
               )}
@@ -255,9 +260,6 @@ export function ProfilePage() {
               >
                 {bioValue.length}/{BIO_MAX_LENGTH} caractères
               </p>
-              {form.formState.errors.bio && (
-                <p className="mt-1 text-sm text-red-600">{form.formState.errors.bio.message}</p>
-              )}
             </div>
             <div>
               <Label htmlFor="interests">Centres d’intérêt</Label>
@@ -270,14 +272,9 @@ export function ProfilePage() {
                   id="linkedin_url"
                   type="url"
                   placeholder="https://…"
-                  aria-invalid={Boolean(form.formState.errors.linkedin_url)}
+                  error={form.formState.errors.linkedin_url?.message}
                   {...form.register('linkedin_url')}
                 />
-                {form.formState.errors.linkedin_url && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {form.formState.errors.linkedin_url.message}
-                  </p>
-                )}
               </div>
               <div>
                 <Label htmlFor="website_url">Site web</Label>
@@ -285,14 +282,9 @@ export function ProfilePage() {
                   id="website_url"
                   type="url"
                   placeholder="https://…"
-                  aria-invalid={Boolean(form.formState.errors.website_url)}
+                  error={form.formState.errors.website_url?.message}
                   {...form.register('website_url')}
                 />
-                {form.formState.errors.website_url && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {form.formState.errors.website_url.message}
-                  </p>
-                )}
               </div>
             </div>
             <div>

@@ -147,6 +147,56 @@ describe('PresencePage', () => {
     const field = await screen.findByLabelText('Note (visible par Ecoworking uniquement)')
     await waitFor(() => expect(field).toHaveAttribute('aria-describedby', 'notes-error'))
     expect(screen.getByText('La note ne peut pas dépasser 255 caractères.')).toBeInTheDocument()
+
+    // Pas de doublon (review) : l'erreur de champ est la seule à s'afficher,
+    // aucun toast générique en plus pour la même 422.
+    expect(screen.queryByText('Enregistrement impossible.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Les données sont invalides.')).not.toBeInTheDocument()
+  })
+
+  it('ne double pas l’erreur d’un champ avec un toast (review — 422 lue deux fois)', async () => {
+    const user = userEvent.setup()
+    server.use(
+      ...presenceHandlers([]),
+      http.post('/api/absences', () =>
+        HttpResponse.json(
+          {
+            message: 'Les données sont invalides.',
+            errors: { notes: ['La note ne peut pas dépasser 255 caractères.'] },
+          },
+          { status: 422 },
+        ),
+      ),
+    )
+
+    renderWithProviders(<PresencePage />, { withAuth: true })
+
+    await user.click(await screen.findByRole('button', { name: 'Marquer une absence' }))
+    await user.type(await screen.findByLabelText('Date de début'), '2026-06-25')
+    await user.click(screen.getByRole('button', { name: 'Enregistrer l’absence' }))
+
+    // Le champ affiche déjà l'erreur : un toast serait un doublon lu deux fois.
+    await screen.findByText('La note ne peut pas dépasser 255 caractères.')
+    expect(screen.queryByText('Les données sont invalides.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Enregistrement impossible.')).not.toBeInTheDocument()
+  })
+
+  it('toaste bien une erreur générale sans champ associé (pas de doublon possible)', async () => {
+    const user = userEvent.setup()
+    server.use(
+      ...presenceHandlers([]),
+      http.post('/api/absences', () =>
+        HttpResponse.json({ message: 'Le bureau est indisponible.' }, { status: 409 }),
+      ),
+    )
+
+    renderWithProviders(<PresencePage />, { withAuth: true })
+
+    await user.click(await screen.findByRole('button', { name: 'Marquer une absence' }))
+    await user.type(await screen.findByLabelText('Date de début'), '2026-06-25')
+    await user.click(screen.getByRole('button', { name: 'Enregistrer l’absence' }))
+
+    expect(await screen.findByText('Le bureau est indisponible.')).toBeInTheDocument()
   })
 
   it('modifie une absence via un formulaire pré-rempli (PATCH)', async () => {

@@ -51,6 +51,7 @@ return [
     'healthchecks' => [
         'monthly_billing' => env('HEALTHCHECK_MONTHLY_BILLING_URL'),
         'overdue_invoices' => env('HEALTHCHECK_OVERDUE_INVOICES_URL'),
+        'notifications_purge' => env('HEALTHCHECK_NOTIFICATIONS_PURGE_URL'),
     ],
 
     // Brevo (ex-Sendinblue) — email transactionnel en prod via driver API (C8).

@@ -28,6 +28,7 @@ export function DeskDetailPanel({ desk, onClose }: DeskDetailPanelProps) {
   const name = occupantDisplayName(desk)
 
   return (
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: le panneau porte volontairement l'écoute Échap (ferme depuis n'importe quel élément focusé à l'intérieur, en plus du bouton « Fermer » dédié) ; pas d'élément interactif natif équivalent pour un panneau de détail entier.
     <section
       aria-labelledby="desk-detail-title"
       className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"

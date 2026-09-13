@@ -121,8 +121,7 @@ describe('DirectoryPage', () => {
 
     renderWithProviders(<DirectoryPage />)
 
-    expect(
-      await screen.findByText('L’annuaire n’est pas accessible avec votre profil.'),
-    ).toBeInTheDocument()
+    // Message générique (PRD §3.8.2, lot G) : jamais le message serveur brut sur un 403.
+    expect(await screen.findByText('Accès refusé.')).toBeInTheDocument()
   })
 })

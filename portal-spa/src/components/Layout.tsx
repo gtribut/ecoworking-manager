@@ -1,11 +1,15 @@
-import { LogOut, Menu, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
-import { useAuth } from '@/features/auth/useAuth'
+import { Toaster } from 'sonner'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
+import { TOAST_CLASS_NAMES, TOAST_CONTAINER_ARIA_LABEL } from '@/lib/toastTheme'
+import { useIsDarkMode } from '@/lib/useIsDarkMode'
 import { cn } from '@/lib/utils'
-import { Button } from './ui/Button'
+import { Footer } from './Footer'
+import { OfflineBanner } from './OfflineBanner'
+import { ProfileMenu } from './ProfileMenu'
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
@@ -22,9 +26,9 @@ interface NavEntry {
 }
 
 export function Layout() {
-  const { user, logout } = useAuth()
   const { isResident, isExternal, canViewDirectory, canViewBilling, canViewBookings } =
     usePermissions()
+  const isDark = useIsDarkMode()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
@@ -74,10 +78,21 @@ export function Layout() {
     ))
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+    <div className="flex min-h-screen flex-col bg-neutral-50 dark:bg-neutral-950">
       <a href="#main-content" className="skip-link">
         Aller au contenu principal
       </a>
+
+      {/* Toasts (PRD §3.1/§3.8.4) : feedback d'action éphémère, thème suivi,
+          animations coupées si prefers-reduced-motion (géré par Sonner). */}
+      <Toaster
+        closeButton
+        position="top-right"
+        theme={isDark ? 'dark' : 'light'}
+        containerAriaLabel={TOAST_CONTAINER_ARIA_LABEL}
+        toastOptions={{ classNames: TOAST_CLASS_NAMES }}
+      />
+      <OfflineBanner />
 
       <header className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
@@ -89,20 +104,7 @@ export function Layout() {
 
           <div className="flex items-center gap-3">
             <NotificationBell />
-            {user && (
-              <span className="hidden text-sm text-neutral-600 sm:inline dark:text-neutral-300">
-                {user.first_name} {user.last_name}
-              </span>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden md:inline-flex"
-              onClick={() => void logout()}
-            >
-              <LogOut className="size-4" aria-hidden="true" />
-              <span>Déconnexion</span>
-            </Button>
+            <ProfileMenu />
             <button
               type="button"
               aria-expanded={menuOpen}
@@ -128,18 +130,7 @@ export function Layout() {
             aria-label="Navigation principale"
             className="border-t border-neutral-200 px-4 py-3 md:hidden dark:border-neutral-800"
           >
-            <div className="flex flex-col gap-1">
-              {links(() => setMenuOpen(false))}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="justify-start"
-                onClick={() => void logout()}
-              >
-                <LogOut className="size-4" aria-hidden="true" />
-                <span>Déconnexion</span>
-              </Button>
-            </div>
+            <div className="flex flex-col gap-1">{links(() => setMenuOpen(false))}</div>
           </nav>
         )}
       </header>
@@ -148,10 +139,12 @@ export function Layout() {
         id="main-content"
         ref={mainRef}
         tabIndex={-1}
-        className="mx-auto max-w-5xl px-4 py-8 focus:outline-none"
+        className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 focus:outline-none"
       >
         <Outlet />
       </main>
+
+      <Footer />
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { QueryError } from '@/components/QueryError'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -87,7 +88,12 @@ export function RoomsCalendar({ isExternal, onPick, onPickEventRoom }: RoomsCale
   const [selectedIds, setSelectedIds] = useState<number[] | null>(null)
   const [detail, setDetail] = useState<string | null>(null)
 
-  const { data: catalog, isLoading: catalogLoading, isError: catalogError } = useRooms()
+  const {
+    data: catalog,
+    isLoading: catalogLoading,
+    isError: catalogError,
+    refetch: refetchCatalog,
+  } = useRooms()
   const roomIds = selectedIds ?? []
 
   const from = view === 'week' ? startOfWeek(anchor) : anchor
@@ -120,7 +126,12 @@ export function RoomsCalendar({ isExternal, onPick, onPickEventRoom }: RoomsCale
     return <Spinner label="Chargement des salles…" />
   }
   if (catalogError || !catalog) {
-    return <Alert variant="error">Impossible de charger les salles.</Alert>
+    return (
+      <QueryError
+        message="Impossible de charger les salles."
+        onRetry={() => void refetchCatalog()}
+      />
+    )
   }
   if (catalog.length === 0) {
     return <Alert variant="info">Aucune salle n’est disponible pour le moment.</Alert>
@@ -236,7 +247,10 @@ export function RoomsCalendar({ isExternal, onPick, onPickEventRoom }: RoomsCale
 
       {availability.isLoading && <Spinner label="Chargement du calendrier…" />}
       {availability.isError && (
-        <Alert variant="error">Impossible de charger le calendrier des salles.</Alert>
+        <QueryError
+          message="Impossible de charger le calendrier des salles."
+          onRetry={() => void availability.refetch()}
+        />
       )}
       {checkedIds.length === 0 && (
         <Alert variant="info">Sélectionnez au moins une salle à afficher.</Alert>

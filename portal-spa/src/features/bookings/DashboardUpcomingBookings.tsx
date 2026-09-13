@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Alert } from '@/components/ui/Alert'
+import { QueryError } from '@/components/QueryError'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatBookingRange } from './format'
 import { useUpcomingBookings } from './useBookings'
@@ -14,7 +14,7 @@ import { useUpcomingBookings } from './useBookings'
  * (`resource_name`, cf. tests/Feature/Api/BookingUpcomingTest.php).
  */
 export function DashboardUpcomingBookings() {
-  const { data: bookings, isLoading, isError } = useUpcomingBookings(3)
+  const { data: bookings, isLoading, isError, refetch } = useUpcomingBookings(3)
 
   return (
     <section aria-labelledby="dashboard-bookings-title" className="space-y-3">
@@ -23,7 +23,12 @@ export function DashboardUpcomingBookings() {
       </h2>
 
       {isLoading && <Spinner label="Chargement des réservations…" />}
-      {isError && <Alert variant="error">Impossible de charger vos réservations.</Alert>}
+      {isError && (
+        <QueryError
+          message="Impossible de charger vos réservations."
+          onRetry={() => void refetch()}
+        />
+      )}
 
       {bookings && bookings.length === 0 && (
         <p className="text-sm text-neutral-500 dark:text-neutral-400">

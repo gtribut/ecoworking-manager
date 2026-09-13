@@ -317,12 +317,13 @@ describe('TicketsPage', () => {
     await user.click(screen.getByRole('button', { name: /^Annuler/ }))
     await user.click(await screen.findByRole('button', { name: 'Oui, annuler' }))
 
-    const confirmation = await screen.findByText('Réservation du bureau « Bureau 12 » annulée.')
-    expect(confirmation).toBeInTheDocument()
+    // Le résultat de l'action est annoncé par un toast (PRD §3.1, lot G).
+    expect(
+      await screen.findByText('Réservation du bureau « Bureau 12 » annulée.'),
+    ).toBeInTheDocument()
     // La ligne annulée est démontée (refetch « à venir ») : le focus ne doit
-    // pas retomber sur <body>, il est reporté sur l'encart de confirmation
-    // (review lot E pt.9).
-    await waitFor(() => expect(confirmation.parentElement).toHaveFocus())
+    // pas retomber sur <body>, il est reporté sur le titre de la section.
+    await waitFor(() => expect(screen.getByText('Mes bureaux réservés')).toHaveFocus())
   })
 
   it('affiche un message explicatif au lieu du bouton Annuler quand le délai est dépassé', async () => {

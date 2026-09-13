@@ -72,6 +72,11 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-neutral-900/50 p-0 sm:items-center sm:p-4">
+      {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: le conteneur
+          `role="dialog"` DOIT porter le gestionnaire clavier — c'est le patron
+          APG dialog standard (piège du focus Tab/Shift+Tab, Échap ferme) : il
+          n'y a pas d'élément natif interactif équivalent pour une boîte de
+          dialogue entière. */}
       <div
         ref={dialogRef}
         role="dialog"

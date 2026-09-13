@@ -212,3 +212,63 @@ it('refuse le changement de mot de passe à un visiteur anonyme (401)', function
         'password_confirmation' => 'nouveau-mot-de-passe-2026',
     ])->assertUnauthorized();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Révocation des autres sessions au changement de mot de passe
+|--------------------------------------------------------------------------
+|
+| `Auth::logoutOtherDevices()` re-hash le mot de passe : l'empreinte
+| `password_hash_web` mémorisée par les sessions ouvertes ailleurs devient
+| caduque, et AuthenticateSession (bootstrap/app.php) les rejette.
+*/
+
+/**
+ * Rejoue une requête portail « comme le navigateur » : c'est l'en-tête Referer
+ * qui fait basculer Sanctum en mode stateful (session + cookies). Sans lui, une
+ * requête /api/* de test n'ouvre aucune session et le middleware passe la main.
+ */
+function asPortalBrowser(): void
+{
+    config(['sanctum.stateful' => ['localhost']]);
+}
+
+it('révoque les autres sessions au changement de mot de passe', function () {
+    asPortalBrowser();
+    $user = User::factory()->resident()->create();
+    // Empreinte qu'une session ouverte AILLEURS a mémorisée à sa connexion.
+    $hashKnownByTheOtherSession = $user->password;
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])->assertSuccessful();
+
+    // Le hash en base a bien changé : l'empreinte de l'autre session est périmée.
+    expect($user->fresh()->password)->not->toBe($hashKnownByTheOtherSession);
+
+    $this->flushSession();
+    $this->withSession(['password_hash_web' => $hashKnownByTheOtherSession])
+        ->actingAs($user)
+        ->withHeader('Referer', 'http://localhost')
+        ->getJson('/api/user')
+        ->assertUnauthorized();
+});
+
+it('laisse la session courante active après son propre changement de mot de passe', function () {
+    asPortalBrowser();
+    $user = User::factory()->resident()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])->assertSuccessful();
+
+    $this->withSession(['password_hash_web' => $user->fresh()->password])
+        ->actingAs($user->fresh())
+        ->withHeader('Referer', 'http://localhost')
+        ->getJson('/api/user')
+        ->assertOk();
+});

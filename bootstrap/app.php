@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\Http\Middleware\AuthenticateSession;
 use Sentry\Laravel\Integration;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
@@ -25,6 +26,29 @@ return Application::configure(basePath: dirname(__DIR__))
         // + CSRF, plutôt que par token. Indispensable pour que `auth:sanctum`
         // résolve l'utilisateur via la session du portail.
         $middleware->statefulApi();
+
+        // Lie chaque session au hash du mot de passe de son propriétaire : un
+        // changement de mot de passe (qui re-hash, cf. UpdateUserPassword +
+        // Auth::logoutOtherDevices) rend toutes les AUTRES sessions caduques
+        // dès leur requête suivante. Sans ce middleware, `logoutOtherDevices`
+        // ne déconnecte personne : rien ne compare jamais les deux hashes.
+        //
+        // Sur `web` (login, logout, changement de mot de passe, magic link) :
+        // le groupe ne l'avait pas du tout. Sur `api` : Sanctum l'injecte déjà
+        // dans son pipeline `frontendMiddleware()` (config/sanctum.php), mais
+        // seulement pour les requêtes reconnues comme venant du front — on
+        // l'ajoute donc explicitement pour que la garantie ne dépende pas de
+        // la présence d'un en-tête Origin/Referer. Le doublon est sans effet
+        // (contrôle idempotent).
+        //
+        // C'est la variante Sanctum, pas celle d'Illuminate : elle cible
+        // explicitement les gardes de session de `config('sanctum.guard')` au
+        // lieu de s'en remettre au driver par défaut. Celle d'Illuminate
+        // appelle `viaRemember()` sur ce driver et explose (BadMethodCall) dès
+        // qu'il n'est pas une SessionGuard — ce qui arrive sur les flux iCal,
+        // authentifiés par jeton d'URL.
+        $middleware->web(append: [AuthenticateSession::class]);
+        $middleware->api(append: [AuthenticateSession::class]);
 
         // Aucune route web nommée `login` (le portail est une SPA, l'admin
         // Filament gère sa propre redirection de login) : sans ceci, un invité

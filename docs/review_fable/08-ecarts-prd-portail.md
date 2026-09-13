@@ -26,8 +26,8 @@ Par ordre d'impact utilisateur, après corrections du 13/09 :
 6. **Annuaire/plan (§3.7)** : aucun tooltip au survol (identité seulement au clic ou via aria-label), photos jamais rendues, staff opt-in sans mention « Équipe Ecoworking ».
 7. ✅ *soldé 13/09 (lot E, plan SVG acté liste)* — **External (§3.5.9, §3.5.6)** : impossible de **voir ou annuler** ses bureaux nomades réservés (route DELETE et hook existent, aucune page) ; pas de plan SVG filtré ; « Mes tickets » sans détail par ticket ; messages « 0 ticket » techniques et sans mailto.
 8. ✅ *soldé 13/09 (lot F)* — **Mot de passe (§3.4.2)** : aucun changement de mot de passe depuis le portail (back prêt : `PUT /user/password`).
-9. **Notifications (§3.8.4)** : deux des cinq types prévus n'existent pas — « nouveau document à valider » (pourtant critique, doublé email) et « résa créée/modifiée/annulée par l'admin ». Pas de rétention 90 j.
-10. **Chrome global (§3.1, §3.9)** : pas de footer (mentions légales, CGU, contact), pas de déclaration d'accessibilité `/accessibilite`, pas de switch thème ni de menu profil dans le header, pas de toasts, pas de Skeleton, pas de bandeau hors-ligne, pas de bouton « Réessayer ».
+9. ✅ *soldé 13/09 (lot G)* — **Notifications (§3.8.4)** : deux des cinq types prévus n'existent pas — « nouveau document à valider » (pourtant critique, doublé email) et « résa créée/modifiée/annulée par l'admin ». Pas de rétention 90 j.
+10. ✅ *soldé 13/09 (lot G)* — **Chrome global (§3.1, §3.9)** : pas de footer (mentions légales, CGU, contact), pas de déclaration d'accessibilité `/accessibilite`, pas de switch thème ni de menu profil dans le header, pas de toasts, pas de Skeleton, pas de bandeau hors-ligne, pas de bouton « Réessayer ».
 
 Points de conformité / sécurité à noter : audit log incomplet (`MemberProfile` et `DeskAbsence` non `Auditable` → opt-in newsletter, visibilité annuaire, suppressions d'absence non tracées ; aucun événement au changement de mot de passe) ; aucune vérification d'**abonnement actif** à la réservation (§3.5.3) ; `additional` peut atteindre l'API absences et reçoit une erreur métier au lieu d'un module masqué.
 
@@ -49,19 +49,19 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 |---|---|---|
 | Palette violet `#481944` + vert `#6AB024` en échelles | ⚠️ | `styles.css:10-17` : une seule échelle `brand` verte (5 paliers), aucun violet |
 | Typographie Inter | ❌ | Aucun `@font-face` / Google Fonts |
-| Switcher thème ☀️/🌙 dans le header | 🔀 | Choix via `<Select>` dans le profil ; rien dans le header |
+| Switcher thème ☀️/🌙 dans le header | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | Menu profil du header (clair/sombre/système, optimiste + rollback) ; le `<Select>` du profil reste en doublon |
 | Persistance thème en localStorage | 🔀 | Persisté en base via `/api/profile` (plus robuste) ; flash possible avant chargement de `/api/user` |
 | Nav : sidebar desktop + bottom nav mobile | 🔀 | Nav horizontale dans le header ; hamburger mobile (`Layout.tsx:77-135`) |
-| Header : menu profil (logout, thème) | 🔀 | Nom + bouton « Déconnexion » direct, pas de menu |
-| Footer : mentions légales, CGU, contact | ❌ | Aucun `<footer>` |
-| Toasts Sonner | ❌ | Aucune lib ; feedback par `<Alert>` inline persistante |
+| Header : menu profil (logout, thème) | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `ProfileMenu` (patron APG, `aria-label` mobile) |
+| Footer : mentions légales, CGU, contact | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `Footer` + pages publiques `/mentions-legales`, `/cgu` (contenu **à compléter par Ecoworking**), mailto |
+| Toasts Sonner | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `sonner@2`, région nommée distinctement, contrastes AA (6,7-8,1:1), pas de toast pour les erreurs de champ |
 | Skeletons shadcn | 🔀 | `Spinner` par bloc |
 | PWA installable | 🔮 | Reportée V1.5 (D6) |
-| Raccourcis clavier actions critiques | ❌ | Aucun (seul Échap sur la cloche) |
-| Zoom 200 % / tailles relatives | ⚠️ | Un `text-[10px]` fixe (`NotificationBell.tsx:79`) |
-| Erreurs de champ reliées au SR | ⚠️ | Messages sous les champs sans `aria-describedby` / `aria-errormessage` (erreur globale OK via `role=alert`) |
-| Lint a11y **strict** | ⚠️ | Biome `a11y: recommended`, pas strict (`biome.json:21-23`) |
-| Déclaration d'accessibilité `/accessibilite` | ❌ | Aucune route |
+| Raccourcis clavier actions critiques | ❌ *(hors lots C13.6, à trancher)* | Aucun (Échap sur cloche, menus, modales) |
+| Zoom 200 % / tailles relatives | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | Unité relative |
+| Erreurs de champ reliées au SR | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | Props `error`/`describedBy` génériques sur `Input`/`Textarea`/`Select` |
+| Lint a11y **strict** | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | Toutes les règles `a11y` Biome activées ; 3 `biome-ignore` justifiés (patron APG dialog ×2, `onError` d'une `<img>`) |
+| Déclaration d'accessibilité `/accessibilite` | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | Page publique (état « partiellement conforme », périmètre, contact, recours) — **audit RGAA réel à renseigner** |
 | h1 accueil avec emoji 👋 lu par le SR | ✅ *corrigé 13/09* | Retiré (`e44a036`) |
 
 ## §3.2 — Authentification
@@ -71,7 +71,7 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 | Lien « Mot de passe oublié ? » + reset par email | ✅ *corrigé 13/09* | R-03 (`b1a2959`) : étape login + page `/reset-password/:token`, URL vers le portail, anti-énumération back |
 | 2FA TOTP optionnelle membre : activation | ✅ *corrigé 13/09* | R-04 (`18f622f`) : section profil (QR, code, codes de récupération, désactivation) |
 | Email d'accueil avec lien de définition initiale du mot de passe | ✅ *soldé 13/09 (lot F, `5d0b870`)* | `WelcomeMail` en queue, jeton dédié (table `welcome_invitation_tokens`, broker `welcome` 3 j, étanche du reset 1 h), route `POST /reset-password/welcome` throttlée, action admin « Renvoyer l'email d'accueil » ; l'admin ne saisit plus de mot de passe |
-| Déconnexion « dans le menu profil » | 🔀 | Bouton direct dans le header |
+| Déconnexion « dans le menu profil » | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | Entrée du menu profil |
 | Message 429 en anglais | ✅ *corrigé 13/09* | R-01 (`5dc146a`) |
 
 ## §3.3 — Accueil
@@ -97,7 +97,7 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 | 🟡 Cellar + Intervention Image (80/200/400) | ✅ *soldé 13/09 (lot F, `5d0b870`)* | Disque `s3` (Cellar) déjà configuré ; **action V1.5** : bucket `ecoworking-storage` en ACL private + `FILESYSTEM_DISK=s3` |
 | Adresse entreprise complète (rue, CP, ville, **pays**) | ✅ *soldé 13/09 (lot D, `94515c1`)* | `EntityBlock` rend `line2` + pays en clair |
 | 🟡 « Mon entreprise » vs « Mes données de facturation » selon entité | ✅ *soldé 13/09 (lot D, `94515c1`)* | Titre selon `entity_type` (`individual`) |
-| Feedback par **toast** | 🔀 | `<Alert>` inline |
+| Feedback par **toast** | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | Toasts pour les mutations ; `<Alert>` conservées pour les erreurs de chargement et messages persistants |
 | Texte d'aide email « procédure dédiée » | ✅ *soldé 13/09 (lot F, `5d0b870`)* | « Pour modifier votre adresse email, contactez Ecoworking » |
 | Audit : mot de passe | ✅ *soldé 13/09 (lot F, `5d0b870`)* | Événement `password_changed` sans valeur |
 | Audit : opt-in newsletter, visibilité annuaire | ✅ *soldé 13/09 (lot C, `1d1dd51`)* | `MemberProfile` `Auditable` (liste blanche `show_in_directory`, `newsletter_opt_in`, `desk_id`, `company_id`) |
@@ -216,26 +216,26 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 
 | Exigence PRD | Statut | Constat |
 |---|---|---|
-| Suspense React / code-splitting | ❌ | Toutes les pages importées statiquement (chunk 560 kB) |
-| Bandeau hors-ligne | ❌ | Aucun `navigator.onLine` |
-| 500 : toast + bouton « Réessayer » | ⚠️ | Alert inline sans réessai (retry TanStack ×2 automatique) |
-| 403 : message « Accès refusé » générique | ⚠️ partiel *(lot B `008e3d3` : écran `Forbidden` « Accès refusé » sur toute garde de route SPA)* | Reste (lot G) : 403 renvoyé par l'API affiché en message serveur brut hors annuaire/plan |
-| États vides « rassurants + CTA » | ⚠️ | « Aucune réservation pour le moment. » sans « Réservez votre première salle → » ; idem factures |
-| Toasts éphémères | ❌ | Aucun système |
-| Marquer lu **manuellement** (sans naviguer) | ⚠️ | Auto au clic uniquement ; l'API `POST /notifications/{id}/read` existe |
-| Historique 90 j configurable | ❌ | Aucune purge ; SPA n'affiche que la page 1 (20) sans pagination |
-| Notif « nouveau document interne à valider » (+ email critique) | ❌ | Aucune classe ni observer `InternalDocument` |
-| Notif « résa confirmée/modifiée/annulée par l'admin » | ❌ | `BookingObserver` silencieux |
-| Notif « absence enregistrée **par l'admin** pour le résident » | 🔀 | Émise quand le **résident** déclare (→ admins, Q25) ; rien côté saisie admin |
+| Suspense React / code-splitting | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `React.lazy` sur réservations, annuaire/plan, factures (~68 kB différés) |
+| Bandeau hors-ligne | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `OfflineBanner` |
+| 500 : toast + bouton « Réessayer » | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `QueryError` (+ refetch ; pas de bouton sur 403) sur tous les blocs |
+| 403 : message « Accès refusé » générique | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | Écran `Forbidden` (lot B) + 403 API générique via `lib/errors.ts` |
+| États vides « rassurants + CTA » | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `EmptyState` sur réservations, factures, actualités, absences, tickets, bureaux, annuaire, documents |
+| Toasts éphémères | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | Sonner |
+| Marquer lu **manuellement** (sans naviguer) | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | Bouton par notification (focus conservé, `aria-live`) |
+| Historique 90 j configurable | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `notifications:purge` quotidien 4 h (`NOTIFICATIONS_RETENTION_DAYS`, ping Healthchecks), cloche paginée (`useInfiniteQuery`, `maxPages: 3`) |
+| Notif « nouveau document interne à valider » (+ email critique) | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `InternalDocumentObserver` + `InternalDocumentPublicationService` (audience, nouvelle version, contenu figé, chunk 100) |
+| Notif « résa confirmée/modifiée/annulée par l'admin » | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `BookingObserver` + garde `NotifiesOwnerOfAdminAction` (acteur ≠ propriétaire) |
+| Notif « absence enregistrée **par l'admin** pour le résident » | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `DeskAbsenceObserver` → résident ; Q25 (→ admins) inchangée |
 
 ## §3.9 — Layout
 
 | Exigence PRD | Statut | Constat |
 |---|---|---|
 | Logo image | ⚠️ | Texte « Ecoworking » |
-| Menu profil ▼, switch thème dans le header | ❌ | Absents |
+| Menu profil ▼, switch thème dans le header | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `ProfileMenu` |
 | Sidebar gauche (5 entrées) | 🔀 | Nav horizontale, 9 entrées |
-| Footer | ❌ | Absent |
+| Footer | ✅ *soldé 13/09 (lot G, `1f92dfb`)* | `Footer` |
 | Bottom nav mobile 5 icônes | 🔀 | Menu déroulant sous le header ; nav sans icônes |
 
 ---
@@ -275,6 +275,7 @@ Regrouper en lots, chacun = une branche + tests :
 | D — Factures & entreprise | ✅ mergé 13/09 | `94515c1` (merge ; `cfbd489`, `f9426d9`, `b7a7fea`, `9358d0f`, `5a878d5`, `54daa65`, `994046c`, `cc9fc49`, `73256a3`, `a821b0a`) | 563 Pest / 150 Vitest / e2e 24/24. Review Opus : 8 findings, 7 corrigés (données bancaires réservées au contact facturation explicite de l'entité — `User::billingContactCompanyIds()` —, focus recherche, `nullable` sur filtres vides, aide mois, mémoïsation `linkedCompanyIds`, pas d'IBAN sur le profil, a11y tri). **À trancher (Guillaume)** : ⏸️ `invoices.billable_type = 'user'` vs acté « tout passe par une entité » ; colonne libellé de facture (schéma) ; périmètre factures `linkedCompanyIds()` inclut l'entité du profil membre (pré-existant, laissé tel quel) |
 | E — External | ✅ mergé 13/09 | `8a81195` (merge ; `6459127`, `28bf84b`, `979d628`, `6b66eb9`, `613ebac`, `baf1c2a`) | 556 Pest / 143 Vitest / e2e 21-22. Review Opus : 9 findings, 9 corrigés dont 1 bloquant (double annulation restituait un ticket repris ailleurs) et `CURRENT_DATE` UTC → `today()` Paris. Trait `MarksScopedFlag` factorise le drapeau par lot (Booking/Absence/Occupation). Route `/tickets` désormais gardée (`create-paid-booking`) → test a11y e2e « tickets » retiré : **aucun compte external seedé en e2e** (à ajouter à `E2eSeeder` si parcours e2e voulu) |
 | F — Compte membre | ✅ mergé 13/09 | `5d0b870` (merge ; `7bfc60c`, `267b6ce`, `08042d6`, `20283a7`, `8eab2a7`, `bb9d6f9`, `90e94ca`, `c666f43`, `2c340fd`) | 629 Pest / 181 Vitest / e2e 23/23. Deps : `intervention/image@4.3.2`, `marked@18.0.11`, `dompurify@3.4.15`. **Migration** : nouvelle table `welcome_invitation_tokens` (réversible). Review Opus : 9 findings, 9 corrigés (bombe de décompression, invalidation des autres sessions, photos héritées, throttles, a11y). **À valider (Guillaume)** : ⏸️ l'admin ne saisit plus de mot de passe (création ni édition) et ne téléverse plus de photo — plus de dépannage hors email ; borne 6000×6000 (ou 4000) ; `last_login_at` jamais alimenté (hors lot). **Action V1.5** : bucket Cellar private + `FILESYSTEM_DISK=s3` |
+| G — Chrome & transverses | ✅ mergé 14/09 | `1f92dfb` (merge ; UI `80a077c`…`41b29c9`, back `0ba480e`, merge main `a4b4f21`, fix liens notifs `05c121e`) | 657 Pest / 212 Vitest / e2e 22-23. Deps : `sonner@2`. **`.env.example` modifié** : `NOTIFICATIONS_RETENTION_DAYS` (commentée, défaut 90) + `HEALTHCHECK_NOTIFICATIONS_PURGE_URL` (vide) — BRIEF §13 à jour. Review Opus : 10 findings, 10 corrigés (thème header effaçait la saisie du profil, nom accessible mobile, toast doublon 422, rollback thème, focus cloche, 403 sans Réessayer, Tab menu, `maxPages`, `--days` invalide, contenu figé). Hors lot corrigé : liens `/factures`→`/invoices` et `/admin` des notifs existantes. **À compléter (Guillaume)** : pages légales et déclaration d'accessibilité ; `<Select>` thème du profil en doublon ; publication programmée de document non notifiée à l'échéance ; seeders → mails en queue |
 
 ### Écarts hors lot découverts (non corrigés)
 

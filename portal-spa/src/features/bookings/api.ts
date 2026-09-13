@@ -22,6 +22,14 @@ export async function fetchBookings(page = 1): Promise<Paginated<Booking>> {
   return data
 }
 
+/** Prochaines résas confirmées (dashboard PRD §3.3.2), chronologiques, `limit` max. */
+export async function fetchUpcomingBookings(limit = 3): Promise<Booking[]> {
+  const { data } = await http.get<Paginated<Booking>>('/api/bookings', {
+    params: { upcoming: 1, per_page: limit },
+  })
+  return data.data
+}
+
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
   const { data } = await http.post<{ data: Booking }>('/api/bookings', input)
   return data.data

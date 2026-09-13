@@ -1,10 +1,12 @@
 import type { LucideIcon } from 'lucide-react'
-import { Armchair, CalendarDays, CalendarOff, FileText, UserCircle } from 'lucide-react'
+import { Armchair, CalendarOff, Mail, UserCircle } from 'lucide-react'
 import { Link } from 'react-router'
 import { DashboardAnnouncements } from '@/features/announcements/DashboardAnnouncements'
 import { useAuth } from '@/features/auth/useAuth'
 import { usePermissions } from '@/features/auth/usePermissions'
+import { DashboardUpcomingBookings } from '@/features/bookings/DashboardUpcomingBookings'
 import { DashboardDocumentsToValidate } from '@/features/documents/DashboardDocumentsToValidate'
+import { DashboardInvoices } from '@/features/invoices/DashboardInvoices'
 import { usePageTitle } from '@/lib/usePageTitle'
 
 interface Tile {
@@ -14,24 +16,27 @@ interface Tile {
   description: string
 }
 
+/** PRD §3.3.2 « Nous contacter » : simple mailto au sujet pré-rempli. */
+export const CONTACT_MAILTO =
+  'mailto:contact@ecoworking.fr?subject=[backend ecowo] Demande d’informations'
+
 /**
- * Accueil minimal du portail (MVP). Le tableau de bord riche (PRD §3.3 :
- * documents à valider, dernières factures, prochaines résa) sera complété quand
- * les endpoints correspondants existeront.
+ * Accueil du portail (PRD §3.3, recette R-05) : vue récapitulative —
+ * documents à valider (en tête, masqué si rien), dernières factures (contacts
+ * facturation uniquement), prochaines réservations, actualités, accès rapides
+ * et bouton « Nous contacter ». Desktop : 2 colonnes (factures + résas /
+ * actualités) ; mobile : 1 colonne dans cet ordre (PRD §3.3.3).
  */
 export function DashboardPage() {
   usePageTitle('Accueil — Portail Ecoworking')
 
   const { user } = useAuth()
-  const { isResident, isExternal } = usePermissions()
+  const { has, isResident, isExternal } = usePermissions()
+  // Bloc factures conditionné au rôle billing_contact (PRD §3.3.2) — le
+  // serveur reste l'autorité (InvoicePolicy), l'UI évite juste un bloc vide.
+  const canSeeInvoices = has('view-entity-invoices')
 
   const tiles: Tile[] = [
-    {
-      to: '/bookings',
-      label: 'Réserver une salle',
-      icon: CalendarDays,
-      description: 'Voir les créneaux et réserver',
-    },
     ...(isExternal
       ? [
           {
@@ -58,43 +63,58 @@ export function DashboardPage() {
       icon: UserCircle,
       description: 'Mes informations et préférences',
     },
-    {
-      to: '/invoices',
-      label: 'Mes factures',
-      icon: FileText,
-      description: 'Consulter et télécharger',
-    },
   ]
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Bonjour {user?.first_name} 👋</h1>
+      <h1 className="text-2xl font-semibold">Bonjour {user?.first_name}</h1>
 
-      {/* C12.4 — Bloc « Documents à valider » (PRD §3.3.2/§5.3, non bloquant),
-          en tête comme le préconise l'ordre mobile du PRD §3.3.3. */}
+      {/* Documents à valider en tête (ordre mobile PRD §3.3.3) ; masqué si tout est à jour. */}
       <DashboardDocumentsToValidate />
 
-      <ul className="grid gap-4 sm:grid-cols-2">
-        {tiles.map((tile) => (
-          <li key={tile.to}>
-            <Link
-              to={tile.to}
-              className="flex items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4 hover:border-brand-500 dark:border-neutral-800 dark:bg-neutral-900"
-            >
-              <tile.icon className="size-6 text-brand-600" aria-hidden="true" />
-              <span>
-                <span className="block font-medium">{tile.label}</span>
-                <span className="block text-sm text-neutral-500 dark:text-neutral-400">
-                  {tile.description}
-                </span>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="space-y-8">
+          {canSeeInvoices && <DashboardInvoices />}
+          <DashboardUpcomingBookings />
+        </div>
+        <div className="space-y-8">
+          <DashboardAnnouncements />
+        </div>
+      </div>
 
-      {/* Bloc « à la une » (PRD §3.3.2) : 3 dernières actualités visibles. */}
-      <DashboardAnnouncements />
+      <section aria-labelledby="dashboard-quick-links-title" className="space-y-3">
+        <h2 id="dashboard-quick-links-title" className="text-lg font-semibold">
+          Accès rapides
+        </h2>
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {tiles.map((tile) => (
+            <li key={tile.to}>
+              <Link
+                to={tile.to}
+                className="flex items-start gap-3 rounded-lg border border-neutral-200 bg-white p-4 hover:border-brand-500 dark:border-neutral-800 dark:bg-neutral-900"
+              >
+                <tile.icon className="size-6 text-brand-600" aria-hidden="true" />
+                <span>
+                  <span className="block font-medium">{tile.label}</span>
+                  <span className="block text-sm text-neutral-500 dark:text-neutral-400">
+                    {tile.description}
+                  </span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <p>
+        <a
+          href={CONTACT_MAILTO}
+          className="inline-flex items-center gap-2 rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
+        >
+          <Mail className="size-4" aria-hidden="true" />
+          Nous contacter
+        </a>
+      </p>
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { CalendarSubscription } from '@/features/calendar/CalendarSubscription'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { BookingForm } from './BookingForm'
+import { formatBookingRange as formatRange } from './format'
 import type { Booking, BookingStatus } from './types'
 import { useBookings, useCancelBooking } from './useBookings'
 
@@ -21,14 +22,6 @@ const STATUS_CLASSES: Record<BookingStatus, string> = {
   confirmed: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
   cancelled: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
   no_show: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
-}
-
-function formatRange(startIso: string, endIso: string): string {
-  const start = new Date(startIso)
-  const end = new Date(endIso)
-  const day = start.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-  const t = (d: Date) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-  return `${day}, ${t(start)} – ${t(end)}`
 }
 
 export function BookingsPage() {

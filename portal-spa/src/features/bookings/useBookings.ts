@@ -6,11 +6,14 @@ import {
   fetchBookings,
   fetchRoomAvailability,
   fetchRooms,
+  fetchUpcomingBookings,
 } from './api'
 import type { CreateBookingInput } from './types'
 
 export const roomsQueryKey = ['rooms'] as const
 export const bookingsQueryKey = (page: number) => ['bookings', page] as const
+/** Préfixe `bookings` conservé : invalidé par création/annulation comme la liste. */
+export const upcomingBookingsQueryKey = (limit: number) => ['bookings', 'upcoming', limit] as const
 export const roomAvailabilityQueryKey = (roomId: number, date: string) =>
   ['rooms', roomId, 'availability', date] as const
 
@@ -31,6 +34,13 @@ export function useBookings(page: number) {
     queryKey: bookingsQueryKey(page),
     queryFn: () => fetchBookings(page),
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useUpcomingBookings(limit = 3) {
+  return useQuery({
+    queryKey: upcomingBookingsQueryKey(limit),
+    queryFn: () => fetchUpcomingBookings(limit),
   })
 }
 

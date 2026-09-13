@@ -9,7 +9,7 @@ test.describe('Mes factures', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Mes factures' })).toBeVisible()
     await expect(page.getByRole('rowheader', { name: seed.invoice.number })).toBeVisible()
-    await expect(page.getByText('Émise')).toBeVisible()
+    await expect(page.getByText('En attente')).toBeVisible()
 
     // Téléchargement réel du PDF généré à l'émission (flux argent critique).
     const downloadPromise = page.waitForEvent('download')

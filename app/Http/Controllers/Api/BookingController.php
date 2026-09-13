@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\BookingStatus;
 use App\Enums\Period;
 use App\Enums\ResourceType;
 use App\Enums\TicketType;
@@ -32,13 +33,27 @@ use Illuminate\Support\Facades\Gate;
  */
 final class BookingController extends Controller
 {
+    /**
+     * Liste des réservations du membre. Par défaut : historique complet, plus
+     * récentes d'abord. `?upcoming=1` (dashboard PRD §3.3.2 « Mes prochaines
+     * réservations ») : uniquement les résas confirmées non terminées, en ordre
+     * chronologique — comparaison côté SQL (piège timezone : jamais `isFuture()`
+     * PHP sur des lignes fraîches). `?per_page` borné à 50.
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
+        $upcoming = $request->boolean('upcoming');
+        $perPage = min(50, max(1, (int) $request->integer('per_page', 20)));
+
         $bookings = Booking::query()
             ->where('user_id', $request->user()->id)
             ->with('resource')
-            ->orderByDesc('starts_at')
-            ->paginate(20);
+            ->when($upcoming, fn ($query) => $query
+                ->where('status', BookingStatus::Confirmed->value)
+                ->where('ends_at', '>=', now())
+                ->orderBy('starts_at'))
+            ->unless($upcoming, fn ($query) => $query->orderByDesc('starts_at'))
+            ->paginate($perPage);
 
         return BookingResource::collection($bookings);
     }

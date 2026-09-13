@@ -88,8 +88,12 @@ final class RoomAvailabilityService
         ];
     }
 
-    /** Un créneau external (date + demi-journée) est-il réservable ? */
-    public function isExternalSlotBookable(Resource $room, CarbonInterface $date, Period $period): bool
+    /**
+     * Un créneau external (date + demi-journée) est-il réservable ?
+     * `$excludeBookingId` : réservation à ignorer (modification d'une résa
+     * existante, qui ne doit pas entrer en conflit avec elle-même).
+     */
+    public function isExternalSlotBookable(Resource $room, CarbonInterface $date, Period $period, ?int $excludeBookingId = null): bool
     {
         if ($period === Period::FullDay || ! FrenchHolidays::isWorkingDay($date)) {
             return false;
@@ -98,6 +102,6 @@ final class RoomAvailabilityService
         [$startHour, $endHour] = self::HALF_DAYS[$period->value];
         $day = CarbonImmutable::parse($date->format('Y-m-d'));
 
-        return $this->isSlotFree($room, $day->setTime($startHour, 0), $day->setTime($endHour, 0));
+        return $this->isSlotFree($room, $day->setTime($startHour, 0), $day->setTime($endHour, 0), $excludeBookingId);
     }
 }

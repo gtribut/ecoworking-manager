@@ -39,7 +39,8 @@ final class TicketService
             ->first();
 
         if ($ticket === null) {
-            throw new DomainActionException("Vous n'avez plus de ticket « {$type->value} » disponible.");
+            // Libellé métier, jamais la valeur d'enum brute (recette §3.5.3).
+            throw new DomainActionException("Vous n'avez plus de ticket « {$type->getLabel()} » disponible.");
         }
 
         return $ticket;

@@ -8,19 +8,21 @@ use App\Models\Booking;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Réservation de salle côté portail (PRD §3.5.5).
+ * Modification d'une réservation de salle depuis le portail (PRD §3.5.5).
  *
- * Deux formes selon le rôle :
- *  - résident/staff/additional : créneau libre (`starts_at` / `ends_at`), gratuit ;
- *  - external : demi-journée fixe (`date` + `period`), payée via ticket.
- *
- * Le membre ne réserve que pour lui-même (auto-scopé : aucun `user_id` accepté).
+ * Mêmes règles que la création (`StoreBookingRequest`) : créneau libre pour
+ * resident/staff/additional, demi-journée fixe pour l'external. L'autorisation
+ * (propriétaire + créneau pas encore commencé + `manage-own-booking`) est
+ * portée par `BookingPolicy::update`.
  */
-final class StoreBookingRequest extends FormRequest
+final class UpdateBookingRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', Booking::class) === true;
+        $booking = $this->route('booking');
+
+        return $booking instanceof Booking
+            && $this->user()?->can('update', $booking) === true;
     }
 
     /**

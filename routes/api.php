@@ -49,9 +49,11 @@ $register = function (): void {
 
         // C4.4 — Réservation de salle (catalogue, dispo, mes résas, annulation).
         Route::get('/rooms', [RoomController::class, 'index'])->name('api.rooms.index');
-        Route::get('/rooms/{room}/availability', [RoomController::class, 'availability'])->name('api.rooms.availability');
+        Route::get('/rooms/availability', [RoomController::class, 'availabilityRange'])->name('api.rooms.availability-range');
+        Route::get('/rooms/{room}/availability', [RoomController::class, 'availability'])->whereNumber('room')->name('api.rooms.availability');
         Route::get('/bookings', [BookingController::class, 'index'])->name('api.bookings.index');
         Route::post('/bookings', [BookingController::class, 'store'])->name('api.bookings.store');
+        Route::patch('/bookings/{booking}', [BookingController::class, 'update'])->whereNumber('booking')->name('api.bookings.update');
         Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('api.bookings.destroy');
 
         // C4.5 — Tickets nomades, bureaux external & présence résident.

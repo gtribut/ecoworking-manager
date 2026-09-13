@@ -30,7 +30,13 @@ final class BookingResource extends JsonResource
             'ends_at' => $this->ends_at?->toIso8601String(),
             'status' => $this->status,
             'is_paid' => $this->ticket_id !== null,
-            'cancellable' => $this->status->value === 'confirmed' && $this->starts_at?->isFuture() === true,
+            'ticket' => $this->whenLoaded('ticket', fn () => $this->ticket === null ? null : [
+                'id' => $this->ticket->id,
+                'type' => $this->ticket->type,
+            ]),
+            // `startsLater` est renseigné par lot côté contrôleur (comparaison
+            // SQL) : jamais `starts_at->isFuture()` en PHP (piège timezone).
+            'cancellable' => $this->status->value === 'confirmed' && $this->startsLater === true,
         ];
     }
 }

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import type { AuthUser } from '@/features/auth/types'
@@ -67,7 +67,7 @@ describe('DashboardDocumentsToValidate', () => {
     )
   })
 
-  it('affiche « à jour » quand rien n’est à valider (bloc non bloquant, PRD §5.3)', async () => {
+  it('masque entièrement le bloc quand rien n’est à valider (R-06, non bloquant PRD §5.3)', async () => {
     server.use(
       http.get('/api/user', () => HttpResponse.json(member())),
       http.get('/api/documents/internal', () => HttpResponse.json({ data: [] })),
@@ -75,6 +75,12 @@ describe('DashboardDocumentsToValidate', () => {
 
     renderWithProviders(<DashboardDocumentsToValidate />, { withAuth: true })
 
-    expect(await screen.findByText('Tous vos documents sont à jour.')).toBeInTheDocument()
+    // Le titre est présent pendant le chargement puis disparaît avec la réponse vide.
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: 'Documents à valider' }),
+      ).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByText('Tous vos documents sont à jour.')).not.toBeInTheDocument()
   })
 })

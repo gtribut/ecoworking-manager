@@ -7,13 +7,18 @@ import { useInternalDocuments } from './useDocuments'
 /**
  * Bloc « Documents à valider » du dashboard (PRD §3.3.2, §5.3) : documents
  * internes non validés dans leur version courante, avec téléchargement et
- * validation directe. Non bloquant : si tout est à jour, un simple message le
- * confirme — l'accès au portail n'est jamais conditionné à la validation.
+ * validation directe. Non bloquant : l'accès au portail n'est jamais
+ * conditionné à la validation. Si tout est à jour, le bloc est entièrement
+ * masqué (recette R-06) — la page Documents garde le récapitulatif complet.
  */
 export function DashboardDocumentsToValidate() {
   const { data, isLoading, isError } = useInternalDocuments()
 
   const toValidate = data?.data.filter((document) => !document.is_validated) ?? []
+
+  if (data && toValidate.length === 0) {
+    return null
+  }
 
   return (
     <section aria-labelledby="dashboard-documents-title" className="space-y-3">
@@ -23,12 +28,6 @@ export function DashboardDocumentsToValidate() {
 
       {isLoading && <Spinner label="Chargement des documents…" />}
       {isError && <Alert variant="error">Impossible de charger vos documents.</Alert>}
-
-      {data && toValidate.length === 0 && (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400" role="status">
-          Tous vos documents sont à jour.
-        </p>
-      )}
 
       {toValidate.length > 0 && (
         <>

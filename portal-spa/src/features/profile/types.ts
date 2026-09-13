@@ -1,3 +1,5 @@
+import type { BillingEntity } from '@/features/billing/types'
+
 export interface ProfileUser {
   id: number
   first_name: string
@@ -24,28 +26,10 @@ export interface MemberProfileData {
   desk: { id: number; name: string; floor: number | null } | null
 }
 
-export interface CompanyData {
-  id: number
-  entity_type: string
-  name: string
-  legal_name: string | null
-  legal_form: string | null
-  siret: string | null
-  vat_number: string | null
-  billing_email: string | null
-  address: {
-    line1: string | null
-    line2: string | null
-    postal_code: string | null
-    city: string | null
-    country: string | null
-  }
-}
-
 export interface ProfilePayload {
   user: ProfileUser
   profile: MemberProfileData | null
-  company: CompanyData | null
+  company: BillingEntity | null
 }
 
 /** Champs éditables par le membre (PATCH partiel, PRD §3.4.2). */

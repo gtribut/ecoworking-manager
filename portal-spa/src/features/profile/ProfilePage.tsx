@@ -9,10 +9,10 @@ import { Label } from '@/components/ui/Label'
 import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
+import { EntityBlock } from '@/features/billing/EntityBlock'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { TwoFactorSection } from './TwoFactorSection'
-import type { CompanyData } from './types'
 import { useProfile, useUpdateProfile } from './useProfile'
 
 const optionalUrl = z.union([z.literal(''), z.string().url('URL invalide.')])
@@ -241,59 +241,24 @@ export function ProfilePage() {
           </fieldset>
         )}
 
-        {data.company && <CompanyBlock company={data.company} />}
-
         <Button type="submit" disabled={form.formState.isSubmitting || updateProfile.isPending}>
           Enregistrer mes modifications
         </Button>
       </form>
 
+      {/* Entité juridique (PRD §3.4.3) — lecture seule, hors du formulaire. */}
+      {data.company ? (
+        <EntityBlock entity={data.company} />
+      ) : (
+        // Cas atypique (PRD §3.4.3) : compte sans entité juridique rattachée.
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">
+          Aucune entité juridique n’est rattachée à votre compte. Contactez Ecoworking si c’est une
+          erreur.
+        </p>
+      )}
+
       {/* Sécurité (PRD §3.2 / §3.4.5) — hors du formulaire profil : ses propres appels Fortify. */}
       <TwoFactorSection />
     </div>
-  )
-}
-
-function CompanyBlock({ company }: { company: CompanyData }) {
-  const rows: Array<[string, string | null]> = [
-    ['Raison sociale', company.legal_name ?? company.name],
-    ['Forme juridique', company.legal_form],
-    ['SIRET', company.siret],
-    ['N° TVA', company.vat_number],
-    ['Email de facturation', company.billing_email],
-    [
-      'Adresse',
-      [company.address.line1, company.address.postal_code, company.address.city]
-        .filter(Boolean)
-        .join(', ') || null,
-    ],
-  ]
-
-  return (
-    <section
-      aria-labelledby="company-heading"
-      className="space-y-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
-    >
-      <h2 id="company-heading" className="text-lg font-medium">
-        Mon entreprise
-      </h2>
-      <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-        {rows.map(([label, value]) => (
-          <div key={label}>
-            <dt className="text-neutral-500 dark:text-neutral-400">{label}</dt>
-            <dd>{value ?? '—'}</dd>
-          </div>
-        ))}
-      </dl>
-      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-        Ces informations sont gérées par Ecoworking.{' '}
-        <a
-          className="underline"
-          href="mailto:contact@ecoworking.fr?subject=[backend ecowo] Demande de modification"
-        >
-          Demander une modification
-        </a>
-      </p>
-    </section>
   )
 }

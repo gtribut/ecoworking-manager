@@ -72,6 +72,45 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Acme SCOP')).toBeInTheDocument()
   })
 
+  it('affiche les données de facturation de l’entité au contact facturation (PRD §3.4.3)', async () => {
+    server.use(
+      http.get('/api/profile', () =>
+        HttpResponse.json({
+          ...payload,
+          company: {
+            ...payload.company,
+            payment_method: 'transfer',
+            payment_method_label: 'Virement',
+            iban_last4: '9876',
+          },
+        }),
+      ),
+    )
+
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true })
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Mon entreprise' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Virement')).toBeInTheDocument()
+    expect(screen.getByText('•••• 9876')).toBeInTheDocument()
+    // Adresse complète : le pays est rendu (écart §3.4 « adresse tronquée »).
+    expect(screen.getByText('France')).toBeInTheDocument()
+  })
+
+  it('explique l’absence d’entité juridique rattachée', async () => {
+    server.use(http.get('/api/profile', () => HttpResponse.json({ ...payload, company: null })))
+
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true })
+
+    expect(await screen.findByText(/Aucune entité juridique/)).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { level: 2, name: 'Mon entreprise' }),
+    ).not.toBeInTheDocument()
+  })
+
   it('enregistre une modification de profil', async () => {
     const user = userEvent.setup()
     server.use(

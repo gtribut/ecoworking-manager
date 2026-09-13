@@ -2,6 +2,7 @@ import { Bell, Check } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
+import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/Button'
 import { getApiErrorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -22,7 +23,8 @@ export function NotificationBell() {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
 
-  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } = useNotifications()
+  const { data, isError, refetch, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useNotifications()
   const markAsRead = useMarkAsRead()
   const markAllAsRead = useMarkAllAsRead()
 
@@ -117,11 +119,22 @@ export function NotificationBell() {
             )}
           </div>
 
-          {items.length === 0 ? (
+          {isError && (
+            <div className="p-4">
+              <QueryError
+                message="Impossible de charger les notifications."
+                onRetry={() => void refetch()}
+              />
+            </div>
+          )}
+
+          {!isError && items.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
               Aucune notification pour le moment.
             </p>
-          ) : (
+          ) : null}
+
+          {!isError && items.length > 0 && (
             <ul className="max-h-96 divide-y divide-neutral-100 overflow-y-auto dark:divide-neutral-800">
               {items.map((item) => (
                 <li key={item.id} className="flex items-stretch">

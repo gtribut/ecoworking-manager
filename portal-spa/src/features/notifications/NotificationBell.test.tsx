@@ -114,6 +114,27 @@ describe('NotificationBell', () => {
     expect(screen.getByRole('region', { name: 'Notifications' })).toBeInTheDocument()
   })
 
+  it('affiche une erreur de chargement avec un bouton Réessayer', async () => {
+    const user = userEvent.setup()
+    let calls = 0
+    server.use(
+      http.get('/api/notifications', () => {
+        calls += 1
+        return calls === 1
+          ? HttpResponse.json({ message: 'Erreur serveur' }, { status: 500 })
+          : HttpResponse.json(response())
+      }),
+    )
+
+    renderWithProviders(<NotificationBell />)
+
+    await user.click(await screen.findByRole('button', { name: 'Notifications' }))
+    expect(await screen.findByText('Impossible de charger les notifications.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Réessayer' }))
+    expect(await screen.findByText('Nouvelle facture EW-2026-00001.')).toBeInTheDocument()
+  })
+
   it('charge la page suivante avec « Charger plus »', async () => {
     const user = userEvent.setup()
     server.use(

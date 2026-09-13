@@ -7,6 +7,7 @@ namespace App\Filament\Resources\Users\Pages;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\User;
 use App\Services\AnonymizeUserService;
+use App\Services\Auth\WelcomeInvitationService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\RestoreAction;
@@ -21,6 +22,25 @@ class EditUser extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            // Email d'accueil (PRD §3.2) : renvoyable à tout moment, pas
+            // seulement avant la première connexion — c'est aussi la seule
+            // voie dont dispose l'admin pour débloquer un membre qui n'arrive
+            // plus à se connecter, puisqu'il ne peut pas lui fixer de mot de
+            // passe. Chaque envoi invalide le jeton précédent.
+            Action::make('resendWelcome')
+                ->label('Renvoyer l\'email d\'accueil')
+                ->icon(Heroicon::OutlinedEnvelope)
+                ->visible(fn (User $record): bool => (Auth::user()?->can('update', $record) ?? false)
+                    && $record->anonymized_at === null)
+                ->requiresConfirmation()
+                ->modalHeading('Renvoyer l\'email d\'accueil ?')
+                ->modalDescription('Le membre recevra un lien de définition de mot de passe valable 3 jours. Le lien envoyé précédemment cessera de fonctionner. Aucun mot de passe n\'est transmis.')
+                ->modalSubmitActionLabel('Envoyer')
+                ->action(function (User $record, WelcomeInvitationService $invitations): void {
+                    $invitations->send($record);
+                })
+                ->successNotificationTitle('Email d\'accueil envoyé'),
+
             // Anonymisation RGPD (PRD §5.6, C12.7) : écrase la PII, révoque
             // les accès et soft-delete. Factures conservées (10 ans). Logique
             // dans AnonymizeUserService, visibilité via UserPolicy::anonymize.

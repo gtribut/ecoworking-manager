@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\GoogleOAuthController;
 use App\Http\Controllers\Auth\MagicLinkController;
+use App\Http\Controllers\Auth\WelcomePasswordController;
 use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\PortalSpaController;
 use Illuminate\Support\Facades\Route;
@@ -79,6 +80,14 @@ $magicLinkRoutes = function (): void {
 
     Route::get('magic-link/{token}', [MagicLinkController::class, 'consume'])
         ->name('magic-link.consume');
+
+    // Définition initiale du mot de passe depuis l'email d'accueil (lot F,
+    // PRD §3.2). Même page SPA que « mot de passe oublié », mais broker
+    // `welcome` (table et durée dédiées) : POST seulement, donc aucun conflit
+    // avec la page `GET /reset-password/{token}` servie par la SPA.
+    Route::post('reset-password/welcome', WelcomePasswordController::class.'@store')
+        ->middleware(['guest'])
+        ->name('welcome.password.update');
 };
 
 if ($portalDomain = config('domains.portal')) {

@@ -50,6 +50,7 @@ const AUTH_FLOW_URLS = [
   '/magic-link',
   '/forgot-password',
   '/reset-password',
+  '/reset-password/welcome',
 ]
 
 function isAuthFlowRequest(url: string | undefined): boolean {

@@ -1,0 +1,85 @@
+import { cn } from '@/lib/utils'
+
+/** URLs des trois rendus servis par l'API (80 / 200 / 400 px), ou null. */
+export interface PhotoUrls {
+  sm: string
+  md: string
+  lg: string
+}
+
+type AvatarSize = 'sm' | 'md' | 'lg'
+
+interface AvatarProps {
+  firstName: string
+  lastName: string
+  photo?: PhotoUrls | null
+  size?: AvatarSize
+  /** Photo grisée : résident absent sur le plan des étages (PRD §3.7.3). */
+  muted?: boolean
+  className?: string
+}
+
+/** Boîte d'affichage par taille + rendu serveur à utiliser (jamais plus grand). */
+const BOXES: Record<AvatarSize, { box: string; text: string; source: keyof PhotoUrls }> = {
+  sm: { box: 'size-12', text: 'text-base', source: 'sm' },
+  md: { box: 'size-20', text: 'text-xl', source: 'md' },
+  lg: { box: 'size-32', text: 'text-3xl', source: 'lg' },
+}
+
+/** Initiales de repli (PRD §3.4.2 : avatar généré si pas de photo). */
+export function initialsOf(firstName: string, lastName: string): string {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+}
+
+/**
+ * Avatar d'un coworker : photo de profil si elle existe, initiales sinon
+ * (PRD §3.4.2). La photo n'est jamais une URL publique — elle passe par
+ * `GET /api/users/{id}/photo/{size}`, authentifié et autorisé côté serveur.
+ *
+ * A11y : l'alternative de la photo est l'identité de la personne — pas
+ * « Photo de … », préfixe redondant que les lecteurs d'écran annoncent déjà
+ * (et que `noRedundantAlt` refuse, cf. Biome). Les initiales de repli sont
+ * `aria-hidden` : le nom figure toujours à côté, en texte.
+ */
+export function Avatar({
+  firstName,
+  lastName,
+  photo,
+  size = 'sm',
+  muted = false,
+  className,
+}: AvatarProps) {
+  const { box, text, source } = BOXES[size]
+
+  if (photo) {
+    return (
+      <img
+        src={photo[source]}
+        alt={`${firstName} ${lastName}`}
+        loading="lazy"
+        decoding="async"
+        className={cn(
+          box,
+          'shrink-0 rounded-full object-cover',
+          muted && 'opacity-50 grayscale',
+          className,
+        )}
+      />
+    )
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        box,
+        text,
+        'flex shrink-0 items-center justify-center rounded-full bg-brand-50 font-semibold text-brand-700 dark:bg-neutral-800 dark:text-brand-50',
+        muted && 'opacity-50 grayscale',
+        className,
+      )}
+    >
+      {initialsOf(firstName, lastName)}
+    </span>
+  )
+}

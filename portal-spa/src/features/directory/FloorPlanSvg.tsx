@@ -10,6 +10,48 @@ interface FloorPlanSvgProps {
   onSelect: (desk: PlanDesk) => void
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg'
+
+/**
+ * Photo du résident présent, posée dans le bloc bureau (PRD §3.7.3) et grisée
+ * s'il a déclaré une absence. Les coordonnées sont lues sur le `<rect>` du
+ * bloc : aucune position en dur, le plan reste redessinable.
+ *
+ * `aria-hidden` : l'information (qui occupe le bureau, présent ou absent) est
+ * déjà portée par l'`aria-label` du bloc et par l'alternative texte.
+ */
+function decoratePhoto(element: SVGGElement, desk: PlanDesk): void {
+  element.querySelector('[data-desk-photo]')?.remove()
+
+  const photo = desk.occupant?.visible ? desk.occupant.photo : null
+  const rect = element.querySelector('rect')
+  if (!photo || !rect) return
+
+  const x = Number(rect.getAttribute('x'))
+  const y = Number(rect.getAttribute('y'))
+  const width = Number(rect.getAttribute('width'))
+  const height = Number(rect.getAttribute('height'))
+  if (![x, y, width, height].every(Number.isFinite)) return
+
+  const diameter = Math.min(width, height) * 0.6
+  const image = document.createElementNS(SVG_NS, 'image')
+  image.setAttribute('href', photo.sm)
+  image.setAttribute('x', String(x + width - diameter - 3))
+  image.setAttribute('y', String(y + 3))
+  image.setAttribute('width', String(diameter))
+  image.setAttribute('height', String(diameter))
+  image.setAttribute('preserveAspectRatio', 'xMidYMid slice')
+  image.setAttribute('clip-path', 'circle(50%)')
+  image.setAttribute('aria-hidden', 'true')
+  image.setAttribute('data-desk-photo', 'true')
+  if (desk.status === 'absent') {
+    image.setAttribute('opacity', '0.45')
+    image.style.filter = 'grayscale(1)'
+  }
+
+  element.appendChild(image)
+}
+
 /**
  * Plan SVG interactif des étages (PRD §3.7.2).
  *
@@ -69,6 +111,8 @@ export function FloorPlanSvg({ desks, floor, selectedId, onSelect }: FloorPlanSv
       if (!desk.svg_desk_id) continue
       const element = svg.querySelector<SVGGElement>(`#${CSS.escape(desk.svg_desk_id)}`)
       if (!element) continue
+
+      decoratePhoto(element, desk)
 
       element.dataset.status = desk.status
       element.dataset.assignment = desk.assignment ?? 'none'

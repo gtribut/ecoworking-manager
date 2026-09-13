@@ -26,7 +26,7 @@ const payload: ProfilePayload = {
     linkedin_url: null,
     website_url: null,
     birth_date: null,
-    photo_path: null,
+    photo: null,
     show_in_directory: true,
     newsletter_opt_in: false,
     arrival_date: null,
@@ -70,6 +70,19 @@ describe('ProfilePage', () => {
     expect(await screen.findByDisplayValue('Designer')).toBeInTheDocument()
     expect(screen.getByDisplayValue('alex@ex.fr')).toBeDisabled()
     expect(screen.getByText('Acme SCOP')).toBeInTheDocument()
+  })
+
+  it('propose la section photo de profil avec l’avatar initiales (PRD §3.4.2)', async () => {
+    server.use(http.get('/api/profile', () => HttpResponse.json(payload)))
+
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true })
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Photo de profil' }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Choisir une photo')).toBeInTheDocument()
+    expect(screen.getByText('AM')).toBeInTheDocument()
   })
 
   it('affiche l’entité complète sans les coordonnées bancaires (PRD §3.4.3)', async () => {

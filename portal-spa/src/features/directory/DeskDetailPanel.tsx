@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
+import { Avatar } from '@/components/Avatar'
 import { MarkdownContent } from '@/components/MarkdownContent'
 import { occupantDisplayName, statusLabel } from './plan-utils'
 import type { PlanDesk } from './types'
@@ -59,53 +60,63 @@ export function DeskDetailPanel({ desk, onClose }: DeskDetailPanelProps) {
       </p>
 
       {occupant?.visible && (
-        <div className="mt-4 space-y-2 text-sm">
-          <p className="text-base font-medium">
-            {occupant.first_name} {occupant.last_name}
-          </p>
-          {occupant.company && <p>{occupant.company}</p>}
-          {occupant.job_title && (
-            <p className="text-neutral-600 dark:text-neutral-300">{occupant.job_title}</p>
-          )}
-          {occupant.bio && (
-            <MarkdownContent
-              markdown={occupant.bio}
-              className="text-neutral-600 dark:text-neutral-300"
-            />
-          )}
-          {occupant.interests && (
-            <p className="text-neutral-600 dark:text-neutral-300">
-              Centres d’intérêt : {occupant.interests}
+        <div className="mt-4 flex gap-4 text-sm">
+          <Avatar
+            firstName={occupant.first_name}
+            lastName={occupant.last_name}
+            photo={occupant.photo}
+            size="md"
+            // Résident absent ce jour-là : photo grisée (PRD §3.7.3).
+            muted={desk.status === 'absent'}
+          />
+          <div className="min-w-0 space-y-2">
+            <p className="text-base font-medium">
+              {occupant.first_name} {occupant.last_name}
             </p>
-          )}
-          <ul className="flex flex-wrap gap-3">
-            {occupant.linkedin_url && (
-              <li>
-                <a
-                  href={occupant.linkedin_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-brand-700 dark:text-brand-300 underline"
-                >
-                  LinkedIn
-                  <span className="sr-only"> de {occupant.first_name} (nouvelle fenêtre)</span>
-                </a>
-              </li>
+            {occupant.company && <p>{occupant.company}</p>}
+            {occupant.job_title && (
+              <p className="text-neutral-600 dark:text-neutral-300">{occupant.job_title}</p>
             )}
-            {occupant.website_url && (
-              <li>
-                <a
-                  href={occupant.website_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-brand-700 dark:text-brand-300 underline"
-                >
-                  Site web
-                  <span className="sr-only"> de {occupant.first_name} (nouvelle fenêtre)</span>
-                </a>
-              </li>
+            {occupant.bio && (
+              <MarkdownContent
+                markdown={occupant.bio}
+                className="text-neutral-600 dark:text-neutral-300"
+              />
             )}
-          </ul>
+            {occupant.interests && (
+              <p className="text-neutral-600 dark:text-neutral-300">
+                Centres d’intérêt : {occupant.interests}
+              </p>
+            )}
+            <ul className="flex flex-wrap gap-3">
+              {occupant.linkedin_url && (
+                <li>
+                  <a
+                    href={occupant.linkedin_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brand-700 dark:text-brand-300 underline"
+                  >
+                    LinkedIn
+                    <span className="sr-only"> de {occupant.first_name} (nouvelle fenêtre)</span>
+                  </a>
+                </li>
+              )}
+              {occupant.website_url && (
+                <li>
+                  <a
+                    href={occupant.website_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brand-700 dark:text-brand-300 underline"
+                  >
+                    Site web
+                    <span className="sr-only"> de {occupant.first_name} (nouvelle fenêtre)</span>
+                  </a>
+                </li>
+              )}
+            </ul>
+          </div>
         </div>
       )}
 

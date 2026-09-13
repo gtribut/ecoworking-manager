@@ -14,6 +14,7 @@ import { EntityBlock } from '@/features/billing/EntityBlock'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { PasswordSection } from './PasswordSection'
+import { PhotoSection } from './PhotoSection'
 import { TwoFactorSection } from './TwoFactorSection'
 import { useProfile, useUpdateProfile } from './useProfile'
 
@@ -127,6 +128,14 @@ export function ProfilePage() {
       <h1 className="text-2xl font-semibold">Mon profil</h1>
 
       {feedback && <Alert variant={feedback.type}>{feedback.message}</Alert>}
+
+      {hasProfile && (
+        <PhotoSection
+          firstName={data.user.first_name}
+          lastName={data.user.last_name}
+          photo={data.profile?.photo ?? null}
+        />
+      )}
 
       <form onSubmit={onSubmit} className="space-y-8" noValidate>
         <fieldset className="space-y-4">

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use PragmaRX\Google2FA\Google2FA;
 
 use function Pest\Laravel\postJson;
@@ -141,4 +142,133 @@ it('déconnecte et détruit la session (POST /logout)', function () {
     $this->actingAs($user)->postJson('/logout')->assertSuccessful();
 
     $this->assertGuest();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Lot F — Changement de mot de passe portail (PRD §3.4.2 / §3.4.5)
+|--------------------------------------------------------------------------
+|
+| `PUT /user/password` (Fortify, feature `updatePasswords`) : ré-authentification
+| obligatoire (mot de passe actuel), réponses JSON 200/422 pour la SPA.
+*/
+
+it('change le mot de passe avec le mot de passe actuel et une confirmation valides', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])->assertSuccessful();
+
+    expect(Hash::check('nouveau-mot-de-passe-2026', $user->fresh()->password))->toBeTrue();
+});
+
+it('rejette un changement de mot de passe si le mot de passe actuel est faux (422)', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'mauvais-mot-de-passe',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('current_password');
+
+    expect(Hash::check('password', $user->fresh()->password))->toBeTrue();
+});
+
+it('rejette un changement de mot de passe si la confirmation diffère (422)', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'autre-chose',
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('password');
+
+    expect(Hash::check('password', $user->fresh()->password))->toBeTrue();
+});
+
+it('rejette un changement de mot de passe trop court (422, politique Password::default = min 8)', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'court1',
+        'password_confirmation' => 'court1',
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('password');
+});
+
+it('refuse le changement de mot de passe à un visiteur anonyme (401)', function () {
+    $this->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])->assertUnauthorized();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Révocation des autres sessions au changement de mot de passe
+|--------------------------------------------------------------------------
+|
+| `Auth::logoutOtherDevices()` re-hash le mot de passe : l'empreinte
+| `password_hash_web` mémorisée par les sessions ouvertes ailleurs devient
+| caduque, et AuthenticateSession (bootstrap/app.php) les rejette.
+*/
+
+/**
+ * Rejoue une requête portail « comme le navigateur » : c'est l'en-tête Referer
+ * qui fait basculer Sanctum en mode stateful (session + cookies). Sans lui, une
+ * requête /api/* de test n'ouvre aucune session et le middleware passe la main.
+ */
+function asPortalBrowser(): void
+{
+    config(['sanctum.stateful' => ['localhost']]);
+}
+
+it('révoque les autres sessions au changement de mot de passe', function () {
+    asPortalBrowser();
+    $user = User::factory()->resident()->create();
+    // Empreinte qu'une session ouverte AILLEURS a mémorisée à sa connexion.
+    $hashKnownByTheOtherSession = $user->password;
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])->assertSuccessful();
+
+    // Le hash en base a bien changé : l'empreinte de l'autre session est périmée.
+    expect($user->fresh()->password)->not->toBe($hashKnownByTheOtherSession);
+
+    $this->flushSession();
+    $this->withSession(['password_hash_web' => $hashKnownByTheOtherSession])
+        ->actingAs($user)
+        ->withHeader('Referer', 'http://localhost')
+        ->getJson('/api/user')
+        ->assertUnauthorized();
+});
+
+it('laisse la session courante active après son propre changement de mot de passe', function () {
+    asPortalBrowser();
+    $user = User::factory()->resident()->create();
+
+    $this->actingAs($user)->putJson('/user/password', [
+        'current_password' => 'password',
+        'password' => 'nouveau-mot-de-passe-2026',
+        'password_confirmation' => 'nouveau-mot-de-passe-2026',
+    ])->assertSuccessful();
+
+    $this->withSession(['password_hash_web' => $user->fresh()->password])
+        ->actingAs($user->fresh())
+        ->withHeader('Referer', 'http://localhost')
+        ->getJson('/api/user')
+        ->assertOk();
 });

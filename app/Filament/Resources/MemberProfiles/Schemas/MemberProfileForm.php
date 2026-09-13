@@ -7,9 +7,10 @@ namespace App\Filament\Resources\MemberProfiles\Schemas;
 use App\Enums\MemberProfileStatus;
 use App\Enums\ResourceType;
 use App\Models\Company;
+use App\Models\MemberProfile;
 use App\Models\User;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -75,11 +76,16 @@ class MemberProfileForm
                 Section::make('Profil public (annuaire)')
                     ->columns(2)
                     ->schema([
-                        FileUpload::make('photo_path')
+                        // Photo : déposée par le membre depuis son portail
+                        // (PRD §3.4.2 — recadrage et EXIF traités côté serveur
+                        // par ProfilePhotoService). L'admin ne la téléverse
+                        // pas : il peut seulement la retirer (modération), via
+                        // l'action d'en-tête de la page d'édition.
+                        Placeholder::make('photo_state')
                             ->label('Photo')
-                            ->image()
-                            ->avatar()
-                            ->directory('member-photos')
+                            ->content(fn (?MemberProfile $record): string => $record?->photo_path === null
+                                ? 'Aucune photo. Le membre la dépose depuis son portail.'
+                                : 'Photo déposée par le membre. Utilisez « Retirer la photo » pour la supprimer.')
                             ->columnSpanFull(),
                         TextInput::make('job_title')
                             ->label('Intitulé de poste')

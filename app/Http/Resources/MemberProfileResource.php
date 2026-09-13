@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\MemberProfile;
+use App\Services\Profile\ProfilePhotoService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -30,7 +31,9 @@ final class MemberProfileResource extends JsonResource
             'linkedin_url' => $this->linkedin_url,
             'website_url' => $this->website_url,
             'birth_date' => $this->birth_date?->toDateString(),
-            'photo_path' => $this->photo_path,
+            // Jamais le chemin de stockage : uniquement les URLs autorisées
+            // (GET /api/users/{user}/photo/{size}), PRD §3.4.2.
+            'photo' => ProfilePhotoService::urls($this->photo_path, $this->user_id),
             'show_in_directory' => $this->show_in_directory,
             'newsletter_opt_in' => $this->newsletter_opt_in,
             'arrival_date' => $this->arrival_date?->toDateString(),

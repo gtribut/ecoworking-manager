@@ -36,7 +36,6 @@ it('refuse d\'attribuer deux rôles d\'usage simultanément (resident + external
             'first_name' => 'Jean',
             'last_name' => 'Dupont',
             'email' => 'jean.dupont@example.com',
-            'password' => 'secret-password',
             'roles' => [roleId(Role::Resident), roleId(Role::External)],
         ])
         ->call('create')
@@ -51,7 +50,6 @@ it('accepte un rôle d\'usage cumulé avec un rôle additionnel (resident + bill
             'first_name' => 'Marie',
             'last_name' => 'Martin',
             'email' => 'marie.martin@example.com',
-            'password' => 'secret-password',
             'roles' => [roleId(Role::Resident), roleId(Role::BillingContact)],
         ])
         ->call('create')

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\Permission;
+use App\Http\Controllers\Api\DirectoryController;
 use App\Models\User;
 
 /**
@@ -54,6 +56,31 @@ final class UserPolicy
     public function anonymize(User $user, User $model): bool
     {
         return $user->isAdmin() && $user->isNot($model) && $model->anonymized_at === null;
+    }
+
+    /**
+     * Lecture de la photo de profil (PRD §3.4.2 / §3.7.3), servie par
+     * `GET /api/users/{user}/photo/{size}`. Trois cas seulement : soi-même,
+     * un admin, ou un membre habilité à l'annuaire regardant une personne qui
+     * s'y affiche volontairement (`show_in_directory`) — même consentement que
+     * {@see DirectoryController}, les `external`
+     * (sans `view-annuaire`) n'y accèdent donc jamais. Le refus se traduit par
+     * un 404 côté contrôleur.
+     *
+     * Le statut du profil n'est volontairement PAS exigé « actif » : le plan
+     * des étages affiche la fiche de tout occupant opt-in, sa photo doit suivre.
+     */
+    public function viewPhoto(User $user, User $model): bool
+    {
+        if ($user->is($model) || $user->isAdmin()) {
+            return true;
+        }
+
+        if (! $user->can(Permission::ViewAnnuaire->value)) {
+            return false;
+        }
+
+        return $model->memberProfile?->show_in_directory === true;
     }
 
     public function forceDelete(User $user, User $model): bool

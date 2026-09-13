@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\GoogleOAuthController;
 use App\Http\Controllers\Auth\MagicLinkController;
+use App\Http\Controllers\Auth\WelcomePasswordController;
 use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\PortalSpaController;
 use Illuminate\Support\Facades\Route;
@@ -79,6 +80,18 @@ $magicLinkRoutes = function (): void {
 
     Route::get('magic-link/{token}', [MagicLinkController::class, 'consume'])
         ->name('magic-link.consume');
+
+    // Définition initiale du mot de passe depuis l'email d'accueil (lot F,
+    // PRD §3.2). Même page SPA que « mot de passe oublié », mais broker
+    // `welcome` (table et durée dédiées) : POST seulement, donc aucun conflit
+    // avec la page `GET /reset-password/{token}` servie par la SPA.
+    Route::post('reset-password/welcome', WelcomePasswordController::class.'@store')
+        // Même limiteur que le magic link (5/min par email|IP) : un lien
+        // d'accueil vit 3 jours, il ne doit pas offrir 3 jours de brute force
+        // sur le jeton. Fortify ne limite pas `password.update` non plus, mais
+        // ses jetons expirent en 1 h — ici la fenêtre est 72 fois plus large.
+        ->middleware(['guest', 'throttle:magic-link'])
+        ->name('welcome.password.update');
 };
 
 if ($portalDomain = config('domains.portal')) {

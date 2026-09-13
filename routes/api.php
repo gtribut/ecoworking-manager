@@ -17,8 +17,10 @@ use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ProfilePhotoController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\TicketController;
+use App\Http\Controllers\Api\UserPhotoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,6 +45,15 @@ $register = function (): void {
         // C4.2 — Profil membre (lecture + édition partielle, auto-scopé).
         Route::get('/profile', [ProfileController::class, 'show'])->name('api.profile.show');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('api.profile.update');
+
+        // Lot F — Photo de profil (PRD §3.4.2) : upload auto-scopé, lecture
+        // autorisée pièce par pièce (UserPolicy::viewPhoto), jamais d'URL publique.
+        Route::post('/profile/photo', [ProfilePhotoController::class, 'store'])->name('api.profile.photo.store');
+        Route::delete('/profile/photo', [ProfilePhotoController::class, 'destroy'])->name('api.profile.photo.destroy');
+        Route::get('/users/{user}/photo/{size}', UserPhotoController::class)
+            ->whereNumber('user')
+            ->whereIn('size', ['80', '200', '400'])
+            ->name('api.users.photo');
 
         // C4.3 — Factures (liste scopée + téléchargement PDF).
         Route::get('/invoices', [InvoiceController::class, 'index'])->name('api.invoices.index');

@@ -24,10 +24,15 @@ const schema = z
 type FormValues = z.infer<typeof schema>
 
 /**
- * Page cible du lien « mot de passe oublié » (PRD §3.2, recette R-03) :
- * `/reset-password/:token?email=…`, hors authentification. Le jeton est validé
- * côté Fortify (`POST /reset-password`, expiration 60 min) ; en cas de succès,
- * retour au login avec un message de confirmation.
+ * Page cible des deux liens de définition de mot de passe (PRD §3.2) :
+ * `/reset-password/:token?email=…`, hors authentification.
+ *
+ * - « Mot de passe oublié » (recette R-03) : jeton Fortify, 60 min.
+ * - Email d'accueil (`?welcome=1`, lot F) : jeton du broker `welcome`, 3 jours,
+ *   consommé par `POST /reset-password/welcome`.
+ *
+ * Seuls le titre, le bouton et le message d'erreur changent : le formulaire et
+ * le flux sont les mêmes.
  */
 export function ResetPasswordPage() {
   usePageTitle('Nouveau mot de passe — Portail Ecoworking')
@@ -46,19 +51,27 @@ export function ResetPasswordPage() {
     },
   })
 
+  const isWelcome = searchParams.get('welcome') === '1'
+
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null)
     try {
-      await resetPassword({ token, ...values })
+      await resetPassword({ token, ...values }, isWelcome ? 'welcome' : 'reset')
       navigate('/login', {
         replace: true,
-        state: { notice: 'Votre mot de passe a été modifié. Vous pouvez vous connecter.' },
+        state: {
+          notice: isWelcome
+            ? 'Votre mot de passe est défini. Vous pouvez vous connecter.'
+            : 'Votre mot de passe a été modifié. Vous pouvez vous connecter.',
+        },
       })
     } catch (error) {
       setFormError(
         getApiErrorMessage(
           error,
-          'Réinitialisation impossible. Le lien est peut-être expiré : demandez-en un nouveau.',
+          isWelcome
+            ? 'Activation impossible. Le lien d’accueil est peut-être expiré : demandez-en un nouveau à Ecoworking.'
+            : 'Réinitialisation impossible. Le lien est peut-être expiré : demandez-en un nouveau.',
         ),
       )
     }
@@ -69,7 +82,9 @@ export function ResetPasswordPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-center text-2xl font-semibold">Nouveau mot de passe</h1>
+        <h1 className="text-center text-2xl font-semibold">
+          {isWelcome ? 'Bienvenue — définissez votre mot de passe' : 'Nouveau mot de passe'}
+        </h1>
 
         {formError && <Alert variant="error">{formError}</Alert>}
 
@@ -86,7 +101,7 @@ export function ResetPasswordPage() {
             {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
           </div>
           <div>
-            <Label htmlFor="password">Nouveau mot de passe</Label>
+            <Label htmlFor="password">{isWelcome ? 'Mot de passe' : 'Nouveau mot de passe'}</Label>
             <Input
               id="password"
               type="password"
@@ -112,7 +127,7 @@ export function ResetPasswordPage() {
             )}
           </div>
           <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            Enregistrer le nouveau mot de passe
+            {isWelcome ? 'Activer mon compte' : 'Enregistrer le nouveau mot de passe'}
           </Button>
           <div className="text-center text-sm">
             <Link to="/login" className="underline">

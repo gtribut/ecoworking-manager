@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\MemberProfile;
+use App\Services\Profile\ProfilePhotoService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,7 +29,7 @@ final class DirectoryEntryResource extends JsonResource
             'id' => $this->id,
             'first_name' => $this->user->first_name,
             'last_name' => $this->user->last_name,
-            'photo_path' => $this->photo_path,
+            'photo' => ProfilePhotoService::urls($this->photo_path, $this->user->id),
             'job_title' => $this->job_title,
             'bio' => $this->bio,
             'interests' => $this->interests,

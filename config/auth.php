@@ -99,6 +99,28 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        /*
+         * Invitation d'accueil (PRD §3.2) : lien de DÉFINITION initiale du mot
+         * de passe envoyé par l'admin à la création d'un compte. 3 jours de
+         * validité — une heure (broker `users`) serait ingérable pour un membre
+         * qui relève ses mails le soir.
+         *
+         * Table DÉDIÉE, et c'est le point important : partager
+         * `password_reset_tokens` rendrait les deux durées indissociables
+         * (le dépôt ne sait pas quel flux a créé le jeton), et un jeton
+         * « mot de passe oublié » périmé depuis 2 h redeviendrait exploitable
+         * 3 jours durant. Deux tables = deux durées réellement étanches.
+         */
+        'welcome' => [
+            'provider' => 'users',
+            'table' => 'welcome_invitation_tokens',
+            'expire' => 4320, // 3 jours
+            // Lu par WelcomeInvitationService::recentlySent() — `createToken()`
+            // ne consulte pas cette clé de lui-même, contrairement au flux
+            // `sendResetLink()` du broker par défaut.
+            'throttle' => 60,
+        ],
     ],
 
     /*

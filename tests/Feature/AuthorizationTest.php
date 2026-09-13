@@ -116,6 +116,30 @@ it('limite la visibilité des factures au billing_contact de l\'entité concern�
         ->and($billingY->can('download', $invoiceX))->toBeFalse();
 });
 
+it('limite les données de facturation d\'une entité à son billing_contact (lot D)', function () {
+    $this->seed(PermissionSeeder::class); // billing_contact → view-billing-section
+
+    // PRD §3.6.4 : mode de paiement + IBAN-4 réservés au contact de facturation
+    // de CETTE entité ; un résident rattaché lit l'entité mais pas ces champs.
+    $companyX = Company::factory()->create();
+    $companyY = Company::factory()->create();
+
+    $billingX = billingContactFor($companyX);
+    $billingY = billingContactFor($companyY);
+
+    $resident = User::factory()->resident()->create();
+    MemberProfile::factory()->for($resident)->create(['company_id' => $companyX->id]);
+
+    expect($billingX->can('viewBillingDetails', $companyX))->toBeTrue()
+        ->and($billingY->can('viewBillingDetails', $companyX))->toBeFalse()
+        ->and($resident->can('viewBillingDetails', $companyX))->toBeFalse()
+        // Lecture simple de l'entité : ouverte au membre rattaché (PRD §2.5).
+        ->and($resident->can('view', $companyX))->toBeTrue()
+        ->and($resident->can('view', $companyY))->toBeFalse()
+        ->and($billingX->can('viewAnyBillingDetails', Company::class))->toBeTrue()
+        ->and($resident->can('viewAnyBillingDetails', Company::class))->toBeFalse();
+});
+
 it('refuse les factures de son entité à un membre SANS rôle billing_contact', function () {
     $company = Company::factory()->create();
     $invoice = Invoice::factory()->issued()->create([

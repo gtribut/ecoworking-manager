@@ -25,9 +25,17 @@ final class DeskOccupationResource extends JsonResource
             'id' => $this->id,
             'desk_id' => $this->desk_id,
             'desk_name' => $this->whenLoaded('desk', fn () => $this->desk->name),
+            'desk_floor' => $this->whenLoaded('desk', fn () => $this->desk->floor),
             'date' => $this->date?->toDateString(),
             'period' => $this->period,
             'status' => $this->status,
+            'ticket' => $this->whenLoaded('ticket', fn () => $this->ticket === null ? null : [
+                'id' => $this->ticket->id,
+                'type' => $this->ticket->type,
+            ]),
+            // Renseigné PAR LOT côté contrôleur (comparaison SQL) : jamais
+            // `date->isFuture()` en PHP (piège timezone, cf. DeskOccupation::scopeCancellable).
+            'cancellable' => $this->cancellable === true,
         ];
     }
 }

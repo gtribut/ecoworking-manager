@@ -34,8 +34,13 @@ final class TicketController extends Controller
                 TicketType::DeskHalfDay->value => (int) ($balances[TicketType::DeskHalfDay->value] ?? 0),
                 TicketType::MeetingRoomHalfDay->value => (int) ($balances[TicketType::MeetingRoomHalfDay->value] ?? 0),
             ],
+            // Eager loading (CLAUDE.md §4.1) : évite le N+1 des accesseurs
+            // `purchase`/`booking.resource`/`deskOccupation.desk` de TicketResource.
             'tickets' => TicketResource::collection(
-                $user->tickets()->orderByDesc('id')->get()
+                $user->tickets()
+                    ->with(['purchase', 'booking.resource', 'deskOccupation.desk'])
+                    ->orderByDesc('id')
+                    ->get()
             )->resolve(),
         ]);
     }

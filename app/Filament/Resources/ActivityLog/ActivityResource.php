@@ -55,6 +55,7 @@ class ActivityResource extends Resource
             'subscription' => 'Abonnement',
             'purchase' => 'Achat',
             'booking' => 'Réservation',
+            'desk_occupation' => 'Occupation de bureau',
             'invoice' => 'Facture',
             'payment' => 'Paiement',
         ];

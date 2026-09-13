@@ -24,16 +24,22 @@ final class BookingResource extends JsonResource
         return [
             'id' => $this->id,
             'resource_id' => $this->resource_id,
-            // Bug R-07 : `$this->resource` est la propriété interne de JsonResource
-            // (le Booking encapsulé), PAS la relation Eloquent `resource()` du même
-            // nom — d'où le second `->resource` pour atteindre la salle chargée.
+            // Piège JsonResource : `$this->resource` désigne le modèle encapsulé
+            // (le Booking), pas la relation `resource` — d'où le double saut
+            // `$this->resource->resource` pour atteindre la salle (R-07).
             'resource_name' => $this->whenLoaded('resource', fn () => $this->resource->resource->name),
             'title' => $this->title,
             'starts_at' => $this->starts_at?->toIso8601String(),
             'ends_at' => $this->ends_at?->toIso8601String(),
             'status' => $this->status,
             'is_paid' => $this->ticket_id !== null,
-            'cancellable' => $this->status->value === 'confirmed' && $this->starts_at?->isFuture() === true,
+            'ticket' => $this->whenLoaded('ticket', fn () => $this->ticket === null ? null : [
+                'id' => $this->ticket->id,
+                'type' => $this->ticket->type,
+            ]),
+            // `startsLater` est renseigné par lot côté contrôleur (comparaison
+            // SQL) : jamais `starts_at->isFuture()` en PHP (piège timezone).
+            'cancellable' => $this->status->value === 'confirmed' && $this->startsLater === true,
         ];
     }
 }

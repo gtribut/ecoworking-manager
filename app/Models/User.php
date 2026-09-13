@@ -6,6 +6,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\ContactRole;
+use App\Enums\Permission;
 use App\Enums\ResourceType;
 use App\Enums\Role;
 use App\Models\Concerns\Auditable;
@@ -207,6 +208,17 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         }
 
         return false;
+    }
+
+    /**
+     * Réserve-t-il une salle en tant qu'external (demi-journée payée par ticket,
+     * PRD §3.5.3) plutôt qu'en créneau libre gratuit ? Source unique pour le
+     * catalogue, la dispo et les Form Requests de réservation.
+     */
+    public function booksAsExternal(): bool
+    {
+        return $this->can(Permission::CreatePaidBooking->value)
+            && ! $this->can(Permission::CreateOwnBooking->value);
     }
 
     /**

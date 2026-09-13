@@ -27,7 +27,9 @@ export const seed = {
     title: 'Charte du coworking',
     version: '2.0',
   },
+  /** Noms figés par database/seeders/ResourceSeeder.php (appelé par E2eSeeder). */
   rooms: {
     small: 'Salle de réunion 1',
+    event: 'Salle événementielle',
   },
 } as const

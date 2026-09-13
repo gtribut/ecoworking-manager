@@ -8,18 +8,24 @@ use App\Enums\BookingStatus;
 use App\Enums\Permission;
 use App\Enums\ResourceType;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\ResourceResource;
+use App\Http\Requests\Api\IndexRoomAvailabilityRequest;
+use App\Http\Resources\RoomResource;
 use App\Models\Booking;
+use App\Models\Company;
 use App\Models\Resource;
+use App\Models\User;
 use App\Services\RoomAvailabilityService;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
- * Salles réservables côté portail (PRD §3.5.5). Lecture seule : catalogue des
- * salles de réunion actives + disponibilité d'une salle à une date donnée.
+ * Salles du calendrier portail (PRD §3.5.2 à §3.5.4). Lecture seule :
+ * catalogue (3 salles de réunion + la salle événementielle, cette dernière
+ * non réservable) et disponibilité — par salle et par jour, ou multi-salles
+ * sur une plage pour la grille semaine/jour.
  */
 final class RoomController extends Controller
 {
@@ -27,14 +33,53 @@ final class RoomController extends Controller
     {
         $this->authorizeCalendar($request);
 
-        $rooms = Resource::query()
-            ->where('type', ResourceType::MeetingRoom->value)
-            ->where('is_active', true)
-            ->where('is_out_of_service', false)
-            ->orderBy('display_order')
+        return RoomResource::collection($this->calendarRooms());
+    }
+
+    /**
+     * Disponibilité multi-salles sur une plage bornée (PRD §3.5.2) : pour
+     * chaque salle du calendrier, ses créneaux occupés avec l'occupant
+     * (prénom + nom + entité) et le libellé — Q4 : transparence par défaut
+     * entre membres. Aucune autre donnée personnelle n'est exposée.
+     */
+    public function availabilityRange(IndexRoomAvailabilityRequest $request): JsonResponse
+    {
+        $from = $request->from();
+        $to = $request->to()->addDay(); // borne haute exclusive
+        $viewer = $request->user();
+        $viewerId = $viewer->id;
+        $seesOccupants = $this->maySeeOccupants($viewer);
+
+        $rooms = $this->calendarRooms($request->roomIds());
+
+        /** @var Collection<int, Booking> $bookings */
+        $bookings = Booking::query()
+            ->whereIn('resource_id', $rooms->modelKeys())
+            ->where('status', BookingStatus::Confirmed->value)
+            ->where('starts_at', '<', $to)
+            ->where('ends_at', '>', $from)
+            ->with(['user.memberProfile.company', 'billable'])
+            ->orderBy('starts_at')
             ->get();
 
-        return ResourceResource::collection($rooms);
+        $slotsByRoom = $bookings->groupBy('resource_id');
+        $editableIds = $this->editableBookingIds($bookings, $viewerId);
+
+        return response()->json([
+            'from' => $request->from()->toDateString(),
+            'to' => $request->to()->toDateString(),
+            'rooms' => $rooms->map(fn (Resource $room): array => [
+                'id' => $room->id,
+                'name' => $room->name,
+                'type' => $room->type,
+                'capacity' => $room->capacity,
+                'is_bookable' => RoomResource::isBookableByMember($room),
+                'slots' => $slotsByRoom->get($room->id, collect())
+                    ->map(fn (Booking $booking): array => $this->slot($booking, $viewerId, $seesOccupants, $editableIds))
+                    ->values()
+                    ->all(),
+            ])->values()->all(),
+        ]);
     }
 
     /**
@@ -69,8 +114,7 @@ final class RoomController extends Controller
                 'ends_at' => $b->ends_at?->toIso8601String(),
             ]);
 
-        $isExternal = $request->user()?->can(Permission::CreatePaidBooking->value)
-            && ! $request->user()?->can(Permission::CreateOwnBooking->value);
+        $isExternal = $request->user()?->booksAsExternal() === true;
 
         $externalSlots = $isExternal
             ? array_map(fn (array $slot): array => [
@@ -84,8 +128,124 @@ final class RoomController extends Controller
             'date' => $date->toDateString(),
             'busy' => $busy,
             'external_slots' => $externalSlots,
-            'is_external' => (bool) $isExternal,
+            'is_external' => $isExternal,
         ]);
+    }
+
+    /**
+     * Salles affichées dans le calendrier : salles de réunion + salle
+     * événementielle, actives et en service, éventuellement filtrées.
+     *
+     * @param  list<int>  $onlyIds
+     * @return Collection<int, resource>
+     */
+    private function calendarRooms(array $onlyIds = []): Collection
+    {
+        return Resource::query()
+            ->whereIn('type', [ResourceType::MeetingRoom->value, ResourceType::EventRoom->value])
+            ->where('is_active', true)
+            ->where('is_out_of_service', false)
+            ->when($onlyIds !== [], fn ($query) => $query->whereKey($onlyIds))
+            ->orderBy('display_order')
+            ->get();
+    }
+
+    /**
+     * Créneau occupé exposé au calendrier. `booking_id` n'est renseigné que
+     * pour ses propres réservations (seules modifiables) ; l'occupant se limite
+     * au prénom + nom + entité (aucun email, aucun téléphone) et n'est montré
+     * qu'aux membres autorisés à voir l'identité des coworkers.
+     *
+     * @param  list<int>  $editableIds  réservations du membre encore modifiables
+     * @return array<string, mixed>
+     */
+    private function slot(Booking $booking, int $viewerId, bool $seesOccupants, array $editableIds): array
+    {
+        $isMine = $booking->user_id === $viewerId;
+        // Ses propres réservations restent toujours identifiables (c'est son
+        // information), même sans accès à l'identité des autres.
+        $identified = $seesOccupants || $isMine;
+
+        return [
+            'booking_id' => $isMine ? $booking->id : null,
+            'is_mine' => $isMine,
+            // Le portail n'ouvre la modale « Modifier / Supprimer » que si la
+            // réservation est encore modifiable (délai Q22, comparé côté SQL).
+            'cancellable' => in_array($booking->id, $editableIds, true),
+            'starts_at' => $booking->starts_at?->toIso8601String(),
+            'ends_at' => $booking->ends_at?->toIso8601String(),
+            'label' => $identified ? $booking->title : null,
+            'occupant' => $identified ? $this->occupant($booking) : null,
+        ];
+    }
+
+    /**
+     * Identifiants des réservations du membre encore modifiables (créneau pas
+     * encore commencé) — UNE requête pour toute la plage, comparaison côté SQL
+     * (piège timezone : `starts_at->isFuture()` en PHP ment sur les lignes
+     * fraîches).
+     *
+     * @param  Collection<int, Booking>  $bookings
+     * @return list<int>
+     */
+    private function editableBookingIds(Collection $bookings, int $viewerId): array
+    {
+        $mine = $bookings->where('user_id', $viewerId)->modelKeys();
+
+        if ($mine === []) {
+            return [];
+        }
+
+        /** @var list<int> */
+        return Booking::query()->whereKey($mine)->startsLater()->pluck('id')->all();
+    }
+
+    /**
+     * Le membre a-t-il le droit de voir QUI occupe un créneau ? Q4 (transparence
+     * entre membres) s'arrête au périmètre de l'annuaire : l'external n'accède à
+     * aucune information d'identité (PRD §3.5.9 / Q16), alors qu'il voit bien le
+     * calendrier pour choisir un créneau libre.
+     */
+    private function maySeeOccupants(User $user): bool
+    {
+        return $user->isAdmin() || $user->can(Permission::ViewAnnuaire->value);
+    }
+
+    /**
+     * Occupant affiché au survol (Q4) : le membre réservant, ou — pour une résa
+     * posée par l'admin au nom d'une entité — l'entité juridique.
+     *
+     * `kind` distingue un membre (dont le nom peut être masqué par l'opt-out
+     * annuaire) d'une entité juridique (résa posée par l'admin) : sans lui, le
+     * portail ne saurait pas quoi afficher à la place du nom.
+     *
+     * @return array{kind: string, first_name: ?string, last_name: ?string, company_name: ?string}|null
+     */
+    private function occupant(Booking $booking): ?array
+    {
+        $user = $booking->user;
+
+        if ($user instanceof User) {
+            // Opt-out annuaire respecté : le nom disparaît, l'entité reste
+            // (coordination d'équipe, PRD §3.5.8). Règle isolée ici : elle est
+            // en attente d'arbitrage et doit rester facile à inverser.
+            $discreet = $user->memberProfile?->show_in_directory === false;
+
+            return [
+                'kind' => 'member',
+                'first_name' => $discreet ? null : $user->first_name,
+                'last_name' => $discreet ? null : $user->last_name,
+                'company_name' => $user->memberProfile?->company?->name,
+            ];
+        }
+
+        $billable = $booking->billable;
+
+        if ($billable instanceof Company) {
+            return ['kind' => 'entity', 'first_name' => null, 'last_name' => null, 'company_name' => $billable->name];
+        }
+
+        return null;
     }
 
     /**

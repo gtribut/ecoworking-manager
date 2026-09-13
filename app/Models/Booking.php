@@ -33,6 +33,15 @@ class Booking extends Model
     use Auditable, HasFactory;
 
     /**
+     * Le créneau n'a-t-il pas encore commencé ? Renseigné PAR LOT depuis l'API
+     * (une requête pour toute la page, cf. BookingController), jamais persisté :
+     * la comparaison doit se faire côté SQL — une ligne fraîchement écrite est
+     * relue décalée du fuseau (piège timezone du dépôt), donc `starts_at` relu
+     * en PHP ment sur `isFuture()`.
+     */
+    public ?bool $startsLater = null;
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -59,7 +68,7 @@ class Booking extends Model
      */
     protected function auditLogAttributes(): array
     {
-        return ['status', 'resource_id', 'starts_at', 'ends_at', 'price_ht', 'cancelled_at', 'cancel_reason'];
+        return ['status', 'resource_id', 'starts_at', 'ends_at', 'price_ht', 'ticket_id', 'cancelled_at', 'cancel_reason'];
     }
 
     /** @return BelongsTo<User, $this> */
@@ -92,5 +101,16 @@ class Booking extends Model
     public function scopeConfirmed(Builder $query): void
     {
         $query->where('status', BookingStatus::Confirmed->value);
+    }
+
+    /**
+     * Créneaux pas encore commencés — comparaison CÔTÉ SQL (jamais
+     * `starts_at->isFuture()` en PHP : piège timezone, cf. `$startsLater`).
+     *
+     * @param  Builder<Booking>  $query
+     */
+    public function scopeStartsLater(Builder $query): void
+    {
+        $query->where('starts_at', '>', now());
     }
 }

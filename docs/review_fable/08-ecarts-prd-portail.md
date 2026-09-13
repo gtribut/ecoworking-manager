@@ -18,8 +18,8 @@ Légende : ❌ absent · ⚠️ partiel · 🔀 fait autrement que le PRD · �
 
 Par ordre d'impact utilisateur, après corrections du 13/09 :
 
-1. **Calendrier des salles (§3.5.2)** : ce n'est pas un calendrier. Une salle à la fois, un seul jour, liste de créneaux d'1 h, occupants anonymes (ni nom, ni entité, ni libellé, pas de distinction de ses propres résas), pas de navigation semaine, **salle événementielle invisible**. Le PRD en fait l'outil de coordination d'équipe « temps réel ».
-2. **Réservation resident/additional (§3.5.3)** : créneaux figés à 1 h entre 8 h et 20 h. Pas de journée / demi-journée / créneau personnalisé, pas de résa nocturne alors que le back accepte 24/7. **Aucune modification** de résa (ni API ni UI) : annuler + recréer.
+1. ✅ *soldé 13/09 (lot A, `e14306c`)* — **Calendrier des salles (§3.5.2)** : ce n'était pas un calendrier. Une salle à la fois, un seul jour, liste de créneaux d'1 h, occupants anonymes (ni nom, ni entité, ni libellé, pas de distinction de ses propres résas), pas de navigation semaine, **salle événementielle invisible**. Le PRD en fait l'outil de coordination d'équipe « temps réel ».
+2. ✅ *soldé 13/09 (lot A, `e14306c`)* — **Réservation resident/additional (§3.5.3)** : créneaux figés à 1 h entre 8 h et 20 h. Pas de journée / demi-journée / créneau personnalisé, pas de résa nocturne alors que le back accepte 24/7. **Aucune modification** de résa (ni API ni UI) : annuler + recréer.
 3. ✅ *soldé 13/09 (lot B)* — **Navigation non filtrée par rôle (§2.5)** : « Factures » visible pour tous (page vide trompeuse pour un resident sans rôle billing), « Présence » proposée aux `additional` (qui n'ont pas de bureau), « Réservations/Actualités » pour un `billing_contact` pur.
 4. **Absences (§3.4.6)** : récurrence hebdo **non bornable** (date de fin désactivée), pas d'édition, pas de champ note, liste sans filtre « à venir », bureau attitré et mini-plan non affichés.
 5. **Factures (§3.6.2)** : aucun tri sélectionnable, aucun filtre (mois, année, statut), aucune recherche par numéro. Bloc « Mon entreprise » : mode de paiement et IBAN-4 absents, adresse tronquée, entité déduite du profil et non des entités facturables.
@@ -127,39 +127,39 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 
 | Exigence PRD | Statut | Constat |
 |---|---|---|
-| Salle événementielle visible en lecture seule | ❌ | `RoomController::index` filtre `meeting_room` → jamais renvoyée |
-| Clic salle event → « contactez-nous » + mailto | 🔮 ❌ | Aucun `mailto:` dans `features/bookings` |
-| 4 salles affichées simultanément | ❌ | `<Select>` mono-salle (`BookingForm.tsx:131-147`) ; dispo chargée par salle |
-| Filtre multi-salles | ❌ | Sélection unique |
-| Vue semaine par défaut | ❌ | Vue = un seul jour, liste de créneaux d'1 h |
-| Vue jour (défaut mobile) | 🔀 | Seule vue existante, sous forme de liste, pas de grille |
-| 🟡 Couleur par ressource | 🔮 ❌ | `ResourceResource` exclut la couleur |
-| Mes résas mises en avant | ❌ | `busy[]` sans propriétaire → tout est « Occupé » |
-| Hover/clic résa des autres = prénom + nom + entité + libellé (Q4) | ❌ | Rien d'exposé dans `busy` (`RoomController.php:63-66`) |
-| Heures 24/24 resident/additional | ⚠️ | Back OK ; front `HOURS = 8..19` → 8 h–20 h seulement |
-| 🟡 Toggle « voir 24 h » | 🔮 ❌ | Absent |
-| Boutons semaine préc./suiv./aujourd'hui | ❌ | Aucune navigation temporelle du calendrier |
-| Date picker vers une semaine | ⚠️ | `<input type=date>` vers un **jour** |
+| Salle événementielle visible en lecture seule | ✅ *soldé 13/09 (lot A, `e14306c`)* | `RoomController::index` renvoie la salle event avec `is_bookable: false` (`RoomResource`) |
+| Clic salle event → « contactez-nous » + mailto | ✅ *soldé 13/09 (lot A, `e14306c`)* | Message + `mailto:` sujet « Réservation salle événementielle » |
+| 4 salles affichées simultanément | ✅ *soldé 13/09 (lot A, `e14306c`)* | `GET /api/rooms/availability` multi-salles + grille `RoomsCalendar` |
+| Filtre multi-salles | ✅ *soldé 13/09 (lot A, `e14306c`)* | Cases à cocher par salle, transmises en `rooms[]` à l'API |
+| Vue semaine par défaut | ✅ *soldé 13/09 (lot A, `e14306c`)* | Grille jours × heures (défaut desktop) |
+| Vue jour (défaut mobile) | ✅ *soldé 13/09 (lot A, `e14306c`)* | Grille salles × heures, défaut mobile via `matchMedia` |
+| 🟡 Couleur par ressource | 🔮 🔀 | Palette **fixe** côté front (couleur + numéro, jamais la couleur seule) ; couleur configurable en admin restée hors MVP |
+| Mes résas mises en avant | ✅ *soldé 13/09 (lot A, `e14306c`)* | `is_mine` → couleur primaire + seule cellule modifiable |
+| Hover/clic résa des autres = prénom + nom + entité + libellé (Q4) | ✅ *soldé 13/09 (lot A, `e14306c`, `7e93083`)* | `occupant` + `label` exposés **aux membres détenant `view-annuaire`** ; panneau de détail au survol **et** au focus clavier. Deux restrictions ajoutées après review : l'`external` ne reçoit aucune identité (PRD §3.5.9 / Q16) et l'opt-out annuaire masque le nom en conservant l'entité — ⏸️ **à valider par Guillaume** |
+| Heures 24/24 resident/additional | ✅ *soldé 13/09 (lot A, `e14306c`)* | 8 h-20 h par défaut, 0 h-24 h via le toggle |
+| 🟡 Toggle « voir 24 h » | ✅ *soldé 13/09 (lot A, `e14306c`)* | Case « Voir 24 h » (masquée pour l'external, borné 9 h-18 h) |
+| Boutons semaine préc./suiv./aujourd'hui | ✅ *soldé 13/09 (lot A, `e14306c`)* | Boutons adaptés à la vue (semaine / jour) |
+| Date picker vers une semaine | ✅ *soldé 13/09 (lot A, `e14306c`)* | « Aller à la semaine du » → semaine de la date choisie |
 
 ### §3.5.3 — Flow de réservation
 
 | Exigence PRD | Statut | Constat |
 |---|---|---|
-| Clic sur un créneau → modal pré-remplie | 🔀 | Salle choisie avant, clic réserve immédiatement (pas de modal) |
-| Toggle Journée / Matin / Après-midi / Créneau perso | ❌ | Durée figée à 1 h pour resident ; le back accepte `starts_at/ends_at` libres |
+| Clic sur un créneau → modal pré-remplie | ✅ *soldé 13/09 (lot A, `e14306c`)* | `BookingDialog` : salle, date et heure pré-remplies |
+| Toggle Journée / Matin / Après-midi / Créneau perso | ✅ *soldé 13/09 (lot A, `e14306c`)* | Radios ; l'external n'a que les deux demi-journées |
 | Toast succès | ⚠️ | `<Alert>` inline |
-| Conflit : message + **suggestion créneau proche** | ⚠️ | Message 409 OK, aucune suggestion |
-| External sans ticket : message « contacter Ecoworking » | ⚠️ | Erreur serveur brute au clic : « …ticket « meeting_room_half_day »… » (valeur enum), pas de mailto ; solde salle non consulté avant |
+| Conflit : message + **suggestion créneau proche** | ✅ *soldé 13/09 (lot A, `e14306c`)* | 409 + créneau libre le plus proche calculé depuis la dispo chargée |
+| External sans ticket : message « contacter Ecoworking » | ✅ *soldé 13/09 (lot A, `e14306c`)* | Solde consulté avant d'ouvrir la modale, message + `mailto:` ; côté serveur, libellé métier au lieu de la valeur d'enum |
 | Droits : rôle **+ abonnement actif** | ⚠️ | Aucune vérification d'abonnement (`BookingPolicy`, `StoreBookingRequest`, services) |
 
 ### §3.5.5 / §3.5.7 — Modifier, supprimer, liste
 
 | Exigence PRD | Statut | Constat |
 |---|---|---|
-| Modal « Modifier / Supprimer » sur sa résa | 🔀 | Bouton « Annuler » par ligne, pas de modal |
-| **Modification** d'une résa | ❌ | Aucune route PATCH/PUT ; `BookingService::update` réservé back-office |
-| Liste « Mes **prochaines** réservations » chronologique | 🔀 | Toutes les résas (passées, annulées) en ordre décroissant (`BookingController@index` par défaut) — le filtre `upcoming` ajouté le 13/09 ne sert que le dashboard |
-| External : ticket consommé indiqué par résa | ⚠️ | Booléen « (payante) » seulement, pas d'identifiant de ticket |
+| Modal « Modifier / Supprimer » sur sa résa | ✅ *soldé 13/09 (lot A, `e14306c`)* | Depuis le calendrier **et** depuis la liste |
+| **Modification** d'une résa | ✅ *soldé 13/09 (lot A, `e14306c`)* | `PATCH /api/bookings/{booking}` (mêmes règles que la création, ticket external restitué/re-consommé) |
+| Liste « Mes **prochaines** réservations » chronologique | ✅ *soldé 13/09 (lot A, `e14306c`)* | Vue par défaut = `upcoming=1` ; onglet « Historique » = `past=1` paginé |
+| External : ticket consommé indiqué par résa | ✅ *soldé 13/09 (lot A, `e14306c`)* | Colonne « Ticket » : nº + type |
 
 ### §3.5.6 — Mes tickets
 
@@ -268,4 +268,11 @@ Regrouper en lots, chacun = une branche + tests :
 
 | Lot | Statut | Commits | Notes |
 |---|---|---|---|
+| A — Calendrier salles | ✅ livré 13/09 (branche `feature/portail-lot-a`) | `241405a`, `6f6f512`, `e14306c`, `3f5f320`, `7e93083`, `74eff8a` | 501 Pest / 121 Vitest verts (Playwright non exécuté : specs `bookings`/`a11y` adaptées, à rejouer). Corrigé au passage : `BookingPolicy` comparait `starts_at->isFuture()` en PHP → une résa **déjà commencée** restait annulable ~2 h (piège timezone). Reste **hors lot** : vérification d'**abonnement actif** (§3.5.3) non implémentée ; décalage de fuseau à l'écriture (cf. « Écarts hors lot ») |
 | B — Rôles & navigation | ✅ mergé 13/09 | `008e3d3` (merge) | 477 Pest / 99 Vitest / e2e 19-20 verts. Écarts hors lot relevés : `/api/announcements`, `/api/tickets`, `/api/desks/*` sans permission de rôle (auto-scopés) ; route `/tickets` non gardée ; e2e « session expirée » flaky **sur main aussi** (échoue seul, dépend de l'ordre des specs) |
+
+### Écarts hors lot découverts (non corrigés)
+
+- **Décalage de fuseau à l'écriture des `timestamptz`** (prolonge le piège déjà connu sur les *lectures*) : la session Postgres est en `UTC` alors que l'application est en `Europe/Paris`, et Eloquent sérialise un `Carbon` **sans le convertir**. Conséquence : une écriture faite depuis un `Carbon` en heure de Paris (`now()`, `halfDayBounds()` pour les demi-journées external, seeders, back-office Filament) est stockée **décalée de 2 h**, alors qu'une écriture faite depuis un `Carbon` en UTC (ce qu'envoie la SPA, `toISOString()`) est correcte. Le round-trip reste cohérent en base (les comparaisons SQL sont justes), mais l'ISO renvoyée au portail est fausse de +2 h pour les lignes du premier type → le **calendrier affichera les résas external et celles créées par l'admin/les seeders décalées**. Correctif candidat : `'timezone' => 'Europe/Paris'` sur la connexion `pgsql` (`config/database.php`) — change l'interprétation de **toutes** les données existantes, donc chantier à part (règle d'arrêt CLAUDE.md §10).
+- **Opt-out annuaire dans le calendrier** (⏸️ décision en attente) : un membre `show_in_directory = false` apparaît « Coworker (souhaite rester discret) · <entité> » sur ses créneaux. Codé après la review, isolé dans `RoomController::occupant()` — facile à inverser si Guillaume préfère la transparence totale de Q4 (le nom réapparaît) ou l'anonymat complet (entité masquée aussi).
+- **Abonnement actif non vérifié à la réservation** (§3.5.3, déjà listé plus haut) : hors périmètre du lot A, à arbitrer (quelle définition d'« abonnement actif » ? blocage dur ou avertissement ?).

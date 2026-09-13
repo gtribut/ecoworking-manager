@@ -30,3 +30,25 @@ export function getApiErrorMessage(error: unknown, fallback = 'Une erreur est su
   }
   return fallback
 }
+
+/**
+ * Erreurs de validation Laravel (422) indexées par champ, pour les afficher
+ * sous les champs concernés (`aria-describedby`). Vide si la réponse n'est pas
+ * une 422 avec un corps de validation.
+ */
+export function getApiFieldErrors(error: unknown): Record<string, string> {
+  if (!(error instanceof AxiosError) || error.response?.status !== 422) {
+    return {}
+  }
+  const body = error.response.data as LaravelErrorBody | undefined
+  const entries = Object.entries(body?.errors ?? {}).flatMap(([field, messages]) => {
+    const first = messages[0]
+    return first === undefined ? [] : [[field, first] as const]
+  })
+  return Object.fromEntries(entries)
+}
+
+/** Statut HTTP d'une erreur API, si disponible. */
+export function getApiStatus(error: unknown): number | null {
+  return error instanceof AxiosError ? (error.response?.status ?? null) : null
+}

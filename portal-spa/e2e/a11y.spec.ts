@@ -12,16 +12,6 @@ import { expect, test } from './support/fixtures'
  * via `colorScheme`.
  */
 
-/** Prochain jour ouvré à `offsetDays` d'aujourd'hui au moins (format YYYY-MM-DD). */
-function nextWeekday(offsetDays: number): string {
-  const date = new Date()
-  date.setDate(date.getDate() + offsetDays)
-  while (date.getDay() === 0 || date.getDay() === 6) {
-    date.setDate(date.getDate() + 1)
-  }
-  return date.toISOString().slice(0, 10)
-}
-
 test.describe('Audit a11y — écrans sans spec dédiée', () => {
   test.beforeEach(async ({ page }) => {
     await loginViaApi(page)
@@ -84,10 +74,10 @@ test.describe('Audit a11y — thème sombre', () => {
     await page.goto('/bookings')
     await expect(page.getByRole('heading', { level: 1, name: 'Réservations' })).toBeVisible()
 
-    // Grille de créneaux affichée : c'est la partie dense/riche de l'écran.
-    await page.getByLabel('Salle', { exact: true }).selectOption({ index: 1 })
-    await page.getByLabel('Date', { exact: true }).fill(nextWeekday(7))
-    await expect(page.getByRole('heading', { name: /Créneaux du/ })).toBeVisible()
+    // Grille du calendrier affichée : c'est la partie dense/riche de l'écran.
+    await expect(page.getByRole('heading', { name: 'Calendrier des salles' })).toBeVisible()
+    await expect(page.getByRole('table').first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Vue liste/ })).toBeVisible()
     await expect(page.locator('html.dark')).toBeAttached()
     await checkA11y('bookings-dark')
   })

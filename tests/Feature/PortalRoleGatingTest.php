@@ -142,6 +142,7 @@ it('refuse les salles et réservations (403) à un contact facturation pur', fun
 
     $this->actingAs($user)->getJson('/api/rooms')->assertForbidden();
     $this->actingAs($user)->getJson("/api/rooms/{$room->id}/availability?date={$date}")->assertForbidden();
+    $this->actingAs($user)->getJson("/api/rooms/availability?from={$date}&to={$date}")->assertForbidden();
     $this->actingAs($user)->getJson('/api/bookings')->assertForbidden();
 });
 
@@ -152,6 +153,7 @@ it('laisse les salles et réservations aux rôles d\'usage', function (string $t
 
     $this->actingAs($user)->getJson('/api/rooms')->assertOk();
     $this->actingAs($user)->getJson("/api/rooms/{$room->id}/availability?date={$date}")->assertOk();
+    $this->actingAs($user)->getJson("/api/rooms/availability?from={$date}&to={$date}")->assertOk();
     $this->actingAs($user)->getJson('/api/bookings')->assertOk();
 })->with(['resident', 'additional', 'external', 'staff']);
 

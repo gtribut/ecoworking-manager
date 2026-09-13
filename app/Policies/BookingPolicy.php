@@ -39,12 +39,23 @@ final class BookingPolicy
         }
 
         return $user->id === $booking->user_id
+            && $user->can(Permission::ManageOwnBooking->value)
             && $booking->status !== BookingStatus::Cancelled
-            && $booking->starts_at?->isFuture() === true;
+            && $this->startsLater($booking);
     }
 
     public function delete(User $user, Booking $booking): bool
     {
         return $this->update($user, $booking);
+    }
+
+    /**
+     * Le créneau n'a-t-il pas encore commencé (délai d'annulation Q22 : jusqu'à
+     * l'heure de début) ? Comparaison côté SQL : une ligne fraîchement écrite
+     * est relue décalée du fuseau, `starts_at->isFuture()` en PHP mentirait.
+     */
+    private function startsLater(Booking $booking): bool
+    {
+        return Booking::query()->whereKey($booking->getKey())->startsLater()->exists();
     }
 }

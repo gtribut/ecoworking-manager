@@ -22,7 +22,7 @@ Par ordre d'impact utilisateur, après corrections du 13/09 :
 2. ✅ *soldé 13/09 (lot A, `e14306c`)* — **Réservation resident/additional (§3.5.3)** : créneaux figés à 1 h entre 8 h et 20 h. Pas de journée / demi-journée / créneau personnalisé, pas de résa nocturne alors que le back accepte 24/7. **Aucune modification** de résa (ni API ni UI) : annuler + recréer.
 3. ✅ *soldé 13/09 (lot B)* — **Navigation non filtrée par rôle (§2.5)** : « Factures » visible pour tous (page vide trompeuse pour un resident sans rôle billing), « Présence » proposée aux `additional` (qui n'ont pas de bureau), « Réservations/Actualités » pour un `billing_contact` pur.
 4. ✅ *soldé 13/09 (lot C, sauf mini-plan)* — **Absences (§3.4.6)** : récurrence hebdo **non bornable** (date de fin désactivée), pas d'édition, pas de champ note, liste sans filtre « à venir », bureau attitré et mini-plan non affichés.
-5. **Factures (§3.6.2)** : aucun tri sélectionnable, aucun filtre (mois, année, statut), aucune recherche par numéro. Bloc « Mon entreprise » : mode de paiement et IBAN-4 absents, adresse tronquée, entité déduite du profil et non des entités facturables.
+5. ✅ *soldé 13/09 (lot D, sauf colonne libellé)* — **Factures (§3.6.2)** : aucun tri sélectionnable, aucun filtre (mois, année, statut), aucune recherche par numéro. Bloc « Mon entreprise » : mode de paiement et IBAN-4 absents, adresse tronquée, entité déduite du profil et non des entités facturables.
 6. **Annuaire/plan (§3.7)** : aucun tooltip au survol (identité seulement au clic ou via aria-label), photos jamais rendues, staff opt-in sans mention « Équipe Ecoworking ».
 7. **External (§3.5.9, §3.5.6)** : impossible de **voir ou annuler** ses bureaux nomades réservés (route DELETE et hook existent, aucune page) ; pas de plan SVG filtré ; « Mes tickets » sans détail par ticket ; messages « 0 ticket » techniques et sans mailto.
 8. **Mot de passe (§3.4.2)** : aucun changement de mot de passe depuis le portail (back prêt : `PUT /user/password`).
@@ -41,7 +41,7 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 | Marquer son bureau vacant : resident + staff, **additional ❌** | ✅ *soldé 13/09 (lot B, `008e3d3`)* | `GET /api/user` expose `has_desk` ; `isResident = has_desk` ; `DeskAbsencePolicy::viewAny/create` = bureau attitré (403 sinon) |
 | Factures : billing_contact uniquement, module masqué sinon | ✅ *soldé 13/09 (lot B, `008e3d3`)* | Nav + route gatées par `view-billing-section` ; `InvoicePolicy::viewAny` / `AdministrativeDocumentPolicy::viewAny` → 403 hors rôle billing (plus de liste vide) |
 | S'inscrire aux events : billing_contact pur ❌ | ✅ *soldé 13/09 (lot B, `008e3d3`)* | Lecture des actualités conservée pour tous (le billing pur est une audience des annonces) ; seul le bouton d'inscription dépend de `register-event` (déjà le cas) |
-| Voir son entité juridique (lecture seule) | ⚠️ | Pas de module dédié : bloc dans le profil uniquement (cf. §3.6.4) |
+| Voir son entité juridique (lecture seule) | ✅ *soldé 13/09 (lot D, `94515c1`)* | Bloc entité dans le module administratif (Factures) et le profil, via `GET /api/billing/entity` |
 
 ## §1.4 / §3.1 — Identité, principes UI, RGAA
 
@@ -95,8 +95,8 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 | Présentation : éditeur **markdown** (max 500) | ⚠️ | `<Textarea>` brut, aucun rendu markdown (annuaire affiche le texte plat) |
 | 🟡 Avatar initiales si pas de photo | ⚠️ | Présent dans l'annuaire, absent de la page profil |
 | 🟡 Cellar + Intervention Image (80/200/400) | 🔮 ❌ | Absent |
-| Adresse entreprise complète (rue, CP, ville, **pays**) | ⚠️ | `line2` et `country` exposés mais non rendus (`ProfilePage.tsx` CompanyBlock) |
-| 🟡 « Mon entreprise » vs « Mes données de facturation » selon entité | 🔮 ❌ | Titre codé en dur ; `entity_type` exposé mais inutilisé |
+| Adresse entreprise complète (rue, CP, ville, **pays**) | ✅ *soldé 13/09 (lot D, `94515c1`)* | `EntityBlock` rend `line2` + pays en clair |
+| 🟡 « Mon entreprise » vs « Mes données de facturation » selon entité | ✅ *soldé 13/09 (lot D, `94515c1`)* | Titre selon `entity_type` (`individual`) |
 | Feedback par **toast** | 🔀 | `<Alert>` inline |
 | Texte d'aide email « procédure dédiée » | ⚠️ | Vague : dire « contactez Ecoworking » (décision D) |
 | Audit : mot de passe | ❌ | Aucun événement (valeur exclue à raison, mais pas d'entrée « password changed ») |
@@ -189,15 +189,15 @@ Points de conformité / sécurité à noter : audit log incomplet (`MemberProfil
 |---|---|---|
 | Module masqué de la nav sans rôle billing | ✅ *soldé 13/09 (lot B, `008e3d3`)* | Cf. §2.5 |
 | Colonne libellé / nom de la facture | ❌ | Aucune colonne ni donnée (pas de label sur `invoices`) |
-| Tri date / numéro / statut | ⚠️ | Défaut date desc OK ; aucun tri sélectionnable (`InvoiceController@index` ne lit que `page`) |
-| Filtres mois, année, statut ; recherche numéro | ❌ | Aucun |
+| Tri date / numéro / statut | ✅ *soldé 13/09 (lot D, `94515c1`)* | `IndexInvoicesRequest` (`sort`/`direction`), en-têtes `aria-sort`, annonce `aria-live` ; tri statut alphabétique (acté MVP) |
+| Filtres mois, année, statut ; recherche numéro | ✅ *soldé 13/09 (lot D, `94515c1`)* | Combinables, `ilike` échappé, filtres dans l'URL ; périmètre d'isolation inchangé (test « aucun filtre n'élargit ») |
 | 🟡 URL `/api/invoices/{id}/download` | 🔀 | `/pdf` (protégé auth + policy) |
-| Documents administratifs en nom propre | ⚠️ | `company_id` obligatoire → impossible pour une facturation en nom propre (contrairement aux factures) |
-| Bloc « Mon entreprise » **dans le module administratif** | 🔀 | Uniquement dans le profil (§3.4.3), rien dans factures/documents |
-| Mode de paiement préféré | ❌ | En DB, absent de `CompanyResource` |
-| 🟡 IBAN 4 derniers chiffres | ❌ | Exclu volontairement de `CompanyResource` |
-| Adresse complète | ⚠️ | `line2`, `country` non rendus |
-| Entité du billing_contact pur / multi-entités | ⚠️ | `ProfileController` prend `memberProfile->company` seulement, alors que factures/documents couvrent `linkedCompanyIds()` |
+| Documents administratifs en nom propre | ✅ *non-écart (lot D)* | L'entité perso EST une ligne `companies` (`entity_type = individual`) : rien à faire. ⏸️ Reste : `invoices.billable_type = 'user'` contredit l'acté §3.3.2 (décision Guillaume : supprimer la branche ou acter les deux modèles) |
+| Bloc « Mon entreprise » **dans le module administratif** | ✅ *soldé 13/09 (lot D, `94515c1`)* | `EntityBlock` rendu dans Factures (avec données bancaires) et profil (sans, §3.4.3) |
+| Mode de paiement préféré | ✅ *soldé 13/09 (lot D, `94515c1`)* | `CompanyResource` sous `CompanyPolicy::viewBillingDetails` (contact facturation explicite de l'entité) |
+| 🟡 IBAN 4 derniers chiffres | ✅ *soldé 13/09 (lot D, `94515c1`)* | `iban_last4` seul, jamais l'IBAN complet ni le mandat (assertion négative sur la réponse brute) |
+| Adresse complète | ✅ *soldé 13/09 (lot D, `94515c1`)* | Rendue |
+| Entité du billing_contact pur / multi-entités | ✅ *soldé 13/09 (lot D, `94515c1`)* | `GET /api/billing/entity` = entités où le user est contact facturation explicite (un bloc par entité) |
 
 ## §3.7 — Annuaire & plan des étages
 
@@ -272,6 +272,7 @@ Regrouper en lots, chacun = une branche + tests :
 | B — Rôles & navigation | ✅ mergé 13/09 | `008e3d3` (merge) | 477 Pest / 99 Vitest / e2e 19-20 verts. Écarts hors lot relevés : `/api/announcements`, `/api/tickets`, `/api/desks/*` sans permission de rôle (auto-scopés) ; route `/tickets` non gardée ; e2e « session expirée » flaky **sur main aussi** (échoue seul, dépend de l'ordre des specs) |
 | A — Calendrier salles | ✅ mergé 13/09 | `967a60e` (merge ; `241405a`, `6f6f512`, `e14306c`, `3f5f320`, `7e93083`, `74eff8a`) | 507 Pest / 128 Vitest / e2e 23/23. Review Opus : 9 findings corrigés (occupant borné à `view-annuaire` + opt-out, `requires_admin` côté écriture, infobulle → panneau détail, vue liste 7 jours, `cancellable` par créneau, clés TanStack, ticket offert non débité, suggestion 409 sur dispo fraîche, erreurs 422 routées). **À trancher (Guillaume)** : ⏸️ règle opt-out annuaire dans le calendrier (implémenté : nom masqué, entité conservée) ; ⏸️ fuseau Postgres (session UTC vs app Paris : `now()` lié +2 h, cf. sonde 13/09) ; bornes Journée 9-18 / Matin 9-13 / AM 14-18 résidents ; abonnement actif non vérifié à la résa (§3.5.3) |
 | C — Absences | ✅ mergé 13/09 | `1d1dd51` (merge ; `607b832`, `2f5ea01`, `00edbfd`, `f3fa7c2`, `afa5fc1`, `7a54be7`) | 534 Pest / 135 Vitest / e2e 22-23. Review Opus : 10 findings, 9 corrigés (scope NULL-safe, `canAccess`, `update` aligné sur `>=`, faux positif audit booléens, `notes` admin internes, focus, messages, test suppression tracée, docblock PATCH). Reporté : mini-plan du bureau (endpoint dédié à décider). Hors lot relevé : `DeskOccupationPolicy::viewAny/create` sans condition de rôle (→ lot E) ; notes des absences `DemoSeeder` sans `created_by` invisibles côté portail (voulu) |
+| D — Factures & entreprise | ✅ mergé 13/09 | `94515c1` (merge ; `cfbd489`, `f9426d9`, `b7a7fea`, `9358d0f`, `5a878d5`, `54daa65`, `994046c`, `cc9fc49`, `73256a3`, `a821b0a`) | 563 Pest / 150 Vitest / e2e 24/24. Review Opus : 8 findings, 7 corrigés (données bancaires réservées au contact facturation explicite de l'entité — `User::billingContactCompanyIds()` —, focus recherche, `nullable` sur filtres vides, aide mois, mémoïsation `linkedCompanyIds`, pas d'IBAN sur le profil, a11y tri). **À trancher (Guillaume)** : ⏸️ `invoices.billable_type = 'user'` vs acté « tout passe par une entité » ; colonne libellé de facture (schéma) ; périmètre factures `linkedCompanyIds()` inclut l'entité du profil membre (pré-existant, laissé tel quel) |
 
 ### Écarts hors lot découverts (non corrigés)
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\Permission;
 use App\Models\Invoice;
 use App\Models\User;
 
@@ -15,9 +16,10 @@ use App\Models\User;
  */
 final class InvoicePolicy
 {
+    /** Module administratif du portail (PRD §2.5/§3.6.1) : rôle billing_contact. */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->isAdmin() || $user->can(Permission::ViewBillingSection->value);
     }
 
     public function view(User $user, Invoice $invoice): bool

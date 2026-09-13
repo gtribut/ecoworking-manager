@@ -7,9 +7,13 @@ use App\Models\Contact;
 use App\Models\Invoice;
 use App\Models\MemberProfile;
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Storage;
 
 /** C4.3 — Endpoints factures (liste scopée + PDF). Isolation = InvoicePolicy (C2.4). */
+beforeEach(function () {
+    $this->seed(PermissionSeeder::class); // câble rôles → permissions (view-billing-section)
+});
 
 /** Crée un contact facturation rattachant $user à $company. */
 function apiBillingContactFor(Company $company): User

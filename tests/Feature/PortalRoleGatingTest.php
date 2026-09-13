@@ -170,6 +170,19 @@ it('refuse factures et documents administratifs (403) sans rôle billing_contact
     $this->actingAs($user)->getJson('/api/documents/administrative')->assertForbidden();
 })->with(['resident', 'additional', 'external', 'staff']);
 
+it('gate le module administratif par Policy (viewAny), pas par un test de rôle inline', function () {
+    $billing = gatingBillingOnly();
+    $resident = User::factory()->resident()->create();
+    $admin = User::factory()->admin()->create();
+
+    expect($billing->can('viewAny', Invoice::class))->toBeTrue()
+        ->and($billing->can('viewAny', AdministrativeDocument::class))->toBeTrue()
+        ->and($resident->can('viewAny', Invoice::class))->toBeFalse()
+        ->and($resident->can('viewAny', AdministrativeDocument::class))->toBeFalse()
+        ->and($admin->can('viewAny', Invoice::class))->toBeTrue()
+        ->and($admin->can('viewAny', AdministrativeDocument::class))->toBeTrue();
+});
+
 it('ouvre factures et documents administratifs au contact facturation', function () {
     $company = Company::factory()->create();
     $user = gatingBillingOnly($company);

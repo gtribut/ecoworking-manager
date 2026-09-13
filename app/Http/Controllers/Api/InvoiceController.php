@@ -29,7 +29,7 @@ final class InvoiceController extends Controller
 
         // Module masqué de la nav sans rôle billing (PRD §2.5/§3.6.1) : un
         // membre sans ce rôle reçoit un refus explicite, pas une liste vide.
-        abort_unless($user->isAdmin() || $user->isBillingContact(), 403, 'Module de facturation réservé aux contacts facturation.');
+        Gate::authorize('viewAny', Invoice::class);
 
         $query = Invoice::query()
             ->whereNotNull('number') // jamais de brouillon côté membre

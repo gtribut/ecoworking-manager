@@ -220,8 +220,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function hasAssignedDesk(): bool
     {
         return $this->memberProfile()
-            ->whereNotNull('desk_id')
-            ->whereHas('desk', fn (Builder $query) => $query->where('type', ResourceType::Desk->value))
+            ->whereHas('desk', fn (Builder $query) => $query->ofType(ResourceType::Desk))
             ->exists();
     }
 

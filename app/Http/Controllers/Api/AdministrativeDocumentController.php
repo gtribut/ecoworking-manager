@@ -28,6 +28,9 @@ final class AdministrativeDocumentController extends Controller
     {
         $user = $request->user();
 
+        // Même règle que les factures (PRD §2.5/§3.6.1) : hors rôle billing, 403.
+        Gate::authorize('viewAny', AdministrativeDocument::class);
+
         $query = AdministrativeDocument::query()
             ->with('company')
             ->orderByDesc('document_date')

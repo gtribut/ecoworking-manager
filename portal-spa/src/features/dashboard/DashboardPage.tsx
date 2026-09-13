@@ -8,6 +8,7 @@ import { DashboardUpcomingBookings } from '@/features/bookings/DashboardUpcoming
 import { DashboardDocumentsToValidate } from '@/features/documents/DashboardDocumentsToValidate'
 import { DashboardInvoices } from '@/features/invoices/DashboardInvoices'
 import { usePageTitle } from '@/lib/usePageTitle'
+import { cn } from '@/lib/utils'
 
 interface Tile {
   to: string
@@ -31,10 +32,11 @@ export function DashboardPage() {
   usePageTitle('Accueil — Portail Ecoworking')
 
   const { user } = useAuth()
-  const { has, isResident, isExternal } = usePermissions()
+  const { has, isResident, isExternal, canViewBookings } = usePermissions()
   // Bloc factures conditionné au rôle billing_contact (PRD §3.3.2) — le
   // serveur reste l'autorité (InvoicePolicy), l'UI évite juste un bloc vide.
   const canSeeInvoices = has('view-entity-invoices')
+  const hasFirstColumn = canSeeInvoices || canViewBookings
 
   const tiles: Tile[] = [
     ...(isExternal
@@ -72,11 +74,17 @@ export function DashboardPage() {
       {/* Documents à valider en tête (ordre mobile PRD §3.3.3) ; masqué si tout est à jour. */}
       <DashboardDocumentsToValidate />
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="space-y-8">
-          {canSeeInvoices && <DashboardInvoices />}
-          <DashboardUpcomingBookings />
-        </div>
+      {/* Deux colonnes seulement si la première a du contenu : sans facture ni
+          réservation, les actualités occupent toute la largeur plutôt que la
+          moitié, à côté d'un vide. */}
+      <div className={cn('grid gap-8', hasFirstColumn && 'lg:grid-cols-2')}>
+        {hasFirstColumn && (
+          <div className="space-y-8">
+            {canSeeInvoices && <DashboardInvoices />}
+            {/* Réservations : masquées au contact facturation pur (PRD §2.5). */}
+            {canViewBookings && <DashboardUpcomingBookings />}
+          </div>
+        )}
         <div className="space-y-8">
           <DashboardAnnouncements />
         </div>

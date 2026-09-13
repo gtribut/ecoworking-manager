@@ -23,7 +23,8 @@ interface NavEntry {
 
 export function Layout() {
   const { user, logout } = useAuth()
-  const { isResident, isExternal, canViewDirectory } = usePermissions()
+  const { isResident, isExternal, canViewDirectory, canViewBilling, canViewBookings } =
+    usePermissions()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
@@ -38,17 +39,25 @@ export function Layout() {
     previousPathname.current = location.pathname
   }, [location.pathname])
 
+  // Navigation filtrée par rôle (PRD §2.5) : un module inaccessible n'est jamais
+  // proposé — les routes correspondantes sont gardées par <RequireAccess>.
   const entries: NavEntry[] = [
     { to: '/', label: 'Accueil', end: true },
-    { to: '/bookings', label: 'Réservations' },
+    // Calendrier des salles : jamais pour un contact facturation pur.
+    ...(canViewBookings ? [{ to: '/bookings', label: 'Réservations' }] : []),
+    // Actualités : lisibles par tous les rôles, y compris un contact facturation
+    // pur (il fait partie des audiences) — seule l'INSCRIPTION à un événement
+    // demande `register-event`, côté RsvpButton.
     { to: '/announcements', label: 'Actualités' },
     ...(isExternal ? [{ to: '/tickets', label: 'Tickets' }] : []),
+    // Présence/absences : seulement avec un bureau attitré (pas les `additional`).
     ...(isResident ? [{ to: '/presence', label: 'Présence' }] : []),
     // C12.5 — Annuaire (masqué aux external : pas de view-annuaire)
     ...(canViewDirectory ? [{ to: '/directory', label: 'Annuaire' }] : []),
     { to: '/documents', label: 'Documents' },
     { to: '/profile', label: 'Profil' },
-    { to: '/invoices', label: 'Factures' },
+    // Module administratif (PRD §3.6.1) : rôle billing_contact uniquement.
+    ...(canViewBilling ? [{ to: '/invoices', label: 'Factures' }] : []),
   ]
 
   const links = (onNavigate?: () => void) =>

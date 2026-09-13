@@ -42,6 +42,10 @@ final class BookingController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
+        // `view-own-bookings` (PRD §2.5) : un contact facturation pur n'a pas
+        // de réservations et n'accède pas au module.
+        Gate::authorize('viewAny', Booking::class);
+
         $upcoming = $request->boolean('upcoming');
         $perPage = min(50, max(1, (int) $request->integer('per_page', 20)));
 

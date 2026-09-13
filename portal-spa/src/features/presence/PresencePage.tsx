@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { Select } from '@/components/ui/Select'
 import { Spinner } from '@/components/ui/Spinner'
-import { usePermissions } from '@/features/auth/usePermissions'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
 import type { Absence, AbsencePeriod, CreateAbsenceInput, RecurrenceType } from './types'
@@ -67,22 +66,12 @@ function formatDate(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString('fr-FR')
 }
 
+/**
+ * Module réservé au membre doté d'un bureau attitré : la garde est portée par
+ * la route (<RequireAccess requiresDesk>), pas par la page.
+ */
 export function PresencePage() {
   usePageTitle('Ma présence — Portail Ecoworking')
-
-  const { isResident } = usePermissions()
-
-  if (!isResident) {
-    return (
-      <div className="mx-auto max-w-2xl space-y-6">
-        <h1 className="text-2xl font-semibold">Ma présence</h1>
-        <Alert variant="info">
-          La déclaration de présence est réservée aux résidents disposant d’un bureau attitré. Si
-          vous travaillez à la demi-journée, rendez-vous sur la page « Tickets & bureaux nomades ».
-        </Alert>
-      </div>
-    )
-  }
 
   return <PresenceContent />
 }

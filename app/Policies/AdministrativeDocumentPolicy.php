@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\Permission;
 use App\Models\AdministrativeDocument;
 use App\Models\User;
 
@@ -13,9 +14,10 @@ use App\Models\User;
  */
 final class AdministrativeDocumentPolicy
 {
+    /** Section « Mes documents administratifs » du portail (PRD §3.6.3). */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->isAdmin() || $user->can(Permission::ViewEntityAdminDocuments->value);
     }
 
     public function view(User $user, AdministrativeDocument $document): bool

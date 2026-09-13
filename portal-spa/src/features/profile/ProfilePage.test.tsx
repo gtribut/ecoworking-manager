@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { server } from '@/test/server'
-import { renderWithProviders } from '@/test/utils'
+import { MEMBER_PERMISSIONS, makeAuthUser, renderWithProviders } from '@/test/utils'
 import { ProfilePage } from './ProfilePage'
 import type { ProfilePayload } from './types'
 
@@ -55,16 +55,7 @@ const payload: ProfilePayload = {
 function withUser() {
   server.use(
     http.get('/api/user', () =>
-      HttpResponse.json({
-        id: 1,
-        first_name: 'Alex',
-        last_name: 'Martin',
-        email: 'alex@ex.fr',
-        theme: null,
-        two_factor_enabled: false,
-        roles: ['resident'],
-        permissions: [],
-      }),
+      HttpResponse.json(makeAuthUser({ roles: ['resident'], permissions: MEMBER_PERMISSIONS })),
     ),
   )
 }

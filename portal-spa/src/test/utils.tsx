@@ -3,6 +3,7 @@ import { type RenderResult, render } from '@testing-library/react'
 import type { ReactElement, ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { AuthProvider } from '@/features/auth/AuthContext'
+import type { AuthUser } from '@/features/auth/types'
 
 /** QueryClient isolé par test, sans retry (pas de flakiness ni d'attente). */
 export function makeTestQueryClient(): QueryClient {
@@ -30,4 +31,57 @@ export function renderWithProviders(
   }
 
   return render(ui, { wrapper: Wrapper })
+}
+
+/**
+ * Compositions rôle → permissions, miroir de `database/seeders/PermissionSeeder.php`
+ * (matrice PRD §2.5). À garder synchronisées avec le seeder.
+ */
+
+/** Tronc commun resident / staff / additional (`$memberBase` + annuaire). */
+export const MEMBER_PERMISSIONS: string[] = [
+  'view-own-bookings',
+  'view-bookings-calendar',
+  'create-own-booking',
+  'manage-own-booking',
+  'register-event',
+  'validate-internal-document',
+  'view-annuaire',
+]
+
+/** external : réserve via ticket payant, pas d'annuaire. */
+export const EXTERNAL_PERMISSIONS: string[] = [
+  'view-own-bookings',
+  'view-bookings-calendar',
+  'create-paid-booking',
+  'manage-own-booking',
+  'register-event',
+  'validate-internal-document',
+]
+
+/** billing_contact : rôle additionnel, visibilité facturation seulement. */
+export const BILLING_PERMISSIONS: string[] = [
+  'view-billing-section',
+  'view-entity-invoices',
+  'view-entity-admin-documents',
+  'request-entity-modification',
+]
+
+/**
+ * Utilisateur tel que renvoyé par `GET /api/user`, pour les mocks msw.
+ * Par défaut : aucun rôle d'usage, aucun bureau attitré.
+ */
+export function makeAuthUser(overrides: Partial<AuthUser> = {}): AuthUser {
+  return {
+    id: 1,
+    first_name: 'Alex',
+    last_name: 'Martin',
+    email: 'alex@ex.fr',
+    theme: null,
+    has_desk: false,
+    two_factor_enabled: false,
+    roles: [],
+    permissions: [],
+    ...overrides,
+  }
 }

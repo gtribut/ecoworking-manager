@@ -30,6 +30,10 @@ final class PresenceController extends Controller
     /** Jours présents sur une plage + absences déclarées du membre. */
     public function index(Request $request, PresenceService $presence): JsonResponse
     {
+        // Module réservé au membre doté d'un bureau attitré (PRD §2.5) : refus
+        // explicite plutôt qu'un calendrier vide trompeur pour un `additional`.
+        Gate::authorize('viewAny', DeskAbsence::class);
+
         $request->validate([
             'from' => ['required', 'date'],
             'to' => ['required', 'date', 'after_or_equal:from'],

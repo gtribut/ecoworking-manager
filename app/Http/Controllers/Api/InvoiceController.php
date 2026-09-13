@@ -27,6 +27,10 @@ final class InvoiceController extends Controller
     {
         $user = $request->user();
 
+        // Module masqué de la nav sans rôle billing (PRD §2.5/§3.6.1) : un
+        // membre sans ce rôle reçoit un refus explicite, pas une liste vide.
+        Gate::authorize('viewAny', Invoice::class);
+
         $query = Invoice::query()
             ->whereNotNull('number') // jamais de brouillon côté membre
             ->latest('issued_at')

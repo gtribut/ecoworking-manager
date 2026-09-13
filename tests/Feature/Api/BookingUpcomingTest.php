@@ -5,12 +5,17 @@ declare(strict_types=1);
 use App\Models\Booking;
 use App\Models\Resource;
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
 
 /**
  * Dashboard PRD §3.3.2 « Mes prochaines réservations » (recette R-05) :
  * `GET /api/bookings?upcoming=1` = résas confirmées non terminées, chronologiques,
  * auto-scopées au membre.
  */
+beforeEach(function () {
+    $this->seed(PermissionSeeder::class); // câble rôles → permissions (view-own-bookings)
+});
+
 it('liste uniquement les réservations à venir, confirmées, en ordre chronologique', function () {
     $user = User::factory()->resident()->create();
     $other = User::factory()->resident()->create();

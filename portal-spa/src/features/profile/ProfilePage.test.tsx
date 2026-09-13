@@ -51,11 +51,30 @@ const payload: ProfilePayload = {
   },
 }
 
+/** L'AuthProvider (TwoFactorSection) interroge /api/user : membre sans 2FA. */
+function withUser() {
+  server.use(
+    http.get('/api/user', () =>
+      HttpResponse.json({
+        id: 1,
+        first_name: 'Alex',
+        last_name: 'Martin',
+        email: 'alex@ex.fr',
+        theme: null,
+        two_factor_enabled: false,
+        roles: ['resident'],
+        permissions: [],
+      }),
+    ),
+  )
+}
+
 describe('ProfilePage', () => {
   it('affiche les infos perso et l’entité (lecture seule)', async () => {
     server.use(http.get('/api/profile', () => HttpResponse.json(payload)))
 
-    renderWithProviders(<ProfilePage />)
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true })
 
     expect(await screen.findByDisplayValue('Designer')).toBeInTheDocument()
     expect(screen.getByDisplayValue('alex@ex.fr')).toBeDisabled()
@@ -75,7 +94,8 @@ describe('ProfilePage', () => {
       }),
     )
 
-    renderWithProviders(<ProfilePage />)
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true })
 
     const bio = await screen.findByLabelText('Présentation')
     await user.clear(bio)
@@ -89,7 +109,8 @@ describe('ProfilePage', () => {
     const user = userEvent.setup()
     server.use(http.get('/api/profile', () => HttpResponse.json(payload)))
 
-    renderWithProviders(<ProfilePage />)
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true })
 
     const linkedin = await screen.findByLabelText('LinkedIn')
     await user.type(linkedin, 'pas-une-url')

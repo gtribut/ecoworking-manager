@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Textarea } from '@/components/ui/Textarea'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
+import { TwoFactorSection } from './TwoFactorSection'
 import type { CompanyData } from './types'
 import { useProfile, useUpdateProfile } from './useProfile'
 
@@ -246,6 +247,9 @@ export function ProfilePage() {
           Enregistrer mes modifications
         </Button>
       </form>
+
+      {/* Sécurité (PRD §3.2 / §3.4.5) — hors du formulaire profil : ses propres appels Fortify. */}
+      <TwoFactorSection />
     </div>
   )
 }

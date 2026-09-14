@@ -97,6 +97,17 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+
+            // Fuseau de la session Postgres, aligné sur celui de l'app (ADR-0010
+            // + ADR-0012). Les `timestamptz` relus reviennent donc en heure de
+            // Paris : `$booking->starts_at->format('H:i')` affiche l'heure
+            // locale, comme attendu partout (PDF, emails, iCal, Filament).
+            //
+            // ⚠️ Ce réglage n'est SÛR que parce que le format de date du query
+            // grammar porte le décalage (App\Database\Query\PostgresGrammar).
+            // Posé seul, il ne corrigerait rien : il inverserait le bug, en
+            // cassant les écritures de la SPA (ISO UTC) aujourd'hui correctes.
+            'timezone' => env('APP_TIMEZONE', 'Europe/Paris'),
         ],
 
         'sqlsrv' => [

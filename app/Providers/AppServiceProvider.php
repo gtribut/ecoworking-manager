@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Database\Query\PostgresGrammar;
 use App\Models\Booking;
 use App\Models\Company;
 use App\Models\DeskAbsence;
@@ -17,7 +18,10 @@ use App\Models\User;
 use App\Policies\ActivityPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Events\ConnectionEstablished;
+use Illuminate\Database\PostgresConnection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -40,6 +44,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Fuseau horaire des écritures Postgres (ADR-0012) : le format de date
+        // du grammar porte le décalage, sans quoi un Carbon en heure de Paris
+        // (now(), seeders, Filament) est stocké 2 h trop tard — la session PG
+        // étant en UTC. Posé sur l'événement plutôt qu'en dur pour ne pas
+        // résoudre la connexion au boot.
+        Event::listen(ConnectionEstablished::class, function (ConnectionEstablished $event): void {
+            if ($event->connection instanceof PostgresConnection) {
+                $event->connection->setQueryGrammar(new PostgresGrammar($event->connection));
+            }
+        });
+
         // Limiteur du groupe `api` (activé par throttleApi() dans bootstrap/app.php,
         // review sécurité M1) : par utilisateur authentifié, sinon par IP. 60/min
         // couvre largement l'usage SPA (~50 membres) tout en bloquant l'abus.

@@ -23,6 +23,7 @@ Format inspiré de la convention popularisée par Michael Nygard.
 | [0009](./0009-google-oauth-admin-only.md) | Google OAuth réservé aux admins (match par email, pas d'auto-provisioning) | Accepté | 2026-06 |
 | [0010](./0010-timezone-europe-paris.md) | Timezone applicative Europe/Paris | Accepté | 2026-07 |
 | [0011](./0011-magic-link-jetons-en-table.md) | Magic link — jetons à usage unique hashés en table dédiée | Accepté | 2026-07 |
+| [0012](./0012-fuseau-horaire-postgres.md) | Décalage horaire porté par le format de date Postgres | Accepté | 2026-09 |
 
 ## Conventions
 

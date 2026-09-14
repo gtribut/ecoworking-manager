@@ -64,6 +64,11 @@ export default defineConfig(({ command }) => ({
   test: {
     globals: true,
     environment: 'jsdom',
+    // Le métier est daté en heure de Paris (ADR-0010) et plusieurs specs codent
+    // des offsets `+02:00` en dur : sans fuseau figé, la suite échoue sur toute
+    // machine en UTC (conteneur Sail, runners GitHub Actions). Garde-fou dans
+    // `src/test/setup.ts` si cette option venait à sauter.
+    env: { TZ: 'Europe/Paris' },
     setupFiles: ['./src/test/setup.ts'],
     css: true,
     // Les specs Playwright (e2e/*.spec.ts) ne sont PAS des tests Vitest :

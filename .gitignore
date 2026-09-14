@@ -2,6 +2,9 @@
 node_modules/
 npm-debug.log
 yarn-error.log
+# Store pnpm : créé à la racine du dépôt si `pnpm install` est lancé dans le
+# conteneur Sail au lieu de l'hôte (~300 Mo). Cf. docs/todo_guillaume.md C13.6.
+.pnpm-store/
 
 # Navigateurs Playwright (e2e C11.3) — binaires téléchargés localement
 # (PLAYWRIGHT_BROWSERS_PATH partagé hôte/conteneur), jamais commités.

@@ -373,6 +373,14 @@ Page d'accueil après connexion. Vue récapitulative qui agrège les infos perti
 
 > ✅ **Acté 2026-09-13** (Guillaume) : la facturation « en nom propre » ne crée **aucune** exception. Un particulier facturé à son nom est une entité (`billable` perso) dont il est **le** `billing_contact` — une seule personne par entité, entreprise ou perso. Sans ce rôle, aucun accès au module facturation ni au bloc « Mes dernières factures » (cf. §3.6.1, `InvoicePolicy::viewAny`). Le rôle est attribué par l'admin à la création.
 
+> ✅ **Précisé 2026-09-14** (Guillaume) : la **règle d'accès ci-dessus est inchangée** (le `billing_contact` reste requis, y compris pour voir sa propre facture en nom propre), mais techniquement le `billable` **reste polymorphe** — `billable_type` vaut `user` **ou** `company`. Le raccourci « tout passe par une entité » est abandonné : il aurait imposé de créer une entité fictive pour chaque membre facturé en direct.
+>
+> Deux chemins coexistent donc, et c'est **voulu** :
+> - **`billable_type = 'user'`** : le membre est facturé directement, sans entité. `InvoicePolicy::view` l'autorise via `User::canBillFor()` (`$billable->is($this)`), toujours conditionné au rôle `billing_contact`.
+> - **entité `companies.entity_type = 'individual'`** (cf. §4.3.1) : un particulier qui a besoin d'une vraie fiche entité (adresse de facturation, remise négociée, contacts multiples, domiciliation).
+>
+> Choisir la première pour un membre facturé en direct sans besoin de fiche, la seconde dès qu'une donnée d'entité est nécessaire.
+
 **Bloc 3 dernières infos/events**
 - Titre du bloc : "Actualités Ecoworking"
 - 3 cards format : titre, date, mini-description (max 100 caractères), lien "Voir →"
@@ -578,9 +586,15 @@ Workflow (l'external consomme un ticket **déjà crédité** par l'admin — pas
 
 **Validation côté serveur (commune)** :
 - Conflit de résa : transaction DB avec `lockForUpdate()`
-- Droits du user (rôle + abonnement actif pour resident/additional)
+- Droits du user (rôle ; ⚠️ **abonnement actif non vérifié**, cf. encadré ci-dessous)
 - Conformité aux règles par rôle (cf. §6.1)
 - Pour external : présence d'un ticket valide à consommer
+
+> ⚠️ **Écart assumé 2026-09-14** (Guillaume) : la vérification d'**abonnement actif** pour `resident` / `additional` **n'est pas implémentée** et ne le sera pas en MVP. Un membre dont l'abonnement est résilié peut donc réserver une salle.
+>
+> **Pourquoi** : à ~50 membres la régulation est sociale — une réservation abusive se voit, et l'admin peut annuler depuis le back-office. Le coût du contrôle (définir « actif » : à la date du jour ? à la date de la réservation ? quid d'un renouvellement en cours ?) dépasse le bénéfice à cette échelle.
+>
+> **Cet écart est délibéré : ne pas le remonter comme anomalie en recette.** À rouvrir si le nombre de membres croît ou si un abus réel est constaté — la définition d'« abonnement actif » devrait alors couvrir la **date de la réservation** (et non celle du jour), sinon un membre ne pourrait plus réserver pour le mois suivant. Les `external` en seraient de toute façon exemptés (ils paient au ticket).
 
 #### 3.5.4 Salle event — admin only
 

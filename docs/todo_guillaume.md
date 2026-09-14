@@ -27,35 +27,35 @@
 
 ### Modifs du 02/07/26 après-midi (seed admin + nettoyage Redis)
 
-| Variable | Dev local (`.env`) | Prod (LastPass → Clever Cloud) |
-|---|---|---|
-| `SEED_ADMIN_PASSWORD` | optionnel (vide = mdp aléatoire affiché au seed) | à définir SI on seed en prod (sinon inutile) |
-| `REDIS_CLIENT/HOST/PASSWORD/PORT`, `MEMCACHED_HOST` | **supprimées** de `.env.example` (variables mortes, ADR-0007) | à retirer des `.env` si présentes |
+| Variable                                            | Dev local (`.env`)                                            | Prod (LastPass → Clever Cloud)               |
+| --------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------- |
+| `SEED_ADMIN_PASSWORD`                               | optionnel (vide = mdp aléatoire affiché au seed)              | à définir SI on seed en prod (sinon inutile) |
+| `REDIS_CLIENT/HOST/PASSWORD/PORT`, `MEMCACHED_HOST` | **supprimées** de `.env.example` (variables mortes, ADR-0007) | à retirer des `.env` si présentes            |
 
-- [ ] 🟡 **`.env` local** : retirer les variables Redis/Memcached si présentes ; `SEED_ADMIN_PASSWORD` optionnel.
-- [ ] 🟡 **LastPass (prod)** : idem.
+- [x] 🟡 **`.env` local** : retirer les variables Redis/Memcached si présentes ; `SEED_ADMIN_PASSWORD` optionnel.
+- [x] 🟡 **LastPass (prod)** : idem.
 
 ### Modifs du 02/07/26 (timezone Europe/Paris — ADR-0010)
 
-| Variable | Dev local (`.env`) | Prod (LastPass → Clever Cloud) |
-|---|---|---|
-| `APP_TIMEZONE` | `Europe/Paris` | `Europe/Paris` |
+| Variable       | Dev local (`.env`) | Prod (LastPass → Clever Cloud) |
+| -------------- | ------------------ | ------------------------------ |
+| `APP_TIMEZONE` | `Europe/Paris`     | `Europe/Paris`                 |
 
 > Nouvelle variable (défaut du code = `Europe/Paris`, donc non bloquant si absente,
 > mais la poser explicitement partout évite toute divergence). Contexte : les
 > demi-journées « 9h-13h / 14h-18h » étaient construites en UTC (décalage 1-2 h).
 
-- [ ] 🟡 **`.env` local** : ajouter `APP_TIMEZONE=Europe/Paris`.
-- [ ] 🟡 **LastPass (prod)** : ajouter `APP_TIMEZONE=Europe/Paris`.
+- [x] 🟡 **`.env` local** : ajouter `APP_TIMEZONE=Europe/Paris`.
+- [x] 🟡 **LastPass (prod)** : ajouter `APP_TIMEZONE=Europe/Paris`.
 
 ### Modifs du 07/06/26 (routing par sous-domaine + APP_KEY)
 
-| Variable | Dev local (`.env`) | Prod (LastPass → Clever Cloud) |
-|---|---|---|
-| `APP_URL` | `http://admin.ecoworking.test` | `https://admin.ecoworking.fr` |
-| `ADMIN_DOMAIN` | `admin.ecoworking.test` | `admin.ecoworking.fr` |
-| `PORTAL_DOMAIN` | `portail.ecoworking.test` | `portail.ecoworking.fr` |
-| `APP_KEY` | généré localement (`key:generate`) | défini en prod (Clever Cloud / LastPass) |
+| Variable        | Dev local (`.env`)                 | Prod (LastPass → Clever Cloud)           |
+| --------------- | ---------------------------------- | ---------------------------------------- |
+| `APP_URL`       | `http://admin.ecoworking.test`     | `https://admin.ecoworking.fr`            |
+| `ADMIN_DOMAIN`  | `admin.ecoworking.test`            | `admin.ecoworking.fr`                    |
+| `PORTAL_DOMAIN` | `portail.ecoworking.test`          | `portail.ecoworking.fr`                  |
+| `APP_KEY`       | généré localement (`key:generate`) | défini en prod (Clever Cloud / LastPass) |
 
 - [x] ✅ **`.env` local** déjà à jour (vérifié 07/06/26) + `APP_KEY` régénéré.
 - [x] ✅ **LastPass** : valeurs **prod** consignées (07/06/26 ; à pousser dans Clever Cloud au déploiement).
@@ -133,10 +133,11 @@
 - [x] ✅ Compte **Healthchecks.io** créé + **1 check par cron** (08/06/26) :
   - facturation mensuelle → `HEALTHCHECK_MONTHLY_BILLING_URL` (cron `0 6 1 * *` UTC, grâce 2 h)
   - bascule factures en retard → `HEALTHCHECK_OVERDUE_INVOICES_URL` (période 1 j, grâce 1 h)
+  - purge des notifications → `HEALTHCHECK_NOTIFICATIONS_PURGE_URL` (cron `notifications:purge`, quotidien 4 h) — **ajouté au lot G, créé le 14/09**
   - (le scheduler ping l'URL en succès et `…/fail` en échec — déjà câblé)
 - [x] ✅ **Période/grâce** réglées sur la fréquence réelle (mensuel / quotidien) (08/06/26)
-- [x] ✅ URLs de ping enregistrées dans **LastPass** (08/06/26)
-- [ ] 🟡 (jour du déploiement) Pousser les 2 URLs dans **Clever Cloud** + tester un ping réel
+- [x] ✅ URLs de ping enregistrées dans **LastPass** (les 2 premières le 08/06/26, `notifications_purge` le 14/09/26)
+- [ ] 🟡 (jour du déploiement) Pousser les **3 URLs** dans **Clever Cloud** + tester un ping réel (`monthly_billing`, `overdue_invoices`, `notifications_purge` — cf. `config/services.php`)
 
 ---
 
@@ -176,7 +177,7 @@
 > le disque S3 en dev — sinon aucun impact, ces variables sont inertes tant que
 > `FILESYSTEM_DISK=local`) :
 
-- [ ] 🟡 `AWS_DEFAULT_REGION` : `us-east-1` → **`eu-west-1`** (aligné BRIEF §13 / Cellar)
+- [x] 🟡 `AWS_DEFAULT_REGION` : `us-east-1` → **`eu-west-1`** (aligné BRIEF §13 / Cellar)
 - [ ] 🟡 `AWS_ENDPOINT=` **ajouté** (vide) — à remplir en prod avec l'endpoint Cellar (`$CELLAR_ADDON_HOST`) ; penser à l'entrée LastPass prod
 
 ---
@@ -189,18 +190,55 @@
 - [x] ✅ Docker Desktop relancé + intégration WSL2 active (13/09/26)
 - [x] ✅ Suite Pest verte après 2 mois : 446 tests (13/09/26) — Biome/Vitest côté SPA non relancés (aucune modif SPA)
 - [x] ✅ Jeu de démo chargé sur la base de dev (13/09/26) : 11 factures (4 payées, 1 partielle, 2 en retard, 1 annulée + avoir, 2 brouillons), 0 job en attente, 57 notifications, 10 mails dans Mailpit. Relancer `sail artisan migrate:fresh --seed --seeder=DemoSeeder` pour repartir d'une base propre
-- [ ] 🟡 Poser `SEED_ADMIN_PASSWORD` dans le `.env` local avant le seed (sinon mot de passe admin affiché une seule fois)
+- [x] 🟡 Poser `SEED_ADMIN_PASSWORD` dans le `.env` local avant le seed (sinon mot de passe admin affiché une seule fois)
 - [ ] 🟡 Dérouler `docs/recette.md`, cocher, remplir le journal §9, puis me dire « corrige R-nn »
+
+## C13.6 — Lots de conformité PRD §3 (2026-09-13, session orchestrateur)
+
+> Les 7 lots (B, A, C, D, E, F, G) sont mergés sur `main` (dernier : G, `1f92dfb`, 14/09). Détail par lot en fin de `docs/review_fable/08-ecarts-prd-portail.md`. Il ne reste que les actions manuelles ci-dessous.
+
+- [x] 🟠 **`.env.example` modifié (lot G)** : synchroniser ton `.env` local + LastPass prod — `NOTIFICATIONS_RETENTION_DAYS` (défaut 90, ligne commentée) et `HEALTHCHECK_NOTIFICATIONS_PURGE_URL` (vide ; créer le check Healthchecks.io du cron `notifications:purge`, quotidien 4 h)
+- [x] ✅ `HEALTHCHECK_NOTIFICATIONS_PURGE_URL` : check Healthchecks.io **créé** + URL consignée dans **LastPass** (14/09) — reste à pousser dans Clever Cloud au déploiement (cf. C10 ci-dessus)
+- [x] ✅ `composer install` + `pnpm install` (portal-spa) faits par Claude le 14/09 : deps `intervention/image@4.3.2`, `marked@18.0.11`, `dompurify@3.4.15`, `sonner@2.0.8` en place ; suites vertes (657 Pest, 212 Vitest)
+  - ⚠️ **`pnpm install` se lance depuis l'hôte WSL**, pas dans le conteneur Sail : un install conteneur crée un `.pnpm-store/` de 314 Mo à la racine du dépôt et force ensuite un re-install côté hôte
+  - Corrigé au passage (`5a7f83f`) : le fuseau des tests Vitest est figé sur `Europe/Paris` ; 4 tests d'horaires échouaient sur toute machine en UTC, **y compris le CI GitHub Actions**
+  - Reste : `PhotoSection.test.tsx` échoue dans le conteneur Sail (Node 24, `FormData` refuse les `File` de jsdom). Sans impact sur l'hôte ni le CI, qui sont en Node 22 — ne pas lancer Vitest dans le conteneur
+- [x] 🟠 `sail artisan migrate` : nouvelle table `welcome_invitation_tokens` (lot F) ; puis `migrate:fresh --seed --seeder=DemoSeeder` pour une base de recette propre (les documents seedés génèrent désormais notifs + mails en queue → `queue:listen`)
+- [x] ✅ **Décisions tranchées le 14/09** (cf. doc 08, « Avancement des lots ») — détail ci-dessous
+- [ ] 🟡 Compléter les pages légales du portail (`/mentions-legales`, `/cgu`, `/accessibilite`) : raison sociale, capital, RCS/SIRET, directeur de publication, audit RGAA réel
+- [ ] 🟡 (V1.5) Cellar : bucket `ecoworking-storage` en ACL **private** + `FILESYSTEM_DISK=s3` (photos de profil servies uniquement via l'API)
+- [ ] 🟡 Ajouter un compte `external` à `E2eSeeder` si un parcours e2e bureau nomade est voulu (la route `/tickets` est désormais réservée aux external)
+
+## C13.6 — Décisions tranchées (2026-09-14)
+
+> Les 8 arbitrages en attente depuis les lots A→G sont pris. **4 n'impliquent aucun code**, 3 sont du chantier à venir, 1 est une mise à jour de doc. Reporter aussi ces décisions dans `docs/review_fable/08-ecarts-prd-portail.md` (les ⏸️) et dans le PRD.
+
+**Sans effet sur le code** — rien à faire :
+
+- ✅ **`invoices.billable_type`** : on **garde le polymorphisme `user` + `company`**. Permet de facturer un particulier sans lui inventer une entité fictive (external, membres sans société). L'acté PRD « tout passe par une entité » est donc **abandonné** → à corriger dans le PRD.
+- ✅ **Libellé de facture** : **pas de colonne `invoices.label`**. Les `invoice_lines.description` + la période suffisent à composer l'intitulé du PDF.
+- ✅ **Admin sans mot de passe ni photo (lot F)** : **validé tel quel**. L'admin ne saisit jamais de mot de passe et ne téléverse pas de photo ; un membre bloqué passe par un nouveau lien d'invitation / de réinitialisation.
+- ✅ **Notes des absences `DemoSeeder` sans `created_by`** : **voulu**, comportement correct (notes internes admin, invisibles côté membre).
+
+**Chantiers à implémenter** :
+
+- [ ] 🔴 **Fuseau Postgres — à traiter MAINTENANT, avant la prod.** La base de dev est jetable (`migrate:fresh --seed`), donc aucune donnée à réinterpréter ; après le provisioning Clever Cloud ce serait une migration de données à risque. ⚠️ **Le correctif candidat de doc 08 (`'timezone' => 'Europe/Paris'` sur la connexion `pgsql`) est insuffisant à lui seul : il inverserait le bug** — les écritures SPA (ISO UTC) sont aujourd'hui correctes et deviendraient fausses. Le correctif porte sur la **normalisation du fuseau à l'écriture**, avec un test de non-régression sur les deux chemins (SPA en UTC / PHP en Paris : `now()`, `halfDayBounds()`, seeders, Filament).
+- [ ] 🟠 **Opt-out annuaire dans le calendrier → transparence totale** : le nom du membre **réapparaît** sur ses créneaux même si `show_in_directory = false`. L'opt-out ne vaut que pour l'annuaire, pas pour l'occupation des salles (nécessité opérationnelle). Inversion de `RoomController::occupant()`. ⚠️ **À annoncer aux membres** : c'est un élargissement de la visibilité par rapport à ce qu'ils ont pu comprendre en cochant l'opt-out — à refléter dans les pages légales / la politique de confidentialité du portail.
+- [ ] 🟡 **Borne photo de profil : 6000×6000 → 4000×4000.** 16 Mpx reste très au-dessus du besoin (affichage 400px max) et divise par ~2 le pic mémoire du redimensionnement.
+
+**Écart au PRD assumé** :
+
+- [ ] 🟡 **Abonnement actif non vérifié à la réservation (PRD §3.5.3) : statu quo, on ne vérifie rien.** À ~50 membres la régulation est sociale. ⚠️ **L'écart doit être tracé explicitement dans le PRD §3.5.3**, sinon il repassera en anomalie à chaque recette.
 
 ## Fix liens emails → domaine portail (2026-09-14) — ⚠️ `.env.example` modifié
 
 > Bug de recette : les liens des emails de notification (« Voir mes documents », « Voir mes factures », « Régulariser ») pointaient sur `admin.ecoworking.fr`, inaccessible aux membres. Cause : `PortalNotification::portalUrl()` construisait ses URLs sur `config('app.url')`. Corrigé via `App\Support\PortalUrl` (source unique = `PORTAL_DOMAIN`). Règle codifiée en CLAUDE.md §3.7 + ADR-0004.
 
-- [ ] 🟠 **`.env.example` modifié** : synchroniser ton `.env` local + LastPass prod / Clever Cloud
+- [x] 🟠 **`.env.example` modifié** : synchroniser ton `.env` local + LastPass prod / Clever Cloud
   - `GOOGLE_REDIRECT_URI` ne dérive plus de `APP_URL` mais de `ADMIN_DOMAIN` → `"http://${ADMIN_DOMAIN}/auth/google/callback"` (dev). **La valeur produite est inchangée** (`https://admin.ecoworking.fr/auth/google/callback` en prod) : **rien à modifier dans la Console Google Cloud**
   - `APP_URL` : valeur inchangée, seuls des commentaires d'avertissement ont été ajoutés au-dessus
-- [ ] 🟠 **Vérifier `APP_URL` en prod Clever Cloud** = `https://admin.ecoworking.fr`. Si ce n'est pas le cas, la `GOOGLE_REDIRECT_URI` prod actuelle (qui en dérivait) est déjà de travers et le login Google admin est cassé
-- [ ] 🟡 Vérifier en recette que les emails de notif arrivent bien avec un lien `portail.` (Mailpit : republier un document interne, ouvrir le mail « Nouveau document à valider »)
+- [x] 🟠 **`APP_URL` prod vérifié** = `https://admin.ecoworking.fr` (valeur LastPass — Clever Cloud pas encore provisionné, cf. V1.5). La `GOOGLE_REDIRECT_URI` prod qui en dérivait était donc correcte, le login Google admin n'est pas impacté
+- [x] 🟡 Vérifier en recette que les emails de notif arrivent bien avec un lien `portail.` (Mailpit : republier un document interne, ouvrir le mail « Nouveau document à valider »)
 
 ## Plus tard / hors MVP (pour mémoire)
 

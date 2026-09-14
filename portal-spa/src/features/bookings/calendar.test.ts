@@ -147,17 +147,20 @@ describe('calendar', () => {
     expect(describeSlot(busy)).not.toContain('Occupé par')
   })
 
-  it('affiche « souhaite rester discret » pour un membre opt-out, entité conservée', () => {
+  // Décision 14/09 : l'opt-out annuaire ne masque plus le nom sur le calendrier
+  // des salles (le serveur envoie toujours l'identité d'un membre). Le plan des
+  // bureaux, lui, continue de le respecter — cf. plan-utils.ts.
+  it('affiche le nom d’un membre même s’il a coché l’opt-out annuaire', () => {
     const busy = slot('2026-09-16T10:00:00+02:00', '2026-09-16T11:00:00+02:00', {
       occupant: {
         kind: 'member',
-        first_name: null,
-        last_name: null,
+        first_name: 'Hugo',
+        last_name: 'Discret',
         company_name: 'Atelier Numérique',
       },
     })
 
-    expect(formatOccupant(busy)).toBe('Coworker (souhaite rester discret) · Atelier Numérique')
+    expect(formatOccupant(busy)).toBe('Hugo Discret (Atelier Numérique)')
   })
 
   it('affiche l’entité seule quand la résa n’a pas de membre (résa admin)', () => {

@@ -215,9 +215,14 @@ final class RoomController extends Controller
      * Occupant affiché au survol (Q4) : le membre réservant, ou — pour une résa
      * posée par l'admin au nom d'une entité — l'entité juridique.
      *
-     * `kind` distingue un membre (dont le nom peut être masqué par l'opt-out
-     * annuaire) d'une entité juridique (résa posée par l'admin) : sans lui, le
-     * portail ne saurait pas quoi afficher à la place du nom.
+     * `kind` distingue un membre d'une entité juridique (résa posée par l'admin) :
+     * sans lui, le portail ne saurait pas quoi afficher à la place du nom.
+     *
+     * L'opt-out annuaire (`show_in_directory = false`) n'a **pas** d'effet ici
+     * (décision Guillaume 14/09) : il ne porte que sur l'ANNUAIRE, alors que
+     * savoir qui occupe une salle est une nécessité opérationnelle du coworking.
+     * Le **plan des bureaux** reste, lui, soumis à l'opt-out — deux surfaces
+     * distinctes, ne pas aligner l'une sur l'autre sans arbitrage.
      *
      * @return array{kind: string, first_name: ?string, last_name: ?string, company_name: ?string}|null
      */
@@ -226,15 +231,10 @@ final class RoomController extends Controller
         $user = $booking->user;
 
         if ($user instanceof User) {
-            // Opt-out annuaire respecté : le nom disparaît, l'entité reste
-            // (coordination d'équipe, PRD §3.5.8). Règle isolée ici : elle est
-            // en attente d'arbitrage et doit rester facile à inverser.
-            $discreet = $user->memberProfile?->show_in_directory === false;
-
             return [
                 'kind' => 'member',
-                'first_name' => $discreet ? null : $user->first_name,
-                'last_name' => $discreet ? null : $user->last_name,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
                 'company_name' => $user->memberProfile?->company?->name,
             ];
         }

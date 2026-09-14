@@ -148,6 +148,10 @@ export function formatTime(iso: string): string {
 /**
  * Identité affichée d'un occupant : « Hugo Discret (Atelier Numérique) ».
  * `null` quand le serveur ne communique aucune identité (external, PRD §3.5.9).
+ *
+ * L'opt-out annuaire ne masque PAS le nom ici (décision 14/09) : il ne porte
+ * que sur l'annuaire, pas sur l'occupation des salles. Le serveur envoie donc
+ * toujours l'identité d'un membre ; seules les résas d'entité arrivent sans nom.
  */
 export function formatOccupant(slot: CalendarSlot): string | null {
   const occupant = slot.occupant
@@ -158,12 +162,7 @@ export function formatOccupant(slot: CalendarSlot): string | null {
   if (name !== '') {
     return occupant.company_name ? `${name} (${occupant.company_name})` : name
   }
-  // Membre sans nom = opt-out annuaire : l'entité reste affichée (coordination).
-  if (occupant.kind === 'member') {
-    return occupant.company_name
-      ? `Coworker (souhaite rester discret) · ${occupant.company_name}`
-      : 'Coworker (souhaite rester discret)'
-  }
+  // Sans nom : résa posée au nom d'une entité (kind === 'entity').
   return occupant.company_name ?? 'Réservation Ecoworking'
 }
 

@@ -261,7 +261,7 @@ it('laisse l’external identifier ses PROPRES réservations', function () {
         ->and($slot['label'])->toBe('Mon point client');
 });
 
-it('respecte l’opt-out annuaire : entité conservée, nom masqué', function () {
+it('affiche le nom même pour un membre opt-out annuaire (transparence, décision 14/09)', function () {
     $viewer = User::factory()->resident()->create();
     $company = Company::factory()->create(['legal_name' => 'Atelier Numérique']);
     $discreet = User::factory()->resident()->create([
@@ -283,14 +283,16 @@ it('respecte l’opt-out annuaire : entité conservée, nom masqué', function (
         ->getJson("/api/rooms/availability?from={$day->toDateString()}&to={$day->toDateString()}")
         ->assertOk();
 
+    // L'opt-out ne vaut que pour l'ANNUAIRE : savoir qui occupe une salle est
+    // une nécessité opérationnelle du coworking (décision Guillaume 14/09,
+    // doc 08 « Écarts hors lot »). Le plan des bureaux, lui, continue de
+    // respecter l'opt-out — ce sont deux surfaces distinctes.
     expect($response->json('rooms.0.slots.0.occupant'))->toBe([
         'kind' => 'member',
-        'first_name' => null,
-        'last_name' => null,
+        'first_name' => 'Hugo',
+        'last_name' => 'Discret',
         'company_name' => 'Atelier Numérique',
     ]);
-
-    $response->assertDontSee('Discret');
 });
 
 it('marque modifiables ses seules réservations à venir (comparaison SQL)', function () {

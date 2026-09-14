@@ -60,6 +60,26 @@ Le routing est géré au niveau Laravel via `Route::domain()` et la configuratio
 - Filament panel restreint : `$panel->domain('admin.ecoworking.fr')`
 - Routes web/api groupées par domaine dans `routes/web.php` et `routes/api.php`
 
+### `ADMIN_DOMAIN` / `PORTAL_DOMAIN` : seule source de vérité d'un domaine (ajout 09/2026)
+
+Corollaire non évident de cette décision, découvert via un bug en recette : **`APP_URL` ne peut pas servir à déterminer un domaine.**
+
+Malgré son nom, `APP_URL` n'est pas « l'URL de l'application » au sens produit. C'est (a) le host de repli quand Laravel génère une URL **sans requête HTTP** (worker de queue, `artisan`, scheduler) et (b) la source du schéma. Une app qui sert **deux** domaines n'a pas de valeur correcte pour ce réglage : quelle que soit celle retenue, la moitié des URLs générées par défaut vise le mauvais public.
+
+Le bug : `PortalNotification::portalUrl()` construisait ses liens sur `config('app.url')`, qui vaut le domaine **admin**. Tous les emails de notification membre (« Voir mes documents », « Voir mes factures », « Régulariser ») envoyaient donc les membres sur un back-office qui leur est interdit.
+
+Le piège inverse, tout aussi réel : basculer `APP_URL` sur le portail « répare » ces emails par accident **et casse silencieusement le login Google admin**, car `GOOGLE_REDIRECT_URI` en dérivait alors que la route `auth/google/callback` est contrainte au domaine admin — avec en prime une redirect URI qui ne matche plus la Console Google.
+
+**Règle retenue** :
+
+- Toute décision de domaine lit `config('domains.admin')` / `config('domains.portal')` (donc `ADMIN_DOMAIN` / `PORTAL_DOMAIN`), jamais `app.url`.
+- Côté portail, passer par `App\Support\PortalUrl::to()` — source unique, utilisée par les notifications, le reset password et l'invitation de bienvenue.
+- Côté admin, passer par le domaine du panel Filament (`Resource::getUrl()`).
+- `config('app.url')` n'est admis que pour en extraire le **schéma** (http en dev / https en prod), qui est une propriété d'environnement et non de domaine.
+- `APP_URL` reste sur le domaine admin, mais n'est plus *load-bearing* : plus aucune variable dérivée ni aucun code applicatif n'en dépend pour un domaine.
+
+Restent légitimement adossés à `APP_URL` : `mail.local_domain` (EHLO, préoccupation de transport) et `filesystems.public.url` (config inerte, `Storage::url()` n'étant utilisé nulle part).
+
 ## Alternatives considérées
 
 ### Path-based (`app.ecoworking.fr/admin` + `app.ecoworking.fr/portal`)

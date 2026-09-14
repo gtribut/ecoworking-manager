@@ -192,6 +192,16 @@
 - [ ] 🟡 Poser `SEED_ADMIN_PASSWORD` dans le `.env` local avant le seed (sinon mot de passe admin affiché une seule fois)
 - [ ] 🟡 Dérouler `docs/recette.md`, cocher, remplir le journal §9, puis me dire « corrige R-nn »
 
+## Fix liens emails → domaine portail (2026-09-14) — ⚠️ `.env.example` modifié
+
+> Bug de recette : les liens des emails de notification (« Voir mes documents », « Voir mes factures », « Régulariser ») pointaient sur `admin.ecoworking.fr`, inaccessible aux membres. Cause : `PortalNotification::portalUrl()` construisait ses URLs sur `config('app.url')`. Corrigé via `App\Support\PortalUrl` (source unique = `PORTAL_DOMAIN`). Règle codifiée en CLAUDE.md §3.7 + ADR-0004.
+
+- [ ] 🟠 **`.env.example` modifié** : synchroniser ton `.env` local + LastPass prod / Clever Cloud
+  - `GOOGLE_REDIRECT_URI` ne dérive plus de `APP_URL` mais de `ADMIN_DOMAIN` → `"http://${ADMIN_DOMAIN}/auth/google/callback"` (dev). **La valeur produite est inchangée** (`https://admin.ecoworking.fr/auth/google/callback` en prod) : **rien à modifier dans la Console Google Cloud**
+  - `APP_URL` : valeur inchangée, seuls des commentaires d'avertissement ont été ajoutés au-dessus
+- [ ] 🟠 **Vérifier `APP_URL` en prod Clever Cloud** = `https://admin.ecoworking.fr`. Si ce n'est pas le cas, la `GOOGLE_REDIRECT_URI` prod actuelle (qui en dérivait) est déjà de travers et le login Google admin est cassé
+- [ ] 🟡 Vérifier en recette que les emails de notif arrivent bien avec un lien `portail.` (Mailpit : republier un document interne, ouvrir le mail « Nouveau document à valider »)
+
 ## Plus tard / hors MVP (pour mémoire)
 
 - [ ] 🟡 (V1.5) Provisioning **Clever Cloud** : app, Postgres 18, Cellar, FS Bucket, DNS, env vars prod (cf. BRIEF §11, SUIVI D1-D2)

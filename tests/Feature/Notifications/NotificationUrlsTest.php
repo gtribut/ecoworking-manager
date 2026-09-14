@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use App\Filament\Resources\DeskAbsences\DeskAbsenceResource;
 use App\Models\DeskAbsence;
+use App\Models\InternalDocument;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Notifications\AbsenceDeclaredNotification;
+use App\Notifications\InternalDocumentPublishedNotification;
 use App\Notifications\InvoiceIssuedNotification;
 use App\Notifications\InvoiceOverdueNotification;
 
@@ -42,4 +44,42 @@ it('pointe l’absence déclarée vers le back-office, jamais /admin (route SPA 
     if ($payload['url'] !== null) {
         expect($payload['url'])->toBe(DeskAbsenceResource::getUrl('index'));
     }
+});
+
+/**
+ * Les liens des emails partaient sur `config('app.url')`, qui pointe le domaine
+ * ADMIN (`APP_URL=https://admin.ecoworking.fr`) : « Voir mes documents » et
+ * « Voir mes factures » envoyaient les membres sur un back-office qui leur est
+ * interdit. Le domaine portail (ADR-0004) est la seule source de vérité.
+ */
+it('pointe les liens des emails vers le domaine portail, jamais le domaine admin', function () {
+    config([
+        'domains.portal' => 'portail.ecoworking.test',
+        'domains.admin' => 'admin.ecoworking.test',
+        'app.url' => 'https://admin.ecoworking.test',
+    ]);
+
+    $recipient = User::factory()->create();
+    $document = InternalDocument::factory()->create();
+    $invoice = Invoice::factory()->issued()->create();
+
+    $urls = [
+        (new InternalDocumentPublishedNotification($document))->toMail($recipient),
+        (new InvoiceIssuedNotification($invoice))->toMail($recipient),
+        (new InvoiceOverdueNotification($invoice))->toMail($recipient),
+    ];
+
+    foreach ($urls as $mail) {
+        expect($mail->actionUrl)->toStartWith('https://portail.ecoworking.test/')
+            ->and($mail->actionUrl)->not->toContain('admin.ecoworking.test');
+    }
+});
+
+it('envoie « Voir mes documents » sur la page documents du portail', function () {
+    config(['domains.portal' => 'portail.ecoworking.test', 'app.url' => 'https://admin.ecoworking.test']);
+
+    $mail = (new InternalDocumentPublishedNotification(InternalDocument::factory()->create()))
+        ->toMail(User::factory()->create());
+
+    expect($mail->actionUrl)->toBe('https://portail.ecoworking.test/documents');
 });

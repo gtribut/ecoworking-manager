@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use App\Support\PortalUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -82,11 +83,13 @@ abstract class PortalNotification extends Notification implements ShouldQueue
     abstract public function toDatabase(object $notifiable): array;
 
     /**
-     * URL absolue d'une page du portail membre (liens d'emails). `app.url` est
-     * aligné sur `PORTAL_URL` en prod (BRIEF §13).
+     * URL absolue d'une page du portail membre (liens d'emails).
+     *
+     * Passe par {@see PortalUrl} : `app.url` pointe le domaine ADMIN, pas le
+     * portail — les liens des emails de notification y renvoyaient les membres.
      */
     protected function portalUrl(string $path): string
     {
-        return rtrim((string) config('app.url'), '/').'/'.ltrim($path, '/');
+        return PortalUrl::to($path);
     }
 }

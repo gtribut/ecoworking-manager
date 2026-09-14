@@ -110,6 +110,8 @@ Outil de gestion sur-mesure pour Ecoworking (coworking lyonnais, SARL, ~50 membr
 - API `/api/*` : sur `portail.ecoworking.fr` uniquement (même origine pour la SPA, pas de CORS)
 - **Jamais** de route admin sur le domaine portail et vice-versa
 - Cookies isolés par sous-domaine (`SESSION_DOMAIN=null`)
+- **`ADMIN_DOMAIN` / `PORTAL_DOMAIN` sont la seule source de vérité d'un domaine.** Tout ce qui est technique (URL absolue d'un email, contrainte de route, URI de callback OAuth, lien back-office) passe par `config('domains.admin')` / `config('domains.portal')` — via `App\Support\PortalUrl::to()` pour le portail, via `Resource::getUrl()` (domaine du panel) pour l'admin
+- **`APP_URL` ne décide JAMAIS d'un domaine.** Malgré son nom ce n'est pas « l'URL de l'app » : c'est le host de repli pour la génération d'URL hors requête HTTP (queue, artisan, scheduler) et la source du schéma. L'app servant deux domaines, aucune valeur n'est correcte — `config('app.url')` n'est donc admis que pour en extraire le **schéma**. Un email portail construit sur `app.url` renvoie les membres sur le back-office (bug réel, 09/2026)
 
 ---
 

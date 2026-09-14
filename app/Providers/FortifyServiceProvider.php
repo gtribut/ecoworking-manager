@@ -8,6 +8,7 @@ use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Http\Responses\GenericPasswordResetLinkResponse;
 use App\Models\User;
+use App\Support\PortalUrl;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -72,19 +73,10 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     /**
-     * URL absolue sur le domaine portail (config/domains, ADR-0004). En test
-     * (domaine nul) : URL locale classique. Le schéma suit APP_URL (https en prod).
+     * URL absolue sur le domaine portail (config/domains, ADR-0004).
      */
     public static function portalUrl(string $path): string
     {
-        $domain = config('domains.portal');
-
-        if (! is_string($domain) || $domain === '') {
-            return url($path);
-        }
-
-        $scheme = parse_url((string) config('app.url'), PHP_URL_SCHEME) ?: 'https';
-
-        return $scheme.'://'.$domain.'/'.ltrim($path, '/');
+        return PortalUrl::to($path);
     }
 }

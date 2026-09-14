@@ -29,7 +29,7 @@ final class StoreProfilePhotoRequest extends FormRequest
                 // de 12000×12000 pèse 17 Ko (il passe `max:2048`) mais coûte
                 // ~770 Mo et 9 s de CPU au décodage. Le contrôle de dimensions
                 // s'appuie sur getimagesize() — l'en-tête seul, jamais le pixel.
-                'dimensions:min_width=80,min_height=80,max_width=6000,max_height=6000',
+                'dimensions:min_width=80,min_height=80,max_width=4000,max_height=4000',
             ],
         ];
     }
@@ -43,7 +43,7 @@ final class StoreProfilePhotoRequest extends FormRequest
             'photo.image' => 'Le fichier doit être une image.',
             'photo.mimes' => 'Formats acceptés : JPG, PNG ou WebP.',
             'photo.max' => 'La photo ne doit pas dépasser 2 Mo.',
-            'photo.dimensions' => 'La photo doit mesurer entre 80 × 80 et 6000 × 6000 pixels.',
+            'photo.dimensions' => 'La photo doit mesurer entre 80 × 80 et 4000 × 4000 pixels.',
         ];
     }
 }

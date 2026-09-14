@@ -223,12 +223,17 @@
 **Chantiers à implémenter** :
 
 - [x] ✅ **Fuseau Postgres — corrigé le 14/09** (ADR-0012, tests `TimezoneRoundTripTest`). ⚠️ **Les données de dev écrites AVANT le correctif sont décalées de +2 h** (vérifié : une résa seedée à 10:00 se relit 12:00) → **`sail artisan migrate:fresh --seed --seeder=DemoSeeder` obligatoire avant de dérouler la recette**, sinon tous les horaires du calendrier seront faux. Contexte initial : La base de dev est jetable (`migrate:fresh --seed`), donc aucune donnée à réinterpréter ; après le provisioning Clever Cloud ce serait une migration de données à risque. ⚠️ **Le correctif candidat de doc 08 (`'timezone' => 'Europe/Paris'` sur la connexion `pgsql`) est insuffisant à lui seul : il inverserait le bug** — les écritures SPA (ISO UTC) sont aujourd'hui correctes et deviendraient fausses. Le correctif porte sur la **normalisation du fuseau à l'écriture**, avec un test de non-régression sur les deux chemins (SPA en UTC / PHP en Paris : `now()`, `halfDayBounds()`, seeders, Filament).
-- [ ] 🟠 **Opt-out annuaire dans le calendrier → transparence totale** : le nom du membre **réapparaît** sur ses créneaux même si `show_in_directory = false`. L'opt-out ne vaut que pour l'annuaire, pas pour l'occupation des salles (nécessité opérationnelle). Inversion de `RoomController::occupant()`. ⚠️ **À annoncer aux membres** : c'est un élargissement de la visibilité par rapport à ce qu'ils ont pu comprendre en cochant l'opt-out — à refléter dans les pages légales / la politique de confidentialité du portail.
-- [ ] 🟡 **Borne photo de profil : 6000×6000 → 4000×4000.** 16 Mpx reste très au-dessus du besoin (affichage 400px max) et divise par ~2 le pic mémoire du redimensionnement.
+- [x] ✅ **Opt-out annuaire dans le calendrier → transparence totale** — implémenté le 14/09 : le nom du membre **réapparaît** sur ses créneaux même si `show_in_directory = false`. L'opt-out ne vaut que pour l'annuaire, pas pour l'occupation des salles (nécessité opérationnelle). Inversion de `RoomController::occupant()`. ⚠️ **À annoncer aux membres** : c'est un élargissement de la visibilité par rapport à ce qu'ils ont pu comprendre en cochant l'opt-out — à refléter dans les pages légales / la politique de confidentialité du portail.
+- [x] ✅ **Borne photo de profil : 6000×6000 → 4000×4000** — implémenté le 14/09. 16 Mpx reste très au-dessus du besoin (affichage 400px max) et divise par ~2 le pic mémoire du redimensionnement.
 
 **Écart au PRD assumé** :
 
 - [ ] 🟡 **Abonnement actif non vérifié à la réservation (PRD §3.5.3) : statu quo, on ne vérifie rien.** À ~50 membres la régulation est sociale. ⚠️ **L'écart doit être tracé explicitement dans le PRD §3.5.3**, sinon il repassera en anomalie à chaque recette.
+
+## Opt-out annuaire — point ouvert (2026-09-14)
+
+- [ ] 🟠 **Annoncer aux membres** que le nom apparaît désormais sur les créneaux de salle même avec l'opt-out annuaire coché, et le refléter dans la politique de confidentialité / les pages légales du portail (élargissement de visibilité par rapport à ce qu'ils ont pu comprendre en cochant).
+- [ ] 🟡 **Cohérence à arbitrer** : le **plan des bureaux** (`plan-utils.ts`, « Coworker (souhaite rester discret) ») continue, lui, de respecter l'opt-out. Volontaire pour l'instant — ta décision portait sur le calendrier des salles. Dis-moi si tu veux aligner le plan sur la même transparence ou garder les deux règles distinctes.
 
 ## Fix liens emails → domaine portail (2026-09-14) — ⚠️ `.env.example` modifié
 

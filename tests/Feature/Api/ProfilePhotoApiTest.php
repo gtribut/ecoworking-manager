@@ -370,3 +370,21 @@ it('n\'annonce aucune URL pour une photo héritée du téléversement admin', fu
 
     $this->actingAs($user)->get("/api/users/{$user->id}/photo/200")->assertNotFound();
 });
+
+/**
+ * Borne haute des dimensions : 4000 × 4000 (décision 14/09, abaissée depuis
+ * 6000). 16 Mpx reste très au-dessus du besoin réel — la photo s'affiche à
+ * 400 px au maximum — et divise par ~2 le pic mémoire du redimensionnement,
+ * qui est la vraie protection contre les images piégées.
+ */
+it('refuse une photo dépassant la borne de 4000 pixels', function () {
+    $user = User::factory()->resident()->create();
+    MemberProfile::factory()->for($user)->create();
+
+    // Hauteur volontairement minuscule : seule la largeur doit déclencher la
+    // règle, sans allouer une image de 16 Mpx dans la suite de tests.
+    actingAs($user)
+        ->postJson('/api/profile/photo', ['photo' => UploadedFile::fake()->image('trop-grande.jpg', 4001, 10)])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('photo');
+});

@@ -232,8 +232,8 @@
 
 ## Opt-out annuaire — point ouvert (2026-09-14)
 
-- [ ] 🟠 **Annoncer aux membres** que le nom apparaît désormais sur les créneaux de salle même avec l'opt-out annuaire coché, et le refléter dans la politique de confidentialité / les pages légales du portail (élargissement de visibilité par rapport à ce qu'ils ont pu comprendre en cochant).
-- [ ] 🟡 **Cohérence à arbitrer** : le **plan des bureaux** (`plan-utils.ts`, « Coworker (souhaite rester discret) ») continue, lui, de respecter l'opt-out. Volontaire pour l'instant — ta décision portait sur le calendrier des salles. Dis-moi si tu veux aligner le plan sur la même transparence ou garder les deux règles distinctes.
+- [ ] 🟠 **(différé — « on verra plus tard », 14/09)** Annoncer aux membres que le nom apparaît désormais sur les créneaux de salle même avec l'opt-out annuaire coché, et le refléter dans la politique de confidentialité / les pages légales du portail. À traiter avec les pages légales, **avant la mise en production** (élargissement de visibilité par rapport à ce que les membres ont pu comprendre en cochant).
+- [x] ✅ **Arbitré 14/09 : on n'aligne PAS.** Le **plan des bureaux** (`plan-utils.ts`) reste en **opt-out** (« Coworker (souhaite rester discret) »), seul le **calendrier des salles** passe en transparence. Les deux règles sont volontairement distinctes — ne pas « harmoniser » par réflexe lors d'un futur refacto.
 
 ## Fix liens emails → domaine portail (2026-09-14) — ⚠️ `.env.example` modifié
 

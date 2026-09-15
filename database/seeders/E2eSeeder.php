@@ -7,6 +7,8 @@ namespace Database\Seeders;
 use App\Enums\Audience;
 use App\Enums\ResourceAssignment;
 use App\Enums\Role;
+use App\Enums\TicketStatus;
+use App\Enums\TicketType;
 use App\Models\Announcement;
 use App\Models\Company;
 use App\Models\Contact;
@@ -16,6 +18,7 @@ use App\Models\InvoiceCounter;
 use App\Models\InvoiceLine;
 use App\Models\MemberProfile;
 use App\Models\Resource;
+use App\Models\Ticket;
 use App\Models\User;
 use App\Services\IssueInvoiceService;
 use Illuminate\Database\Seeder;
@@ -39,6 +42,18 @@ final class E2eSeeder extends Seeder
 
     /** Second résident : opt-out annuaire + créateur du conflit de résa. */
     public const string OTHER_EMAIL = 'autre.e2e@ecoworking.test';
+
+    /**
+     * External (nomade) : parcours « Tickets & bureaux nomades » (§3.5.6/§3.5.9).
+     * La route `/tickets` est gardée par `create-paid-booking`, que seul ce rôle
+     * porte — les deux résidents ci-dessus y reçoivent « Accès refusé ».
+     */
+    public const string EXTERNAL_EMAIL = 'nomade.e2e@ecoworking.test';
+
+    /** Soldes de tickets de l'external, assertés tels quels par les specs. */
+    public const int EXTERNAL_DESK_TICKETS = 3;
+
+    public const int EXTERNAL_ROOM_TICKETS = 2;
 
     /** Mot de passe commun aux comptes e2e (base dédiée, jamais en prod). */
     public const string PASSWORD = 'e2e-password';
@@ -110,6 +125,46 @@ final class E2eSeeder extends Seeder
             'job_title' => 'Développeur',
             'show_in_directory' => false, // opt-out : ne doit PAS apparaître
         ]);
+
+        // --- External (nomade) + tickets -----------------------------------
+        // Crédités par un admin, sans `purchase` : c'est le flux réel du MVP
+        // (pas d'achat en ligne, PRD §3.5.6 — l'admin crédite, l'external
+        // consomme). Hors annuaire pour que `directory.spec.ts` continue de
+        // n'y voir que le résident opt-in.
+        $admin = User::factory()->admin()->create([
+            'first_name' => 'Admin',
+            'last_name' => 'E2E',
+            'email' => 'admin.e2e@ecoworking.test',
+            'password' => Hash::make(self::PASSWORD),
+        ]);
+
+        $external = User::factory()->external()->create([
+            'first_name' => 'Léo',
+            'last_name' => 'Nomade',
+            'email' => self::EXTERNAL_EMAIL,
+            'password' => Hash::make(self::PASSWORD),
+        ]);
+        MemberProfile::factory()->create([
+            'user_id' => $external->id,
+            'company_id' => $company->id,
+            'desk_id' => null, // un nomade n'a pas de bureau attitré
+            'job_title' => 'Consultant indépendant',
+            'show_in_directory' => false,
+        ]);
+
+        foreach ([
+            [TicketType::DeskHalfDay, self::EXTERNAL_DESK_TICKETS],
+            [TicketType::MeetingRoomHalfDay, self::EXTERNAL_ROOM_TICKETS],
+        ] as [$type, $quantity]) {
+            Ticket::factory()->count($quantity)->create([
+                'purchase_id' => null,
+                'user_id' => $external->id,
+                'type' => $type->value,
+                'status' => TicketStatus::Available->value,
+                'credited_by' => $admin->id,
+                'credit_reason' => 'Crédit e2e',
+            ]);
+        }
 
         // --- Facture émise au nom du membre --------------------------------
         // Via le VRAI pipeline d'émission (numéro chronologique + PDF généré,

@@ -173,6 +173,19 @@ Données : tout ce qui est asserté vient de `E2eSeeder`
 (`database/seeders/E2eSeeder.php`) et de son miroir
 `portal-spa/e2e/support/seed.ts` — **maintenir les deux en phase**.
 
+**Comptes seedés** — le rôle conditionne les écrans accessibles, donc le compte
+à utiliser dans `loginViaApi(page, <email>)` :
+
+| Compte | Rôle | Sert à |
+|---|---|---|
+| `membre.e2e@…` (défaut) | `resident` + `billing_contact` | Presque tout : bureau attitré (`desk-2`), présence, factures, annuaire (opt-in) |
+| `autre.e2e@…` | `resident` | Opt-out annuaire, conflit de réservation |
+| `nomade.e2e@…` | `external` | **`/tickets`** (route gardée par `create-paid-booking`, que seul ce rôle porte) : 3 tickets bureau + 2 tickets salle, hors annuaire |
+| `admin.e2e@…` | `admin` | Créditeur des tickets ci-dessus — pas de parcours UI dédié |
+
+Un résident ouvrant `/tickets` reçoit « Accès refusé » : c'est voulu, ne pas le
+corriger en élargissant la garde.
+
 ### Audit a11y (C11.4) — fixture `checkA11y`
 
 La fixture `checkA11y` (`e2e/support/fixtures.ts`, `@axe-core/playwright`)

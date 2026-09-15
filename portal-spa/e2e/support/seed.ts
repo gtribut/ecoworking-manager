@@ -13,6 +13,19 @@ export const seed = {
     firstName: 'Hugo',
     lastName: 'Discret',
   },
+  /**
+   * External (nomade) : seul rôle à porter `create-paid-booking`, donc seul
+   * compte pouvant ouvrir /tickets. Hors annuaire (opt-out) pour ne pas
+   * perturber directory.spec.ts.
+   */
+  external: {
+    email: 'nomade.e2e@ecoworking.test',
+    firstName: 'Léo',
+    lastName: 'Nomade',
+    /** Soldes crédités par E2eSeeder (constantes EXTERNAL_*_TICKETS). */
+    deskTickets: 3,
+    roomTickets: 2,
+  },
   password: 'e2e-password',
   /** Entité juridique du membre e2e (bloc « Mon entreprise », PRD §3.6.4). */
   entity: {

@@ -207,7 +207,7 @@
 - [x] ✅ **Décisions tranchées le 14/09** (cf. doc 08, « Avancement des lots ») — détail ci-dessous
 - [ ] 🟡 Compléter les pages légales du portail (`/mentions-legales`, `/cgu`, `/accessibilite`) : raison sociale, capital, RCS/SIRET, directeur de publication, audit RGAA réel
 - [ ] 🟡 (V1.5) Cellar : bucket `ecoworking-storage` en ACL **private** + `FILESYSTEM_DISK=s3` (photos de profil servies uniquement via l'API)
-- [ ] 🟡 Ajouter un compte `external` à `E2eSeeder` si un parcours e2e bureau nomade est voulu (la route `/tickets` est désormais réservée aux external)
+- [x] ✅ **Compte `external` ajouté à `E2eSeeder`** (15/09) : `nomade.e2e@ecoworking.test` (Léo Nomade), 3 tickets bureau + 2 tickets salle crédités par un admin e2e, hors annuaire. L'audit a11y « Tickets & bureaux nomades », retiré au lot E faute de compte external, est rétabli → **24 tests e2e** (23 avant). Miroir `e2e/support/seed.ts` et `docs/testing-e2e.md` à jour.
 
 ## C13.6 — Décisions tranchées (2026-09-14)
 

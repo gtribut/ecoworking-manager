@@ -190,7 +190,7 @@
 - [x] ✅ Docker Desktop relancé + intégration WSL2 active (13/09/26)
 - [x] ✅ Suite Pest verte après 2 mois : 446 tests (13/09/26) — Biome/Vitest côté SPA non relancés (aucune modif SPA)
 - [x] ✅ Jeu de démo chargé sur la base de dev (13/09/26) : 11 factures (4 payées, 1 partielle, 2 en retard, 1 annulée + avoir, 2 brouillons), 0 job en attente, 57 notifications, 10 mails dans Mailpit. Relancer `sail artisan migrate:fresh --seed --seeder=DemoSeeder` pour repartir d'une base propre
-- [x] 🟡 Poser `SEED_ADMIN_PASSWORD` dans le `.env` local avant le seed (sinon mot de passe admin affiché une seule fois)
+- [x] ✅ `SEED_ADMIN_PASSWORD` posé dans le `.env` local (15/09) — le mot de passe admin est donc stable d'un `migrate:fresh --seed` à l'autre, plus de mot de passe aléatoire affiché une seule fois.
 - [ ] 🟡 **En cours (15/09)** — dérouler `docs/recette.md`, cocher, remplir le journal §9, puis me dire « corrige R-nn ». Base reseedée et `queue:listen` lancé le 15/09.
   - [x] ✅ **Validé en recette le 15/09** : liens des emails de notification sur `portail.` (fix `PortalUrl`) et horaires du calendrier conformes aux données en base (fix de fuseau, ADR-0012). Les deux correctifs sont donc confirmés de bout en bout, pas seulement par les tests.
 

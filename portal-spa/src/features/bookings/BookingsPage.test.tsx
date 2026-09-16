@@ -179,6 +179,45 @@ describe('BookingsPage — agenda des salles', () => {
     expect(screen.getByRole('heading', { name: 'Abonnement agenda' })).toBeVisible()
   })
 
+  it('francise les libellés de navigation du mini-mois', async () => {
+    setup()
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    // `react-day-picker` laisse « Go to the Previous Month » en dur même avec
+    // `locale={fr}` : les libellés sont surchargés dans `ui/calendar.tsx`.
+    await screen.findByRole('button', { name: 'Nouvelle réservation' })
+    expect(screen.getByRole('button', { name: 'Mois précédent' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mois suivant' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Go to the/ })).not.toBeInTheDocument()
+  })
+
+  it('écrit le nom de la salle dans le bloc, jamais la couleur seule', async () => {
+    setup({ slots: [OTHER_SLOT] })
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    // Titre (libellé), puis « horaire · salle », puis occupant · entité.
+    const title = await screen.findByText('Comité produit')
+    const block = title.closest('.ew-ev-content')
+    expect(block).not.toBeNull()
+    expect(within(block as HTMLElement).getByText(/Salle Rhône/)).toBeVisible()
+    expect(within(block as HTMLElement).getByText('Hugo Discret (Atelier Numérique)')).toBeVisible()
+  })
+
+  it('ferme le popover dès que la grille défile sous lui', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    setup({ slots: [OTHER_SLOT] })
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    await user.click(await screen.findByText('Comité produit'))
+    expect(await screen.findByRole('dialog')).toBeVisible()
+
+    // Le popover est ancré à un rectangle figé au clic : il doit disparaître
+    // plutôt que de pointer à côté.
+    window.dispatchEvent(new Event('scroll'))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
   it('annonce l’alternative accessible avant la grille (ADR-0013 D4)', async () => {
     setup()
     renderWithProviders(<BookingsPage />, { withAuth: true })
@@ -286,8 +325,10 @@ describe('BookingsPage — agenda des salles', () => {
     await user.click(await screen.findByText('Comité produit'))
 
     // Popover de détail : occupant + entité (Q4, transparence entre membres).
-    expect(await screen.findByText('Hugo Discret (Atelier Numérique)')).toBeVisible()
-    expect(screen.getByText(/Salle Rhône · 6 places/)).toBeVisible()
+    // Scopé au popover : le bloc de la grille affiche déjà ces informations.
+    const popover = await screen.findByRole('dialog')
+    expect(within(popover).getByText('Hugo Discret (Atelier Numérique)')).toBeVisible()
+    expect(within(popover).getByText(/Salle Rhône · 6 places/)).toBeVisible()
     // Résa d'un autre membre : jamais modifiable ni annulable.
     expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Annuler' })).not.toBeInTheDocument()
@@ -348,7 +389,9 @@ describe('BookingsPage — agenda des salles', () => {
     setup()
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    await user.click(await screen.findByRole('button', { name: 'Réserver Salle événementielle' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Salle événementielle : sur demande' }),
+    )
 
     expect(await screen.findByText('Pour réserver cette salle, contactez-nous.')).toBeVisible()
     expect(screen.getByRole('link', { name: 'Nous contacter' })).toHaveAttribute(

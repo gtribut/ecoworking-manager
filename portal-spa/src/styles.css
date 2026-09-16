@@ -422,3 +422,34 @@
     var(--card) 3px 6px
   );
 }
+
+/* Contenu d'un bloc : titre, puis « horaire · salle », puis occupant. Le nom de
+   la salle est écrit — la couleur ne porte jamais l'information seule
+   (CLAUDE.md §3.5). Les lignes secondaires sont rendues seulement si la durée
+   du créneau leur laisse la place (cf. RoomsCalendar). */
+.ew-ev-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.0625rem;
+}
+.ew-ev-line {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+.ew-ev-title {
+  font-weight: 600;
+}
+.ew-ev-meta,
+.ew-ev-occupant {
+  font-size: 0.6875rem;
+  /* Teinte du bloc, jamais une couleur propre : le contraste vérifié pour le
+     texte principal vaut donc aussi pour ces lignes. */
+  opacity: 0.9;
+}
+.ew-ev-time {
+  font-weight: 400;
+}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   defaultRange,
+  eventDetail,
   eventTitle,
   isExternalHalfDaySelection,
   mapAvailabilityToEvents,
@@ -86,6 +87,30 @@ describe('eventTitle', () => {
     ).toBe('Hugo Discret (Atelier Numérique)')
     expect(eventTitle(slot())).toBe('Occupé')
     expect(eventTitle(slot({ is_mine: true }))).toBe('Ma réservation')
+  })
+})
+
+describe('eventDetail', () => {
+  it('complète un bloc libellé par son occupant, et ne répète rien sinon', () => {
+    // Sans libellé, le titre du bloc EST déjà l'occupant : pas de 3ᵉ ligne.
+    expect(eventDetail(slot())).toBeNull()
+    expect(eventDetail(slot({ is_mine: true }))).toBeNull()
+
+    expect(eventDetail(slot({ label: 'Comité produit' }))).toBe('Occupé')
+    expect(eventDetail(slot({ label: 'Point équipe', is_mine: true }))).toBe('Ma réservation')
+    expect(
+      eventDetail(
+        slot({
+          label: 'Comité produit',
+          occupant: {
+            kind: 'member',
+            first_name: 'Hugo',
+            last_name: 'Discret',
+            company_name: 'Atelier Numérique',
+          },
+        }),
+      ),
+    ).toBe('Hugo Discret (Atelier Numérique)')
   })
 })
 

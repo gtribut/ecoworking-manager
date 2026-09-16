@@ -7,11 +7,34 @@ import { cn } from '@/lib/utils'
 /*
  * Primitive shadcn/ui `calendar` (style radix-nova, base react-day-picker),
  * ajoutée au lot U3 pour le mini-mois de navigation de l'agenda des salles
- * (ADR-0013 D3). Écart assumé par rapport au fichier généré : `cn` est importé
- * depuis `@/lib/utils` (le registre génère `from "cn"`, alias inexistant ici).
+ * (ADR-0013 D3). Deux adaptations locales assumées :
+ *
+ * 1. `cn` est importé depuis `@/lib/utils` (le registre génère `from "cn"`,
+ *    alias inexistant ici — et la dépendance npm `cn` qu'il tire au passage
+ *    n'a rien à voir avec shadcn).
+ * 2. **Libellés ARIA francisés** (`FRENCH_LABELS`) : `react-day-picker` v10
+ *    laisse en dur « Go to the Previous Month », « Choose the Month »… même
+ *    avec `locale={fr}`, qui ne traduit que les dates. Posés ici en valeurs par
+ *    défaut (et non au point d'appel) pour couvrir tous les usages futurs du
+ *    composant ; un appelant peut toujours les surcharger via `labels`.
+ *
  * Les classes nova sont conservées telles quelles, le thème sombre passe par
  * les jetons shadcn déjà mappés sur le vert brand.
  */
+
+/**
+ * Libellés ARIA que react-day-picker ne dérive PAS de la locale. Les autres
+ * (grille du mois, bouton de jour, en-tête de jour de semaine) sont formatés à
+ * partir de `locale`, donc déjà en français.
+ */
+const FRENCH_LABELS: Partial<React.ComponentProps<typeof DayPicker>['labels']> = {
+  labelPrevious: () => 'Mois précédent',
+  labelNext: () => 'Mois suivant',
+  labelMonthDropdown: () => 'Choisir le mois',
+  labelYearDropdown: () => 'Choisir l’année',
+  labelWeekNumber: (weekNumber: number) => `Semaine ${weekNumber}`,
+  labelWeekNumberHeader: () => 'Numéro de semaine',
+}
 
 function Calendar({
   className,
@@ -21,6 +44,7 @@ function Calendar({
   buttonVariant = 'ghost',
   locale,
   formatters,
+  labels,
   components,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
@@ -39,6 +63,7 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       locale={locale}
+      labels={{ ...FRENCH_LABELS, ...labels }}
       formatters={{
         formatMonthDropdown: (date) => date.toLocaleString(locale?.code, { month: 'short' }),
         ...formatters,

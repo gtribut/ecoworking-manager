@@ -66,6 +66,58 @@ async function fillBooking(
   return dialog
 }
 
+/**
+ * Jour de la semaine **suivante** (0 = lundi), au format YYYY-MM-DD, calculé
+ * DANS le navigateur pour partager son fuseau. La semaine suivante est
+ * entièrement dans le futur : aucun créneau n'y est refusé pour cause de passé.
+ */
+async function dayOfNextWeek(page: Page, weekdayOffset: number): Promise<string> {
+  return page.evaluate((offset) => {
+    const day = new Date()
+    day.setHours(0, 0, 0, 0)
+    day.setDate(day.getDate() - ((day.getDay() + 6) % 7) + 7 + offset)
+    const month = String(day.getMonth() + 1).padStart(2, '0')
+    const date = String(day.getDate()).padStart(2, '0')
+    return `${day.getFullYear()}-${month}-${date}`
+  }, weekdayOffset)
+}
+
+/**
+ * Glisse sur la colonne d'un jour de la grille FullCalendar.
+ *
+ * La v7 hache ses classes : les seuls accroches stables sont les attributs
+ * ARIA/données de la grille (`[role="gridcell"][data-date]` pour la colonne
+ * d'un jour). Une colonne couvre exactement `slotMinTime`→`slotMaxTime`, la
+ * position verticale d'une heure s'en déduit linéairement (vérifié sur le DOM :
+ * un bloc de 10 h avec `slotMinTime` à 8 h est posé à `top: 2 × hauteur d'heure`).
+ * Les heures sont passées en décimal et visent l'INTÉRIEUR d'un pas de 30 min
+ * (`snapDuration`), pour que la sélection tombe sur des bornes prévisibles.
+ */
+async function dragOnDay(
+  page: Page,
+  options: { date: string; fromHour: number; toHour: number; dayStart: number; dayEnd: number },
+): Promise<void> {
+  const column = page.locator(`.fc [role="gridcell"][data-date="${options.date}"]`)
+  await expect(column).toBeVisible()
+  await column.scrollIntoViewIfNeeded()
+
+  const box = await column.boundingBox()
+  if (box === null) {
+    throw new Error(`Colonne du ${options.date} sans géométrie`)
+  }
+  const span = options.dayEnd - options.dayStart
+  const yAt = (hour: number) => box.y + ((hour - options.dayStart) / span) * box.height
+  const x = box.x + box.width / 2
+
+  await page.mouse.move(x, yAt(options.fromHour))
+  await page.mouse.down()
+  // Plusieurs déplacements : FullCalendar démarre le glisser au premier
+  // mouvement significatif, un saut unique peut être avalé.
+  await page.mouse.move(x, yAt((options.fromHour + options.toHour) / 2), { steps: 8 })
+  await page.mouse.move(x, yAt(options.toHour), { steps: 8 })
+  await page.mouse.up()
+}
+
 test.describe('Réservation de salle', () => {
   test.beforeEach(async ({ page }) => {
     await loginViaApi(page)
@@ -199,7 +251,7 @@ test.describe('Réservation de salle', () => {
   test('salle événementielle : lecture seule + invitation à nous contacter', async ({ page }) => {
     // Plus de créneau cliquable par salle depuis C14 (grille unique) : le
     // renvoi vers Ecoworking est un bouton explicite à côté des chips.
-    await page.getByRole('button', { name: `Réserver ${seed.rooms.event}` }).click()
+    await page.getByRole('button', { name: `${seed.rooms.event} : sur demande` }).click()
 
     // Le lien est cherché DANS le bandeau : la top bar du shell (C14) porte
     // désormais son propre « Nous contacter », visible en desktop.
@@ -212,11 +264,66 @@ test.describe('Réservation de salle', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
+  test('glisser sur un créneau libre → modale pré-remplie', async ({ page }) => {
+    // Mercredi de la semaine suivante : toujours dans le futur, donc jamais
+    // refusé par `selectAllow`.
+    const date = await dayOfNextWeek(page, 2)
+    await page.getByRole('button', { name: 'Période suivante' }).click()
+
+    // Bornes par défaut d'un membre résident : 08 h – 20 h.
+    await dragOnDay(page, { date, fromHour: 10.1, toHour: 11.6, dayStart: 8, dayEnd: 20 })
+
+    const dialog = page.getByRole('dialog', { name: 'Nouvelle réservation' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByLabel('Date')).toHaveValue(date)
+    // Le pas de sélection est de 30 min : 10,1 h → borne basse 10:00,
+    // 11,6 h → borne haute 12:00.
+    await expect(dialog.getByLabel('Heure de début')).toHaveValue('10:00')
+    await expect(dialog.getByLabel('Heure de fin')).toHaveValue('12:00')
+    // Salle pré-remplie sur la première salle réservable affichée, modifiable.
+    await expect(dialog.getByLabel('Salle', { exact: true })).not.toHaveValue('')
+  })
+
   test('historique : onglet dédié aux réservations passées', async ({ page }) => {
     await page.getByRole('button', { name: 'Historique' }).click()
 
     await expect(
       page.getByRole('heading', { name: 'Historique de mes réservations' }),
     ).toBeVisible()
+  })
+})
+
+test.describe('Réservation de salle — external', () => {
+  test.beforeEach(async ({ page }) => {
+    await loginViaApi(page, seed.external.email)
+    await page.goto('/bookings')
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Réservations de salles' }),
+    ).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Nouvelle réservation' })).toBeVisible()
+  })
+
+  test('glisser hors demi-journée n’ouvre rien, une demi-journée ouvre la modale', async ({
+    page,
+  }) => {
+    const date = await dayOfNextWeek(page, 2)
+    await page.getByRole('button', { name: 'Période suivante' }).click()
+
+    // Grille 09 h – 18 h pour un external. La pause déjeuner 13 h – 14 h
+    // n'appartient à aucune demi-journée (PRD §3.5.3) : `selectAllow` la refuse.
+    await dragOnDay(page, { date, fromHour: 13.1, toHour: 13.8, dayStart: 9, dayEnd: 18 })
+    // Assertion négative : on laisse à la modale le temps de s'ouvrir avant de
+    // constater qu'elle ne s'ouvre pas.
+    await page.waitForTimeout(300)
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+
+    // Le matin, lui, reste sélectionnable.
+    await dragOnDay(page, { date, fromHour: 9.1, toHour: 10.6, dayStart: 9, dayEnd: 18 })
+    const dialog = page.getByRole('dialog', { name: 'Nouvelle réservation' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByLabel('Date')).toHaveValue(date)
+    // Un external ne réserve qu'en demi-journées : le matin est pré-coché.
+    await expect(dialog.getByLabel('Matin (9 h – 13 h)')).toBeChecked()
+    await expect(dialog.getByLabel('Créneau personnalisé')).toHaveCount(0)
   })
 })

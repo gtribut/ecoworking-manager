@@ -55,6 +55,20 @@ export function eventTitle(slot: CalendarSlot): string {
 }
 
 /**
+ * Ligne complémentaire d'un bloc : qui occupe le créneau. `null` quand le titre
+ * porte déjà l'occupant (créneau sans libellé), pour ne pas le répéter.
+ */
+export function eventDetail(slot: CalendarSlot): string | null {
+  if (slot.label === null || slot.label === '') {
+    return null
+  }
+  if (slot.is_mine) {
+    return 'Ma réservation'
+  }
+  return formatOccupant(slot) ?? 'Occupé'
+}
+
+/**
  * Disponibilité multi-salles → blocs FullCalendar, salles masquées exclues.
  * `editable: false` : le déplacement / redimensionnement à la souris n'est pas
  * du MVP (modification via la modale, PRD §3.5.5).

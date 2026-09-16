@@ -1,4 +1,10 @@
-import type { CalendarRef, DateSelectInfo, DatesSetInfo, EventClickInfo } from '@fullcalendar/react'
+import type {
+  CalendarRef,
+  DateSelectInfo,
+  DatesSetInfo,
+  EventClickInfo,
+  EventDisplayInfo,
+} from '@fullcalendar/react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/react/daygrid'
 import interactionPlugin from '@fullcalendar/react/interaction'
@@ -38,6 +44,7 @@ import {
 import {
   type EventSlotProps,
   EXTERNAL_SELECT_CONSTRAINT,
+  eventDetail,
   isExternalHalfDaySelection,
   mapAvailabilityToEvents,
   type PickedRange,
@@ -103,6 +110,66 @@ function isMobileViewport(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
 }
 
+/** Plage affichée au montage, avant le premier `datesSet` de FullCalendar. */
+function initialRange(): { from: string; to: string } {
+  const start = isMobileViewport() ? atHour(new Date(), 0) : startOfWeek(new Date())
+  return {
+    from: toIsoDate(start),
+    to: toIsoDate(isMobileViewport() ? start : addDays(start, 6)),
+  }
+}
+
+/**
+ * Seuils de densité d'un bloc : sous 30 min il n'y a la place que pour le
+ * titre, sous 1 h pas pour l'occupant. Calculés sur la durée (déterministe)
+ * plutôt que sur la hauteur rendue, qui dépend du zoom et de la vue.
+ */
+const META_MIN_MINUTES = 30
+const OCCUPANT_MIN_MINUTES = 60
+
+function durationMinutes(start: Date | null, end: Date | null): number {
+  if (start === null || end === null) {
+    return 0
+  }
+  return (end.getTime() - start.getTime()) / 60_000
+}
+
+/**
+ * Contenu d'un bloc (maquettes C14) : titre, puis horaire · salle, puis
+ * occupant · entité. Le **nom de la salle** y figure explicitement : la couleur
+ * seule ne doit jamais porter l'information (CLAUDE.md §3.5, WCAG 1.4.1).
+ * En vue mois, les blocs sont des lignes : titre et horaire seulement.
+ */
+function renderEventContent(info: EventDisplayInfo, compact: boolean) {
+  const props = readEventSlotProps(info.event.extendedProps as Record<string, unknown>)
+
+  if (props === null || compact) {
+    return (
+      <span className="ew-ev-line ew-ev-title">
+        {info.timeText !== '' && <span className="ew-ev-time">{info.timeText} </span>}
+        {info.event.title}
+      </span>
+    )
+  }
+
+  const minutes = durationMinutes(info.event.start, info.event.end)
+  const detail = eventDetail(props.slot)
+
+  return (
+    <span className="ew-ev-content">
+      <span className="ew-ev-line ew-ev-title">{info.event.title}</span>
+      {minutes >= META_MIN_MINUTES && (
+        <span className="ew-ev-line ew-ev-meta">
+          {info.timeText} · {props.roomName}
+        </span>
+      )}
+      {minutes >= OCCUPANT_MIN_MINUTES && detail !== null && (
+        <span className="ew-ev-line ew-ev-occupant">{detail}</span>
+      )}
+    </span>
+  )
+}
+
 /**
  * Agenda des salles (PRD §3.5.2, ADR-0013 D3) : une seule grille FullCalendar
  * pour toutes les salles, blocs colorés par salle posés côte à côte.
@@ -130,13 +197,16 @@ export function RoomsCalendar({
   const [showAllHours, setShowAllHours] = useState(false)
   const [hiddenIds, setHiddenIds] = useState<number[]>([])
   const [popover, setPopover] = useState<PopoverTarget | null>(null)
-  const [range, setRange] = useState(() => {
-    const start = isMobileViewport() ? atHour(new Date(), 0) : startOfWeek(new Date())
-    return {
-      from: toIsoDate(start),
-      to: toIsoDate(isMobileViewport() ? start : addDays(start, 6)),
-    }
-  })
+  /** Plage **affichée** (débords de mois inclus) : c'est elle qu'on interroge. */
+  const [range, setRange] = useState(() => initialRange())
+  /** Période **courante** (le mois, la semaine, le jour) : libellé et mini-mois. */
+  const [period, setPeriod] = useState(() => initialRange())
+
+  // FullCalendar n'est pas contrôlé : `initialView` / `initialDate` ne valent
+  // qu'au montage. On les fige pour qu'un rendu ultérieur ne les fasse pas
+  // varier (la navigation passe par `getApi()`).
+  const initialView = useRef(view).current
+  const initialDate = useRef(date).current
 
   const {
     data: catalog,
@@ -152,7 +222,7 @@ export function RoomsCalendar({
   )
 
   const availability = useRoomsAvailability(range.from, range.to, visibleIds)
-  const rooms = availability.data?.rooms ?? []
+  const rooms = useMemo(() => availability.data?.rooms ?? [], [availability.data])
 
   const events = useMemo(
     () => mapAvailabilityToEvents(rooms, catalogIds, visibleIds),
@@ -175,10 +245,28 @@ export function RoomsCalendar({
   // `datesSet`, qui remonte à son tour la période courante).
   useEffect(() => {
     const iso = toIsoDate(date)
-    if (iso < range.from || iso > range.to) {
+    if (iso < period.from || iso > period.to) {
       calendarRef.current?.getApi().gotoDate(date)
     }
-  }, [date, range])
+  }, [date, period])
+
+  // Le popover est ancré à un rectangle **figé** au moment du clic : dès que la
+  // grille bouge sous lui (défilement de la page ou de la grille, changement de
+  // taille de fenêtre), il pointerait à côté. On le ferme plutôt que de le
+  // laisser mentir. `capture` pour attraper aussi le défilement des conteneurs
+  // internes de FullCalendar, qui ne remonte pas jusqu'à `window`.
+  useEffect(() => {
+    if (popover === null) {
+      return
+    }
+    const close = () => setPopover(null)
+    window.addEventListener('scroll', close, { capture: true, passive: true })
+    window.addEventListener('resize', close)
+    return () => {
+      window.removeEventListener('scroll', close, { capture: true })
+      window.removeEventListener('resize', close)
+    }
+  }, [popover])
 
   const changeView = useCallback((next: AgendaView) => {
     setPopover(null)
@@ -188,14 +276,31 @@ export function RoomsCalendar({
 
   const handleDatesSet = useCallback(
     (info: DatesSetInfo) => {
+      // La grille a bougé : le popover, ancré à un rectangle figé, n'a plus de
+      // cible valide (navigation, mini-mois, changement de vue).
+      setPopover(null)
+
+      // `info.start`/`info.end` = plage AFFICHÉE (la vue mois déborde sur les
+      // mois voisins) : c'est elle qu'on interroge, pour ne pas laisser de jour
+      // visible sans ses réservations. `view.currentStart`/`currentEnd` = la
+      // période réelle, celle qui nomme l'écran et positionne le mini-mois.
       const from = toIsoDate(info.start)
       // `end` est exclusive côté FullCalendar, l'API attend une borne incluse.
       const to = toIsoDate(addDays(info.end, -1))
       setRange((current) => (current.from === from && current.to === to ? current : { from, to }))
+
+      const currentFrom = toIsoDate(info.view.currentStart)
+      const currentTo = toIsoDate(addDays(info.view.currentEnd, -1))
+      setPeriod((current) =>
+        current.from === currentFrom && current.to === currentTo
+          ? current
+          : { from: currentFrom, to: currentTo },
+      )
+
       // La date sélectionnée reste celle de l'utilisateur tant qu'elle est
-      // visible ; une navigation ‹ / › la ramène au début de la nouvelle période.
-      if (date < info.start || date >= info.end) {
-        onDateChange(info.start)
+      // dans la période ; une navigation ‹ / › la ramène à son début.
+      if (date < info.view.currentStart || date >= info.view.currentEnd) {
+        onDateChange(info.view.currentStart)
       }
     },
     [date, onDateChange],
@@ -210,6 +315,11 @@ export function RoomsCalendar({
       })
     },
     [firstBookableVisible, onPickRange],
+  )
+
+  const renderEvent = useCallback(
+    (info: EventDisplayInfo) => renderEventContent(info, view === 'dayGridMonth'),
+    [view],
   )
 
   const handleEventClick = useCallback(
@@ -250,8 +360,8 @@ export function RoomsCalendar({
 
   const periodLabel = formatPeriodLabel(
     PERIOD_OF_VIEW[view],
-    new Date(`${range.from}T00:00:00`),
-    new Date(`${range.to}T00:00:00`),
+    new Date(`${period.from}T00:00:00`),
+    new Date(`${period.to}T00:00:00`),
   )
 
   return (
@@ -340,7 +450,7 @@ export function RoomsCalendar({
 
         {eventRoom !== null && (
           <Button variant="ghost" size="sm" onClick={onPickEventRoom}>
-            Réserver {eventRoom.name}
+            {eventRoom.name} : sur demande
           </Button>
         )}
 
@@ -379,8 +489,8 @@ export function RoomsCalendar({
         <FullCalendar
           ref={calendarRef}
           plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin, classicTheme]}
-          initialView={view}
-          initialDate={date}
+          initialView={initialView}
+          initialDate={initialDate}
           locale={frLocale}
           firstDay={1}
           headerToolbar={false}
@@ -404,6 +514,7 @@ export function RoomsCalendar({
           }
           selectConstraint={isExternal ? EXTERNAL_SELECT_CONSTRAINT : undefined}
           eventClick={handleEventClick}
+          eventContent={renderEvent}
           events={events}
           datesSet={handleDatesSet}
           dayMaxEvents={3}
@@ -502,7 +613,7 @@ function EventPopover({
             {props.roomCapacity !== null && ` · ${props.roomCapacity} places`}
           </dd>
           <dt className="text-muted-foreground">Occupant</dt>
-          <dd>{slot.is_mine ? 'Vous' : (occupant ?? 'Non communiqué')}</dd>
+          <dd>{slot.is_mine ? 'Vous' : (occupant ?? 'Occupé')}</dd>
         </dl>
 
         {editable && slot.booking_id !== null && (

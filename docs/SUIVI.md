@@ -218,7 +218,7 @@
 | Code | Tâche | Statut | Notes |
 |---|---|---|---|
 | C14.0 | U0 docs : ADR-0013, PRD (écart nav ré-acté, §3.5.2), BRIEF §5 | ✅ | Sonnet — mergé 16/09 (`5ac65d4`) : ADR-0013, PRD §3.1/§3.5.2/§3.9 ré-actés, BRIEF §5.3, artboards `refonte_ui/maquettes/` |
-| C14.1 | U1 design system : shadcn/ui réel (Tailwind v4), Geist fontsource, migration `components/ui` | ⬜ | Opus |
+| C14.1 | U1 design system : shadcn/ui réel (Tailwind v4), Geist fontsource, migration `components/ui` | ✅ | Opus — mergé 16/09 (`971f8d2`) : shadcn CLI 4.21 (style radix-nova, `radix-ui`, `tw-animate-css`), 25 primitives kebab-case + `NativeSelect` (react-hook-form) + `Spinner` conservé, jetons mappés sur le vert brand oklch (contrastes AA documentés dans `styles.css`), Geist auto-hébergée, `Modal`→`Dialog`, `ConfirmButton`→`AlertDialog`, ~94 call sites migrés ; review Opus soldée (persistance sidebar, TooltipProvider, focus des champs, `onInteractOutside`). 663 Pest + 226 Vitest + e2e 23/24 (échec « session expirée » préexistant sur main, à stabiliser en U2) |
 | C14.2 | U2 shell : sidebar + top bar + bottom nav mobile, largeur par page | ⬜ | Opus |
 | C14.3 | U3 agenda salles FullCalendar v7 (repli v6), alternative liste + bouton | ⬜ | Opus — ∥ C14.4/C14.5 |
 | C14.4 | U4a pages : dashboard bento, factures DataTable, profil onglets | ⬜ | Sonnet |

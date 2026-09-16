@@ -1,6 +1,5 @@
 import { Link } from 'react-router'
 import { KpiTile } from '@/features/dashboard/KpiTile'
-import { cn } from '@/lib/utils'
 import { useInternalDocuments } from './useDocuments'
 
 /**
@@ -11,6 +10,13 @@ import { useInternalDocuments } from './useDocuments'
  * et repris tel quel par `e2e/auth.spec.ts`, quel que soit le nombre réel.
  * Import cross-feature de `KpiTile` (dashboard) assumé, comme `EntityBlock`
  * (billing) l'est déjà par le profil et les factures.
+ *
+ * **Masquée entièrement dès que rien n'est à valider** (recette R-06,
+ * anomalie corrigée le 13/09 : la tuile « prenait de la place pour rien ») —
+ * la grille passe alors à 3 tuiles, sans bandeau en mobile. Ne pas confondre
+ * avec le chargement (`data` encore `undefined`) : la tuile reste affichée
+ * (avec son skeleton) tant qu'on ne sait pas encore s'il y a des documents en
+ * attente, pour éviter un flash "rien" → "quelque chose".
  *
  * Le téléchargement et la validation restent sur `/documents`
  * (`InternalDocumentItem`, page « Documents ») : cette tuile n'est qu'un
@@ -25,6 +31,7 @@ export function DashboardDocumentsToValidate() {
       <KpiTile
         label="Documents"
         orderFirst
+        className="col-span-2 lg:col-span-1"
         value="Indisponible"
         sub={
           <Link
@@ -40,30 +47,29 @@ export function DashboardDocumentsToValidate() {
 
   const toValidate = data?.data.filter((document) => !document.is_validated) ?? []
   const hasPending = toValidate.length > 0
+
+  if (data && !hasPending) {
+    return null
+  }
+
   const firstTitle = toValidate[0]?.title
 
   return (
     <KpiTile
-      label={hasPending ? 'Documents à valider' : 'Documents'}
+      label="Documents à valider"
       loading={isLoading}
-      tone={hasPending ? 'amber' : 'default'}
+      tone="amber"
       orderFirst
-      value={hasPending ? firstTitle : 'Documents à jour'}
+      className="col-span-2 lg:col-span-1"
+      value={firstTitle}
       sub={
         <Link
           to="/documents"
-          className={cn(
-            'font-medium underline underline-offset-2',
-            hasPending
-              ? 'text-amber-900 dark:text-amber-200'
-              : 'text-brand-700 dark:text-brand-300',
-          )}
+          className="font-medium text-amber-900 underline underline-offset-2 dark:text-amber-200"
         >
-          {hasPending
-            ? toValidate.length > 1
-              ? `+${toValidate.length - 1} autre(s) · Lire et valider`
-              : 'Lire et valider'
-            : 'Voir mes documents'}
+          {toValidate.length > 1
+            ? `+${toValidate.length - 1} autre(s) · Lire et valider`
+            : 'Lire et valider'}
         </Link>
       }
     />

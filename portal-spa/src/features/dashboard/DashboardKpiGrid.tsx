@@ -27,18 +27,21 @@ function relativeDay(iso: string): string {
   return WEEKDAY_MONTH_FORMAT.format(target)
 }
 
-function timeOnly(iso: string): string {
-  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+function timeRange(startsAt: string, endsAt: string): string {
+  const time = (iso: string) =>
+    new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return `${time(startsAt)} – ${time(endsAt)}`
 }
 
 /**
- * KPI « Prochaine réservation » (PRD §3.3.2, maquette C14). Requête dédiée
- * (`useUpcomingBookings(1)`) : même endpoint que `DashboardUpcomingBookings`
- * (`upcoming=1`), avec une limite différente — donc une entrée de cache TanStack
- * Query distincte (léger surcoût réseau assumé, cf. rapport U4a).
+ * KPI « Prochaine réservation » (PRD §3.3.2, maquette C14). Réutilise
+ * `useUpcomingBookings()` (défaut 3, même clé de cache que
+ * `DashboardUpcomingBookings`) plutôt qu'une limite de 1 dédiée : la valeur
+ * `[0]` suffit, pas besoin d'une seconde requête réseau pour la même donnée
+ * (review U4a I-2 — `useUpcomingBookings(1)` dupliquait l'appel).
  */
 function NextBookingKpi() {
-  const { data, isLoading, isError } = useUpcomingBookings(1)
+  const { data, isLoading, isError } = useUpcomingBookings()
   const booking = data?.[0] ?? null
 
   if (isError) {
@@ -51,7 +54,7 @@ function NextBookingKpi() {
       loading={isLoading}
       value={
         booking
-          ? `${relativeDay(booking.starts_at)} · ${timeOnly(booking.starts_at)}`
+          ? `${relativeDay(booking.starts_at)} · ${timeRange(booking.starts_at, booking.ends_at)}`
           : 'Aucune résa à venir'
       }
       sub={
@@ -182,9 +185,13 @@ function LastInvoiceKpi() {
 /**
  * Rangée de KPI du dashboard (PRD §3.3, maquette C14 « bento ») : jusqu'à 4
  * tuiles selon le rôle et les données déjà chargées ailleurs dans le portail
- * — aucun nouvel appel API (CLAUDE.md §11, garde-fou U4a). Le document à
- * valider (`DashboardDocumentsToValidate`) est toujours affiché en premier
- * dans le DOM et repasse en tête visuellement sur mobile (`orderFirst`).
+ * — aucun nouvel appel API (CLAUDE.md §11, garde-fou U4a). Ordre du DOM
+ * (accessible) = ordre de la maquette desktop : prochaine résa, bureau/
+ * tickets, documents à valider, dernière facture. Le document à valider
+ * (`DashboardDocumentsToValidate`) repasse néanmoins en tête visuellement en
+ * mobile/tablette (`orderFirst`, `col-span-2` en dessous de `lg` — bandeau
+ * pleine largeur comme `Mobile.dc.html`) et se masque lui-même s'il n'y a
+ * rien à valider (recette R-06).
  */
 export function DashboardKpiGrid() {
   const { canViewBookings, isResident, isExternal, has } = usePermissions()
@@ -195,11 +202,11 @@ export function DashboardKpiGrid() {
       <h2 id="dashboard-kpis-title" className="sr-only">
         Indicateurs clés
       </h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <DashboardDocumentsToValidate />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {canViewBookings && <NextBookingKpi />}
         {isResident && <DeskKpi />}
         {isExternal && <TicketsKpi />}
+        <DashboardDocumentsToValidate />
         {canSeeInvoices && <LastInvoiceKpi />}
       </div>
     </section>

@@ -12,11 +12,13 @@ export interface KpiTileProps {
   /** `amber` : mise en avant (document à valider), cf. maquette C14. */
   tone?: 'default' | 'amber'
   /**
-   * Repasse la tuile en tête de la grille en mobile uniquement (maquette :
-   * le document à valider précède les autres KPI sous `md`), sans effet en
-   * desktop où l'ordre du DOM (accessible) fait foi.
+   * Repasse la tuile en tête de la grille en mobile/tablette uniquement
+   * (maquette : le document à valider précède les autres KPI sous `lg`,
+   * même s'il n'est pas le premier dans le DOM), sans effet en desktop où
+   * l'ordre du DOM (accessible) fait foi.
    */
   orderFirst?: boolean
+  /** Classes de placement dans la grille (ex. `col-span-2 lg:col-span-1`). */
   className?: string
 }
 
@@ -43,14 +45,13 @@ export function KpiTile({
   return (
     <article
       aria-labelledby={headingId}
-      className={cn('flex', orderFirst && 'order-first md:order-none')}
+      className={cn('flex', orderFirst && 'order-first lg:order-none', className)}
     >
       <Card
         className={cn(
           'flex-1 gap-1',
           tone === 'amber' &&
             'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40',
-          className,
         )}
       >
         <CardContent className="space-y-1">

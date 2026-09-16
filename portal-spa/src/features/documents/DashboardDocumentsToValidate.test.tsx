@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import type { AuthUser } from '@/features/auth/types'
@@ -66,15 +66,18 @@ describe('DashboardDocumentsToValidate (KPI dashboard, PRD §3.3.2)', () => {
 
     renderWithProviders(<DashboardDocumentsToValidate />, { withAuth: true })
 
+    // Le libellé (heading) est déjà présent pendant le chargement (skeleton) :
+    // on attend la valeur (dépendante de la donnée) avant les checks
+    // synchrones, sans quoi ceux-ci peuvent s'exécuter trop tôt.
+    expect(await screen.findByText('Charte interne')).toBeInTheDocument()
     // Libellé au pluriel, quel que soit le nombre réel (e2e/auth.spec.ts,
     // cohérent avec le titre de la même section sur /documents).
-    expect(await screen.findByRole('heading', { name: 'Documents à valider' })).toBeInTheDocument()
-    expect(screen.getByText('Charte interne')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Documents à valider' })).toBeInTheDocument()
     const link = screen.getByRole('link', { name: /\+1 autre\(s\) · Lire et valider/ })
     expect(link).toHaveAttribute('href', '/documents')
   })
 
-  it('affiche « Documents à jour » quand rien n’est à valider (recette R-06)', async () => {
+  it('masque la tuile quand rien n’est à valider (recette R-06)', async () => {
     server.use(
       http.get('/api/user', () => HttpResponse.json(member())),
       http.get('/api/documents/internal', () => HttpResponse.json({ data: [] })),
@@ -82,12 +85,14 @@ describe('DashboardDocumentsToValidate (KPI dashboard, PRD §3.3.2)', () => {
 
     renderWithProviders(<DashboardDocumentsToValidate />, { withAuth: true })
 
-    expect(await screen.findByText('Documents à jour')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Documents' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voir mes documents' })).toHaveAttribute(
-      'href',
-      '/documents',
+    // Tant que la donnée n'est pas résolue, la tuile peut rester affichée
+    // (skeleton) — c'est une fois vide confirmée qu'elle doit disparaître.
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: 'Documents à valider' }),
+      ).not.toBeInTheDocument(),
     )
+    expect(screen.queryByRole('link', { name: /documents/i })).not.toBeInTheDocument()
   })
 
   it('affiche un état indisponible sans planter si la requête échoue', async () => {

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import type { AuthUser } from '@/features/auth/types'
@@ -159,13 +159,51 @@ describe('DashboardKpiGrid — mapping rôle → tuiles (PRD §3.3, maquette C14
     expect(screen.queryByRole('heading', { name: 'Mon bureau' })).not.toBeInTheDocument()
   })
 
-  it('aucune permission d’usage : seule la tuile documents reste', async () => {
+  it('aucune permission d’usage et aucun document en attente : grille de KPI vide (R-06)', async () => {
     mockCommon(makeAuthUser({ permissions: [] }))
 
     renderWithProviders(<DashboardKpiGrid />, { withAuth: true })
 
-    expect(await screen.findByText('Documents à jour')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Documents' })).toBeInTheDocument()
+    // La tuile documents (`DashboardDocumentsToValidate`) se masque elle-même
+    // une fois la liste résolue vide — aucune tuile ne reste alors.
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('heading', { name: 'Documents à valider' }),
+      ).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByRole('heading', { name: 'Prochaine réservation' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Mon bureau' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Tickets restants' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Dernière facture' })).not.toBeInTheDocument()
+    // Le h2 sr-only de la section reste présent même sans tuile.
+    expect(screen.getByRole('heading', { name: 'Indicateurs clés' })).toBeInTheDocument()
+  })
+
+  it('affiche uniquement la tuile documents quand seul un document est en attente', async () => {
+    mockCommon(makeAuthUser({ permissions: [] }))
+    server.use(
+      http.get('/api/documents/internal', () =>
+        HttpResponse.json({
+          data: [
+            {
+              id: 1,
+              type: 'charter',
+              title: 'Charte interne',
+              version: '1.0',
+              body: null,
+              published_at: '2026-06-01T10:00:00+02:00',
+              pdf_available: true,
+              is_validated: false,
+              validated_at: null,
+            },
+          ],
+        }),
+      ),
+    )
+
+    renderWithProviders(<DashboardKpiGrid />, { withAuth: true })
+
+    expect(await screen.findByRole('heading', { name: 'Documents à valider' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Prochaine réservation' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Mon bureau' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Tickets restants' })).not.toBeInTheDocument()

@@ -135,6 +135,45 @@ export function formatShortDay(day: Date): string {
   return day.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
+/**
+ * Libellé de la période affichée par l'agenda (barre d'outils C14) :
+ * « lundi 14 septembre 2026 », « 14 – 20 septembre 2026 », « septembre 2026 ».
+ * `endInclusive` est le dernier jour affiché (pas la borne exclusive de
+ * FullCalendar).
+ */
+export function formatPeriodLabel(
+  period: 'day' | 'week' | 'month',
+  start: Date,
+  endInclusive: Date,
+): string {
+  if (period === 'day') {
+    return start.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  }
+  if (period === 'month') {
+    // La vue mois déborde sur les mois voisins : le mois du milieu de plage
+    // est celui réellement affiché.
+    const middle = new Date((start.getTime() + endInclusive.getTime()) / 2)
+    return middle.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+  }
+  const sameMonth =
+    start.getMonth() === endInclusive.getMonth() &&
+    start.getFullYear() === endInclusive.getFullYear()
+  const from = sameMonth
+    ? String(start.getDate())
+    : start.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+  const to = endInclusive.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  return `${from} – ${to}`
+}
+
 /** « 09:00 ». */
 export function formatHour(hour: number): string {
   return `${String(hour).padStart(2, '0')}:00`

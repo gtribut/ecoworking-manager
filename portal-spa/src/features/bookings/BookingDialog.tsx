@@ -8,6 +8,7 @@ import { ConfirmButton } from '@/components/ui/confirm-button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NativeSelect } from '@/components/ui/native-select'
 import { getApiErrorMessage, getApiFieldErrors, getApiStatus } from '@/lib/errors'
 import { fetchRoomAvailability } from './api'
 import {
@@ -19,22 +20,27 @@ import {
   toIsoDate,
 } from './calendar'
 import type { CreateBookingInput, SlotPeriod } from './types'
-import { useCancelBooking, useCreateBooking, useUpdateBooking } from './useBookings'
+import { useCancelBooking, useCreateBooking, useRooms, useUpdateBooking } from './useBookings'
 
-/** Créneau à réserver (clic sur une case libre) ou réservation à modifier. */
+/**
+ * Créneau à réserver (glisser dans l'agenda, ou bouton « Nouvelle réservation »
+ * sans créneau imposé) ou réservation à modifier. En création, `roomId` n'est
+ * qu'une **valeur par défaut** : la salle reste modifiable dans le formulaire
+ * (alternative accessible à la grille, ADR-0013 D4).
+ */
 export type DialogTarget =
   | {
       mode: 'create'
-      roomId: number
-      roomName: string
+      roomId: number | null
       date: string
-      startHour: number
+      /** « HH:MM » — bornes du créneau glissé, ou prochaine heure pleine. */
+      startTime: string
+      endTime: string
     }
   | {
       mode: 'edit'
       bookingId: number
       roomId: number
-      roomName: string
       startsAt: string
       endsAt: string
       title: string | null
@@ -54,6 +60,7 @@ const KIND_LABELS: Record<SlotKind, string> = {
 
 const schema = z
   .object({
+    resource_id: z.string().min(1, 'La salle est requise.'),
     date: z.string().min(1, 'La date est requise.'),
     kind: z.enum(SLOT_KINDS),
     start_time: z.string(),
@@ -118,19 +125,23 @@ function hhmm(iso: string): string {
 
 function defaultValues(target: DialogTarget, isExternal: boolean): FormValues {
   if (target.mode === 'create') {
-    const start = formatHour(target.startHour)
-    const end = formatHour(Math.min(target.startHour + 1, 24))
     return {
+      resource_id: target.roomId === null ? '' : String(target.roomId),
       date: target.date,
-      kind: isExternal ? (target.startHour < MORNING.end ? 'morning' : 'afternoon') : 'custom',
-      start_time: start,
-      end_time: end,
+      kind: isExternal
+        ? target.startTime < formatHour(MORNING.end)
+          ? 'morning'
+          : 'afternoon'
+        : 'custom',
+      start_time: target.startTime,
+      end_time: target.endTime,
       title: '',
     }
   }
 
   const start = hhmm(target.startsAt)
   return {
+    resource_id: String(target.roomId),
     date: toIsoDate(new Date(target.startsAt)),
     kind: isExternal ? (start < formatHour(AFTERNOON.start) ? 'morning' : 'afternoon') : 'custom',
     start_time: start,
@@ -147,12 +158,17 @@ interface BookingDialogProps {
 }
 
 /**
- * Modale de réservation / modification (PRD §3.5.3 et §3.5.5) : ressource et
- * créneau pré-remplis, choix journée / demi-journée / créneau personnalisé
- * (demi-journées seules pour l'external), libellé optionnel, suppression avec
- * confirmation. Validation Zod côté client, doublée du Form Request côté back.
+ * Modale de réservation / modification (PRD §3.5.3 et §3.5.5) : salle, date et
+ * créneau saisissables (pré-remplis quand ils viennent de l'agenda), choix
+ * journée / demi-journée / créneau personnalisé (demi-journées seules pour
+ * l'external), libellé optionnel, suppression avec confirmation. Validation Zod
+ * côté client, doublée du Form Request côté back.
+ *
+ * C'est l'**alternative accessible** à la grille FullCalendar (ADR-0013 D4) :
+ * elle doit rester utilisable entièrement au clavier, sans passer par l'agenda.
  */
 export function BookingDialog({ target, isExternal, onClose, onSuccess }: BookingDialogProps) {
+  const rooms = useRooms()
   const createBooking = useCreateBooking()
   const updateBooking = useUpdateBooking()
   const cancelBooking = useCancelBooking()
@@ -178,8 +194,11 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
   }
 
   const kind = watch('kind')
-  const title =
-    target.mode === 'create' ? `Réserver ${target.roomName}` : `Ma réservation — ${target.roomName}`
+  // Salle événementielle exclue : elle n'est réservable que par l'admin (§3.5.4).
+  const bookableRooms = (rooms.data ?? []).filter((room) => room.is_bookable)
+  const roomName =
+    (rooms.data ?? []).find((room) => room.id === target.roomId)?.name ?? 'salle inconnue'
+  const title = target.mode === 'create' ? 'Nouvelle réservation' : `Ma réservation — ${roomName}`
   const kinds: SlotKind[] = isExternal ? ['morning', 'afternoon'] : [...SLOT_KINDS]
 
   // Filet : si la résa a commencé entre l'affichage de la liste et le clic, le
@@ -208,7 +227,7 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
             </Alert>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
               <dt className="font-medium">Salle</dt>
-              <dd>{target.roomName}</dd>
+              <dd>{roomName}</dd>
               <dt className="font-medium">Créneau</dt>
               <dd>
                 {new Date(target.startsAt).toLocaleString('fr-FR', {
@@ -234,16 +253,17 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
     setSuggestion(null)
 
     const times = timesForKind(values.kind, values)
+    const resourceId = Number(values.resource_id)
     const payload: CreateBookingInput = isExternal
       ? {
-          resource_id: target.roomId,
+          resource_id: resourceId,
           date: values.date,
           period:
             values.kind === 'afternoon' ? ('afternoon' as SlotPeriod) : ('morning' as SlotPeriod),
           ...(values.title === '' ? {} : { title: values.title }),
         }
       : {
-          resource_id: target.roomId,
+          resource_id: resourceId,
           starts_at: toIsoInstant(values.date, times.start),
           ends_at: toIsoInstant(values.date, times.end),
           ...(values.title === '' ? {} : { title: values.title }),
@@ -267,6 +287,8 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
       for (const [field, message] of Object.entries(fieldErrors)) {
         if (field === 'title') {
           setError('title', { message })
+        } else if (field === 'resource_id') {
+          setError('resource_id', { message })
         } else if (field === 'ends_at' && timesVisible) {
           setError('end_time', { message })
         } else if (timesVisible && (field === 'starts_at' || field === 'date')) {
@@ -284,7 +306,7 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
         const end = new Date(`${values.date}T${times.end}:00`)
         const duration = Math.round((end.getTime() - start.getTime()) / 60_000)
         try {
-          const fresh = await fetchRoomAvailability(target.roomId, values.date)
+          const fresh = await fetchRoomAvailability(resourceId, values.date)
           setSuggestion(findNearestFreeSlot(fresh.busy, start, duration, DEFAULT_HOURS))
         } catch {
           setSuggestion(null) // message de conflit seul
@@ -348,6 +370,23 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
               )}
             </Alert>
           )}
+
+          <div>
+            <Label htmlFor="booking-room">Salle</Label>
+            <NativeSelect
+              id="booking-room"
+              error={errors.resource_id?.message}
+              {...register('resource_id')}
+            >
+              <option value="">Choisir une salle…</option>
+              {bookableRooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.name}
+                  {room.capacity !== null && ` — ${room.capacity} places`}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
 
           <div>
             <Label htmlFor="booking-date">Date</Label>

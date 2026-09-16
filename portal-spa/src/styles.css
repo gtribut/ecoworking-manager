@@ -320,6 +320,15 @@
  * `.fc` n'existe plus comme classe racine en v7 (classes hachées) : c'est le
  * conteneur de `RoomsCalendar` qui la porte, et c'est le sélecteur d'exclusion
  * de l'audit axe (`FULLCALENDAR_AXE_EXCLUDE`, e2e/support/fixtures.ts).
+ *
+ * Hauteur des lignes horaires (demande de recette 16/09, +50 %) : **pas ici**.
+ * FullCalendar v7/thème classic n'expose aucune règle `.fc-timegrid-slot` ni
+ * variable `--fc-*-slot-height` à surcharger (classes hachées, vérifié dans
+ * les sources du paquet et la doc officielle) ; une surcharge CSS directe
+ * désynchronise en plus la position des événements de la grille (testé). Le
+ * réglage vit donc dans `RoomsCalendar.tsx` (constantes `AGENDA_ROW_HEIGHT_PX`
+ * / `AGENDA_HEADER_HEIGHT_PX`, prop `height` + `expandRows` de `<FullCalendar>`
+ * — seul levier documenté qui repositionne aussi les événements).
  * ========================================================================== */
 
 :root {

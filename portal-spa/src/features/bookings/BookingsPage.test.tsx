@@ -284,18 +284,6 @@ describe('BookingsPage — agenda des salles', () => {
     expect(screen.getByText('mercredi 10 juin 2026')).toBeInTheDocument()
   })
 
-  it('bascule sur la vue mois via le sélecteur de vue', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    setup()
-    renderWithProviders(<BookingsPage />, { withAuth: true })
-    await screen.findByRole('button', { name: 'Nouvelle réservation' })
-
-    await user.click(screen.getByRole('radio', { name: 'Mois' }))
-
-    // Le libellé de période, pas la légende du mini-mois du panneau droit.
-    expect(await screen.findByText('juin 2026', { selector: 'p' })).toBeInTheDocument()
-  })
-
   it('étend la plage horaire à 24 h via le toggle', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     setup()

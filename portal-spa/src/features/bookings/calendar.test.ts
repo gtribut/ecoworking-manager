@@ -5,6 +5,7 @@ import {
   describeSlot,
   findNearestFreeSlot,
   formatOccupant,
+  formatPeriodLabel,
   hourRange,
   slotCovering,
   slotsOfDay,
@@ -174,5 +175,29 @@ describe('calendar', () => {
     })
 
     expect(formatOccupant(busy)).toBe('Cabinet Rhône')
+  })
+})
+
+describe('formatPeriodLabel', () => {
+  it('nomme la journée affichée en vue jour', () => {
+    expect(
+      formatPeriodLabel('day', new Date('2026-09-14T00:00:00'), new Date('2026-09-14T00:00:00')),
+    ).toBe('lundi 14 septembre 2026')
+  })
+
+  it('résume la semaine, en factorisant le mois quand il est commun', () => {
+    expect(
+      formatPeriodLabel('week', new Date('2026-09-14T00:00:00'), new Date('2026-09-20T00:00:00')),
+    ).toBe('14 – 20 septembre 2026')
+    expect(
+      formatPeriodLabel('week', new Date('2026-09-28T00:00:00'), new Date('2026-10-04T00:00:00')),
+    ).toBe('28 septembre – 4 octobre 2026')
+  })
+
+  it('nomme le mois réellement affiché, débordements voisins inclus', () => {
+    // La grille mois de septembre 2026 commence le 31 août et finit le 4 octobre.
+    expect(
+      formatPeriodLabel('month', new Date('2026-08-31T00:00:00'), new Date('2026-10-04T00:00:00')),
+    ).toBe('septembre 2026')
   })
 })

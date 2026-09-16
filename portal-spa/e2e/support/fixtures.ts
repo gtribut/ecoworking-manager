@@ -28,6 +28,26 @@ interface A11yFixtures {
 /** Cible du projet : WCAG 2.1 AA (RGAA 4.1 AA). */
 const WCAG_AA_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
 
+/**
+ * Seule exclusion d'audit du portail : la grille de l'agenda des salles
+ * (ADR-0013 **D4**, dérogation actée le 2026-09-16).
+ *
+ * FullCalendar ne garantit ni une navigation clavier complète ni une
+ * restitution fidèle par lecteur d'écran sur sa grille temporelle interactive
+ * (glisser, chevauchements) ; y remédier en profondeur dépasse le coût
+ * acceptable à l'échelle d'Ecoworking (~50 membres). En contrepartie, **la même
+ * page** expose une alternative accessible intégralement auditée : le bouton
+ * « Nouvelle réservation » (saisie manuelle salle / date / heures) et la liste
+ * « Mes réservations » (consulter, modifier, annuler). Tout le reste de l'écran
+ * — barre d'outils, chips de filtre, popover, panneau droit, modale — reste
+ * audité sans exclusion.
+ *
+ * `.fc` n'est plus une classe de FullCalendar en v7 (classes hachées) : c'est
+ * le conteneur de `RoomsCalendar` qui la porte explicitement, justement pour
+ * rester le point d'accroche documenté ici.
+ */
+export const FULLCALENDAR_AXE_EXCLUDE = ['.fc'] as const
+
 type AxeResults = Awaited<ReturnType<AxeBuilder['analyze']>>
 
 /** Rapport d'échec lisible : une entrée par règle, nœuds fautifs listés. */

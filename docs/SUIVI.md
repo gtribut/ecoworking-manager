@@ -217,7 +217,7 @@
 
 | Code | Tâche | Statut | Notes |
 |---|---|---|---|
-| C14.0 | U0 docs : ADR-0013, PRD (écart nav ré-acté, §3.5.2), BRIEF §5 | 🚧 | Sonnet — U0 livré (branche `feature/ui-0-docs`) : ADR-0013, PRD §3.1/§3.5.2/§3.9 ré-actés, BRIEF §5.3 ; l'orchestrateur passera en ✅ au merge |
+| C14.0 | U0 docs : ADR-0013, PRD (écart nav ré-acté, §3.5.2), BRIEF §5 | ✅ | Sonnet — mergé 16/09 (`5ac65d4`) : ADR-0013, PRD §3.1/§3.5.2/§3.9 ré-actés, BRIEF §5.3, artboards `refonte_ui/maquettes/` |
 | C14.1 | U1 design system : shadcn/ui réel (Tailwind v4), Geist fontsource, migration `components/ui` | ⬜ | Opus |
 | C14.2 | U2 shell : sidebar + top bar + bottom nav mobile, largeur par page | ⬜ | Opus |
 | C14.3 | U3 agenda salles FullCalendar v7 (repli v6), alternative liste + bouton | ⬜ | Opus — ∥ C14.4/C14.5 |

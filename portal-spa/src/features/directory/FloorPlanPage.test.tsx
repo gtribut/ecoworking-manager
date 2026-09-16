@@ -227,11 +227,11 @@ describe('FloorPlanPage', () => {
     expect(document.querySelector('#desk-2 [data-desk-photo]')).toBeNull()
   })
 
-  it('signale un jour non ouvré', async () => {
+  // Ré-acté 2026-09-17 : les bureaux attitrés sont présents 7 j/7 sauf absence
+  // déclarée — le bandeau « jour non ouvré » n'a plus lieu d'être.
+  it('n’affiche aucun bandeau « jour non ouvré »', async () => {
     await renderPlan({ ...defaultPlan, is_working_day: false })
 
-    expect(
-      screen.getByText('Jour non ouvré : les bureaux attitrés sont affichés absents.'),
-    ).toBeInTheDocument()
+    expect(screen.queryByText(/jour non ouvré/i)).not.toBeInTheDocument()
   })
 })

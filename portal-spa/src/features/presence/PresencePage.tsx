@@ -156,12 +156,13 @@ function PresenceContent() {
 
   const desk = data?.desk ?? null
   const today = isoOf(new Date())
-  // « État du jour » (PRD §3.4.6/§3.7.4) : `present_days` (déjà renvoyé par
-  // `/api/presence`, pas encore affiché avant ce lot) vaut `false` pour tout
-  // jour non travaillé (week-end, férié, absence — cf. `PresenceService::
-  // presentOn()`), pas seulement pour une absence déclarée : on ne peut donc
-  // afficher « Absent(e) » que si une absence de la liste couvre bien
-  // aujourd'hui (review I-2), sinon aucun badge (jour non ouvré/indéterminé).
+  // « État du jour » (PRD §3.4.6/§3.7.4) : depuis le ré-acté 2026-09-17, un
+  // bureau attitré est présent TOUS les jours — week-ends et fériés compris —
+  // sauf absence déclarée (cf. `PresenceService::presentOn()`). `present_days`
+  // ne vaut donc `false` que sur une absence : le badge « Présent(e) » peut
+  // s'afficher un samedi. On garde la double garde `todaysAbsence` sur le badge
+  // « Absent(e) » (review I-2) : hors plage renvoyée par l'API, `present_days`
+  // ne dit rien — mieux vaut aucun badge qu'un faux « Absent(e) ».
   const presentToday = data ? data.present_days.includes(today) : null
   const todaysAbsence = data ? findAbsenceCovering(data.absences, today) : null
 

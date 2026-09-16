@@ -61,13 +61,14 @@ describe('PresencePage', () => {
     expect(screen.getByText('du 20/06/2026 au 22/06/2026')).toBeInTheDocument()
   })
 
-  // Date figée (review I-2) : `present_days` vaut `false` pour TOUT jour non
-  // travaillé (week-end, férié, absence — `PresenceService::presentOn()`),
-  // le badge « Absent(e) » ne doit donc s'afficher que si une absence
-  // déclarée couvre réellement le jour, jamais par simple déduction.
+  // Date figée. Depuis le ré-acté 2026-09-17, `present_days` ne vaut `false`
+  // que sur une absence déclarée (un samedi sans absence est donc présent).
+  // Le badge « Absent(e) » reste conditionné à une absence réellement trouvée
+  // dans la liste (review I-2), jamais à la seule absence du jour de
+  // `present_days` — la plage renvoyée par l'API peut ne pas le couvrir.
   describe('état du jour (review I-2)', () => {
     const TODAY = '2026-06-17' // mercredi
-    const SATURDAY = '2026-06-20' // jour non ouvré, sans absence déclarée
+    const SATURDAY = '2026-06-20' // samedi : présent aussi, sauf absence déclarée
 
     beforeEach(() => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -124,7 +125,16 @@ describe('PresencePage', () => {
       expect(await screen.findByText('Absent(e) aujourd’hui')).toBeInTheDocument()
     })
 
-    it('n’affiche aucun badge un jour non ouvré sans absence déclarée (pas de faux « Absent »)', async () => {
+    it('affiche « Présent(e) aujourd’hui » un samedi sans absence déclarée', async () => {
+      vi.setSystemTime(new Date(`${SATURDAY}T09:00:00`))
+      server.use(...presenceHandlers([], [], [SATURDAY]))
+
+      renderWithProviders(<PresencePage />, { withAuth: true })
+
+      expect(await screen.findByText('Présent(e) aujourd’hui')).toBeInTheDocument()
+    })
+
+    it('n’affiche aucun badge si le jour est hors de `present_days` sans absence déclarée (pas de faux « Absent »)', async () => {
       vi.setSystemTime(new Date(`${SATURDAY}T09:00:00`))
       server.use(...presenceHandlers([], [], []))
 

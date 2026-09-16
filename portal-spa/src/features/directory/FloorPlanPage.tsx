@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 import { PageContainer } from '@/components/PageContainer'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
-import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -113,10 +112,6 @@ export function FloorPlanPage() {
           fallback="Impossible de charger le plan des étages."
           onRetry={() => void refetch()}
         />
-      )}
-
-      {data && !data.is_working_day && (
-        <Alert variant="info">Jour non ouvré : les bureaux attitrés sont affichés absents.</Alert>
       )}
 
       {data && (

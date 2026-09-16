@@ -402,6 +402,14 @@ Page d'accueil après connexion. Vue récapitulative qui agrège les infos perti
 - ✅ Si une **nouvelle version** du document est publiée par l'admin, la validation précédente devient invalide → le doc redevient "à valider" pour le membre. **L'historique de chaque validation est conservé en DB** (qui / date de validation / version du document validée) via `member_document_validations` — on ne supprime jamais, on ajoute une nouvelle ligne.
 - Si zéro doc à valider : bloc masqué ou message "Tous vos documents sont à jour"
 
+> ✅ **Ré-acté 2026-09-16 (C14, U4a — confirmé U5)** : le bloc pleine liste ci-dessus devient une
+> **tuile KPI** dans la rangée bento (`DashboardKpiGrid`/`DashboardDocumentsToValidate`), pas un
+> bloc dédié : nombre + premier titre du document à valider, teinte ambre. **Masquée entièrement**
+> dès qu'il n'y a rien à valider (recette R-06) — la grille passe alors à 3 tuiles au lieu de 4. Le
+> **téléchargement et la validation restent uniquement sur `/documents`** (`InternalDocumentItem`) :
+> plus de boutons « Télécharger »/« Valider » directement sur l'accueil, la tuile n'est qu'un point
+> d'entrée (« Lire et valider » →) vers la page dédiée.
+
 **Bloc 3 prochaines réservations**
 - Titre du bloc : "Mes prochaines réservations"
 - 3 lignes max, format : libellé (si renseigné par le user), nom ressource, date + créneau horaire
@@ -412,6 +420,12 @@ Page d'accueil après connexion. Vue récapitulative qui agrège les infos perti
 - Simple `mailto:contact@ecoworking.fr?subject=[backend ecowo] Demande d'informations`
 - 🟡 À placer en footer ou comme floating action button (FAB) sur mobile
 
+> ✅ **Ré-acté 2026-09-16 (C14, U2 — confirmé U5)** : le bouton « Nous contacter » local de
+> l'accueil est retiré, en desktop **et** en mobile (un exemplaire mobile avait subsisté jusqu'en
+> U5, retiré en review — doublon avec le pied de page). Le pied de page (`Footer.tsx`, présent sur
+> toutes les pages authentifiées) porte le lien `mailto:` « Contact », identique quel que soit le
+> viewport ; la top bar porte en plus un bouton « Nous contacter » dédié en desktop (`TopBar.tsx`).
+
 #### 3.3.3 Layout
 
 - Desktop : grid responsive 2 colonnes (gauche : factures + résa, droite : actualités + documents) ou 1 colonne large
@@ -419,11 +433,27 @@ Page d'accueil après connexion. Vue récapitulative qui agrège les infos perti
 
 > ✅ **Résolu (Q7.2-4)** : l'ordre exact des blocs (mobile et desktop) est laissé à l'appréciation de Claude selon les best practices UI/UX (skill `ui-ux-pro-max`), affiné lors des itérations de wireframes. L'ordre mobile ci-dessus reste la base de départ.
 
+> ✅ **Ré-acté 2026-09-16 (C14, U4a — confirmé U5)** : layout final = rangée de tuiles KPI (bento,
+> jusqu'à 4 selon le rôle : prochaine résa, bureau/tickets, documents à valider, dernière facture)
+> en tête, puis deux colonnes « Mes prochaines réservations » / « Actualités » (une seule colonne
+> si le rôle n'a pas accès aux résas), puis le bandeau « Mes dernières factures »
+> (`billing_contact` uniquement). La section « Accès rapides » de la maquette initiale est retirée
+> (présence/tickets déjà dans les KPI, profil déjà dans la sidebar). Grille KPI en `auto-fit`
+> (`minmax(14rem,1fr)`) au-delà de `lg` plutôt qu'un nombre de colonnes figé, pour ne pas laisser de
+> vide quand moins de 4 tuiles s'affichent (review U5).
+
 ### 3.4 Profil
 
 #### 3.4.1 Vue d'ensemble
 
 Page de gestion des données personnelles + visualisation des données entreprise (non éditables côté membre).
+
+> ✅ **Ré-acté 2026-09-16 (C14, U4a — confirmé U5)** : la page est organisée en **4 onglets**
+> (`Tabs` shadcn, état dans l'URL `?tab=`) plutôt qu'en sections empilées : **Profil** (§3.4.2,
+> identité + profil public), **Compte** (mot de passe, 2FA), **Préférences** (thème, notifications,
+> visibilité annuaire/newsletter), **Entreprise** (§3.4.3, toujours présent — affiche un message
+> « aucune entité rattachée » plutôt que d'être masqué, pour rester un onglet stable). La bascule
+> se fait automatiquement sur l'onglet contenant un champ en erreur après soumission.
 
 #### 3.4.2 Section "Mes informations"
 
@@ -563,8 +593,12 @@ Trois types de ressources, chacun avec des règles d'utilisation et d'affichage 
 
 > ✅ **Tranché (Q4)** — privacy résa : nom du réserveur **visible** aux autres membres (tooltip ou clic sur la résa affiche "prénom + nom + entité juridique" et le libellé si renseigné).
 
-> ✅ **Acté 2026-09-16 (C14, ADR-0013)** : le calendrier est rendu par **FullCalendar v7**
-> (`@fullcalendar/react` + core/timegrid/daygrid/interaction, MIT) — vues `timeGridWeek` /
+> ✅ **Acté 2026-09-16 (C14, ADR-0013)** ; **packaging corrigé 2026-09-16 (U5)** — le calendrier
+> est rendu par **FullCalendar v7** : un seul paquet npm `@fullcalendar/react` (MIT), plugins en
+> **sous-chemins** du même paquet (`/timegrid`, `/daygrid`, `/interaction`, `/locales/fr`,
+> `/themes/classic`) — pas de `@fullcalendar/core` séparé comme en v6. Peers requis :
+> `temporal-polyfill` + `@full-ui/headless-calendar`. Détail complet dans
+> [ADR-0013](./adr/0013-shadcn-fullcalendar-a11y-agenda.md#mise-en-œuvre-u1--u5). Vues `timeGridWeek` /
 > `timeGridDay` / `dayGridMonth`, `locale: 'fr'`, `firstDay: 1`. Plage horaire : 08 h–20 h par
 > défaut avec toggle « voir 24 h » pour resident/additional (`slotMinTime`/`slotMaxTime`) ;
 > pour external, 09 h–18 h avec `selectConstraint` limité aux demi-journées des jours ouvrés
@@ -584,7 +618,10 @@ Trois types de ressources, chacun avec des règles d'utilisation et d'affichage 
 UX++ rapide :
 1. Clic sur un créneau libre dans le calendrier
 2. Modal :
-   - Ressource pré-remplie (déduite du clic)
+   - Ressource pré-remplie avec la première salle réservable affichée (pas nécessairement celle
+     cliquée dans la grille — FullCalendar v7 ne remonte pas la colonne/ressource du clic dans ce
+     mode de sélection), modifiable via le champ Salle de la modale (✅ corrigé 2026-09-16, U5 —
+     cf. `RoomsCalendar.tsx`, `firstBookableVisible`)
    - Créneau pré-rempli (date + heure début/fin)
    - Toggle "Toute la journée / Demi-journée matin / Demi-journée après-midi / Créneau personnalisé (heure début + fin)"
    - Champ "Libellé / info" (optionnel)
@@ -620,6 +657,13 @@ Visible dans le calendrier (mode lecture seule) mais :
 - Aucun bouton "Réserver" disponible pour resident/additional/external
 - 🟡 Au clic sur un créneau libre de la salle event : message "Pour réserver cette salle, contactez-nous" + bouton `mailto:`
 - L'admin peut réserver pour soi ou pour n'importe quel autre user/entité depuis le back-office (cf. §4.7)
+
+> ✅ **Précisé 2026-09-16 (U5)** : deux entrées mènent au même message, pas seulement le clic sur
+> un créneau libre — (1) le bouton dédié « [Salle événementielle] : sur demande » dans la barre
+> d'outils de l'agenda, toujours visible, et (2) le clic sur un bloc **occupé** de la salle event
+> (pas de popover « occupant » pour cette salle, contrairement aux salles de réunion, cf.
+> `RoomsCalendar.tsx`). Les deux affichent le même bandeau « Pour réserver cette salle,
+> contactez-nous. » avec le lien `mailto:` (`BookingsPage.tsx`).
 
 #### 3.5.5 Modifier / supprimer une réservation
 
@@ -714,6 +758,11 @@ Pour réserver un bureau, l'external doit avoir des **tickets bureau crédités*
 - 🟡 Lien direct vers `/api/invoices/{id}/download` protégé par auth + policy (seul le billing_contact de l'entité concernée peut télécharger)
 
 > ✅ **Acté 2026-09-13** : la route retenue est `GET /api/invoices/{id}/pdf` (auth Sanctum + policy), à la place de `/download` évoqué ci-dessus.
+
+> ✅ **Ré-acté 2026-09-16 (C14, U4a — confirmé U5)** : la liste est rendue en **DataTable**
+> (`@tanstack/react-table` + `Table` shadcn) plutôt qu'en cartes empilées : tri serveur par colonne
+> (`aria-sort`, focus restauré après tri), pagination et filtres existants conservés à l'identique
+> côté API. Le bloc « Mon entreprise » (§3.6.4) reste au-dessus de la table.
 
 #### 3.6.3 Section "Mes documents administratifs"
 

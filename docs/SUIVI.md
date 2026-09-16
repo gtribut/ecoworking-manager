@@ -222,7 +222,7 @@
 | C14.2 | U2 shell : sidebar + top bar + bottom nav mobile, largeur par page | ✅ | Opus — mergé 16/09 (`05e2efc`) : `AppSidebar` (groupes principal/Administratif, gating inchangé via `useNavEntries`, état persisté), `TopBar` 60 px (titre via `PageHeader` en portail, contact, thème, cloche), bloc profil sur DropdownMenu, `BottomNav` 5 onglets + Sheet « Plus » (substitution testée sur 4 profils), `PageContainer` full/wide/narrow, `PublicLayout` restylé ; review Opus soldée (skip link vers le contenu après la top bar, nom du lien logo en mode icône). 663 Pest + 242 Vitest + e2e 24/24 (« session expirée » stabilisé). ⏸️ Point back pour Guillaume : `/api/user` n'expose pas l'entité → bloc profil affiche l'email |
 | C14.3 | U3 agenda salles FullCalendar v7 (repli v6), alternative liste + bouton | ⬜ | Opus — ∥ C14.4/C14.5 |
 | C14.4 | U4a pages : dashboard bento, factures DataTable, profil onglets | ⬜ | Sonnet |
-| C14.5 | U4b pages : tickets, documents, actualités, annuaire + plan, présence | ⬜ | Sonnet |
+| C14.5 | U4b pages : tickets, documents, actualités, annuaire + plan, présence | ✅ | Sonnet — mergé 16/09 (`2da6d16`) : Card/Badge/Table shadcn, `DeskDetailPanel` en Sheet (retour de focus câblé), `EmptyState` restylé, Skeletons de bloc, badge de présence du jour (règle : présent via `present_days`, absent seulement si une absence couvre le jour) ; review Opus soldée (contrastes liens `text-brand-700 dark:text-brand-300`, onglets annuaire, `th scope=row`, bouton absence sans bureau). 663 Pest + 252 Vitest + e2e 24/24 |
 | C14.6 | U5 finition : axe clair/sombre, Lighthouse, recette §3 mise à jour, docs | ⬜ | Sonnet |
 
 ## 🔮 V1.5 — Déploiement & migration (post-MVP)

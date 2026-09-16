@@ -223,10 +223,13 @@ Remplacer l'outil actuel **Cosoft** (utilisé pour gérer le coworking Ecoworkin
 **UI**
 - **Tailwind CSS v4.3+** (Lightning CSS, plus de PostCSS, plus de `@tailwind` directives → utiliser `@import "tailwindcss"` + bloc `@theme` pour les customs)
 - Plugin **`@tailwindcss/vite`** (intégration native avec Vite 8)
-- shadcn/ui (composants Radix UI, accessibles par défaut, customisables)
+- shadcn/ui (composants Radix UI, accessibles par défaut, customisables) — installé réellement en C14, cf. ADR-0013 (le kit maison `components/ui/` du MVP est migré vers les primitives)
 - lucide-react (icônes)
 - **Sonner** (toast notifications, shadcn-compatible)
 - Composants natifs shadcn/ui : `Skeleton` (loading states), `Dialog`, `Form`, etc.
+- **`@fullcalendar/react` v7** (+ `core`, `timegrid`, `daygrid`, `interaction`, licence MIT) — agenda des salles (C14, ADR-0013)
+- **`@fontsource-variable/geist`** — typographie Geist auto-hébergée (pas de CDN Google Fonts, raison RGPD), fallback `system-ui`
+- **`@tanstack/react-table`** — DataTable des factures (tri, filtres, recherche, pagination)
 
 **Accessibilité (RGAA cible)**
 - **Biome v2.4+** (lint + format unifié, Rust-based, remplace ESLint + Prettier) avec règles a11y équivalent jsx-a11y strict

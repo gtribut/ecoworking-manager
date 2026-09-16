@@ -44,7 +44,17 @@ export function ConfirmButton({
   const confirmed = useRef(false)
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next) {
+          // Ceinture-bretelles : une réouverture ne doit jamais hériter d'une
+          // intention de confirmation laissée par un cycle précédent.
+          confirmed.current = false
+        }
+        setOpen(next)
+      }}
+    >
       <AlertDialogTrigger asChild>
         <Button ref={triggerRef} variant={variant} size={size} {...buttonProps}>
           {children}

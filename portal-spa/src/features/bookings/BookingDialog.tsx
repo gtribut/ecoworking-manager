@@ -192,6 +192,10 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
             Radix. */}
         <DialogContent
           aria-describedby={undefined}
+          // Le clic hors de la boîte ne ferme pas : l'ancienne `Modal` maison
+          // ne le faisait pas non plus, et une saisie de réservation à moitié
+          // remplie serait perdue. Échap et le bouton Fermer restent actifs.
+          onInteractOutside={(event) => event.preventDefault()}
           className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
         >
           <DialogHeader>
@@ -307,6 +311,9 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
     <Dialog open onOpenChange={(next) => !next && onClose()}>
       <DialogContent
         aria-describedby={undefined}
+        // Cf. ci-dessus : pas de fermeture au clic extérieur, le formulaire de
+        // réservation serait perdu.
+        onInteractOutside={(event) => event.preventDefault()}
         className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
       >
         <DialogHeader>

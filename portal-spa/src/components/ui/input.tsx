@@ -2,9 +2,23 @@ import type * as React from 'react'
 import { useId } from 'react'
 import { cn } from '@/lib/utils'
 
+/*
+ * Primitive shadcn/ui `input`, avec deux écarts assumés par rapport au fichier
+ * généré — cf. ADR-0013 D1 :
+ *
+ * 1. Le contrat du champ maison remplacé est conservé : props `error` /
+ *    `describedBy` qui câblent seules `aria-invalid` et `aria-describedby`
+ *    (helpers `useFieldAria` / `FieldError` ci-dessous, partagés avec
+ *    `Textarea` et `NativeSelect` via `fieldClassName`).
+ * 2. `outline-none` est retiré des classes de champ : il neutralisait
+ *    l'indicateur de focus brand global (`:focus-visible` dans styles.css) et
+ *    le remplaçait par un anneau translucide, moins net que le kit maison.
+ *    L'outline brand décollé est posé explicitement, comme sur `Button`.
+ */
+
 /** Classes de champ partagées par `Input`, `Textarea` et `NativeSelect`. */
 export const fieldClassName =
-  'w-full min-w-0 rounded-lg border border-input bg-transparent text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40'
+  'w-full min-w-0 rounded-lg border border-input bg-transparent text-base transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive md:text-sm dark:bg-input/30 dark:aria-invalid:border-destructive/50'
 
 export interface FieldErrorProps {
   /**

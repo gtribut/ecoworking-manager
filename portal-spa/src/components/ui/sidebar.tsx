@@ -1,5 +1,3 @@
-'use client'
-
 import { cva, type VariantProps } from 'class-variance-authority'
 import { PanelLeftIcon } from 'lucide-react'
 import { Slot } from 'radix-ui'
@@ -15,19 +13,39 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 
-// Écart avec le fichier généré : l'état réduit est persisté en `localStorage`
-// (décision D2 du plan C14) et non dans un cookie — le portail est une SPA, le
-// serveur n'a aucun usage de cette préférence, et `document.cookie` est refusé
-// par Biome (lint/suspicious/noDocumentCookie).
+/*
+ * Écarts avec le fichier généré :
+ *
+ * 1. L'état réduit est persisté en `localStorage` (décision D2 du plan C14) et
+ *    non dans un cookie — le portail est une SPA, le serveur n'a aucun usage de
+ *    cette préférence, et `document.cookie` est refusé par Biome
+ *    (lint/suspicious/noDocumentCookie). La lecture se fait à l'initialisation
+ *    paresseuse de l'état ; en amont c'est Next.js qui relisait le cookie côté
+ *    serveur pour alimenter `defaultOpen`.
+ * 2. `SidebarProvider` remonte un `TooltipProvider` (présent dans le sidebar
+ *    amont de shadcn, absent du préréglage nova) : `SidebarMenuButton` rend un
+ *    `Tooltip` dès qu'on lui passe la prop `tooltip`, ce qui lève sinon
+ *    « Tooltip must be used within TooltipProvider ».
+ */
 const SIDEBAR_STORAGE_KEY = 'ecoworking.sidebar.open'
 const SIDEBAR_WIDTH = '16rem'
 const SIDEBAR_WIDTH_MOBILE = '18rem'
 const SIDEBAR_WIDTH_ICON = '3rem'
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b'
+
+/** Préférence persistée, ou `fallback` si absente / stockage indisponible. */
+function readStoredOpen(fallback: boolean): boolean {
+  try {
+    const stored = window.localStorage.getItem(SIDEBAR_STORAGE_KEY)
+    return stored === null ? fallback : stored === 'true'
+  } catch {
+    return fallback
+  }
+}
 
 type SidebarContextProps = {
   state: 'expanded' | 'collapsed'
@@ -68,7 +86,8 @@ function SidebarProvider({
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen)
+  // Initialisation paresseuse : la préférence persistée gagne sur `defaultOpen`.
+  const [_open, _setOpen] = React.useState(() => readStoredOpen(defaultOpen))
   const open = openProp ?? _open
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -79,7 +98,7 @@ function SidebarProvider({
         _setOpen(openState)
       }
 
-      // Persiste l'état pour le prochain chargement (cf. SIDEBAR_STORAGE_KEY).
+      // Persiste l'état, relu au prochain montage par `readStoredOpen`.
       try {
         window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(openState))
       } catch {
@@ -127,23 +146,25 @@ function SidebarProvider({
 
   return (
     <SidebarContext.Provider value={contextValue}>
-      <div
-        data-slot="sidebar-wrapper"
-        style={
-          {
-            '--sidebar-width': SIDEBAR_WIDTH,
-            '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
-            ...style,
-          } as React.CSSProperties
-        }
-        className={cn(
-          'group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar',
-          className,
-        )}
-        {...props}
-      >
-        {children}
-      </div>
+      <TooltipProvider delayDuration={0}>
+        <div
+          data-slot="sidebar-wrapper"
+          style={
+            {
+              '--sidebar-width': SIDEBAR_WIDTH,
+              '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
+              ...style,
+            } as React.CSSProperties
+          }
+          className={cn(
+            'group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar',
+            className,
+          )}
+          {...props}
+        >
+          {children}
+        </div>
+      </TooltipProvider>
     </SidebarContext.Provider>
   )
 }

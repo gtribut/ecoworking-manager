@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatBookingRange } from './format'
 import { useUpcomingBookings } from './useBookings'
 
 const WEEKDAY_FORMAT = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' })
@@ -83,7 +84,17 @@ export function DashboardUpcomingBookings() {
                     <span className="block truncate font-medium">
                       {booking.title ?? booking.resource_name}
                     </span>
-                    <span className="block truncate text-sm text-muted-foreground">
+                    {/* La pastille jour (`DayPill`) est `aria-hidden` : c'est
+                        ici, en `sr-only`, que la date complète (pas seulement
+                        l'horaire) atteint les lecteurs d'écran (RGAA 1.3.1,
+                        PRD §3.3.2 « date + créneau »). */}
+                    <span className="sr-only">
+                      {formatBookingRange(booking.starts_at, booking.ends_at)}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="block truncate text-sm text-muted-foreground"
+                    >
                       {timeRange(booking.starts_at, booking.ends_at)}
                     </span>
                   </span>

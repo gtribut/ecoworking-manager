@@ -51,6 +51,11 @@ describe('DashboardUpcomingBookings (R-05/R-07, PRD §3.3.2, maquette C14)', () 
     // de sens ; `selector` cible le badge pour lever l'ambiguïté de requête).
     expect(within(rows[0] as HTMLElement).getByText('Point client')).toBeInTheDocument()
     expect(within(rows[0] as HTMLElement).getByText('10:00 – 12:00')).toBeInTheDocument()
+    // La date complète (pas seulement l'horaire) doit atteindre les lecteurs
+    // d'écran : la pastille jour qui la porte visuellement est aria-hidden.
+    expect(
+      within(rows[0] as HTMLElement).getByText('15 septembre 2026, 10:00 – 12:00'),
+    ).toBeInTheDocument()
     expect(
       within(rows[1] as HTMLElement).getByText('Salle de réunion 1', {
         selector: '[data-slot="badge"]',

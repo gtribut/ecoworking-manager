@@ -4,6 +4,7 @@
 > calendrier des réservations inutilisable, tout est tassé dans une colonne centrale »).
 > Maquettes validées : https://claude.ai/artifact/NtkNBV4suphHbzQ7AKhFjT (accueil desktop,
 > réservations agenda clair + sombre, accueil mobile).
+> Artboards extraits : [`maquettes/`](./maquettes/).
 > Prompt de lancement de la session orchestrateur : [`02-prompt-orchestrateur.md`](./02-prompt-orchestrateur.md).
 
 ---

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { Textarea } from './Textarea'
+import { Textarea } from './textarea'
 
 describe('Textarea', () => {
   it('avec une erreur : aria-invalid, message relié via aria-describedby', () => {

@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-09-13 (soir) — C13.6 lot B mergé, lot A livré (branche `feature/portail-lot-a`, à relire + rejouer Playwright). Reprise 12/09 après 2 mois. MVP COMPLET ✅ depuis le 03/07 (444 Pest + 72 Vitest + 26 e2e). Chantier ouvert : C13 recette manuelle** (`docs/recette.md` + `DemoSeeder`, livrés le 12/09, validés le 13/09 : 446 Pest verts). Ensuite : corrections issues de la recette, puis V1.5 (Clever Cloud, import Cosoft) — cf. `todo_guillaume.md`.
+> **Dernière mise à jour : 2026-09-16 — C14 refonte UI portail planifié (`docs/refonte_ui/`), recette §3.1 faite, §3.2+ suspendue jusqu'à C14.** Précédent : 2026-09-13 (soir) — C13.6 lot B mergé, lot A livré (branche `feature/portail-lot-a`, à relire + rejouer Playwright). Reprise 12/09 après 2 mois. MVP COMPLET ✅ depuis le 03/07 (444 Pest + 72 Vitest + 26 e2e). Chantier ouvert : C13 recette manuelle** (`docs/recette.md` + `DemoSeeder`, livrés le 12/09, validés le 13/09 : 446 Pest verts). Ensuite : corrections issues de la recette, puis V1.5 (Clever Cloud, import Cosoft) — cf. `todo_guillaume.md`.
 
 ---
 
@@ -208,6 +208,22 @@
 | C13.6 | Lots de conformité PRD §3 (A→G) via session orchestrateur | ✅ | Prompt : [`review_fable/09-prompt-orchestrateur-lots.md`](./review_fable/09-prompt-orchestrateur-lots.md) — ordre B → A → C → D → E → F → G, une branche/worktree par lot (`.worktrees/lot-<x>`, wrapper `./sail` sur base `testing_lot<x>`). **PRD** : 7 écarts 🔀 actés (`fff53c3`). **Lot B ✅ 13/09** (`008e3d3`) : `has_desk`, nav/routes/tuiles gatées, Policies strictes, écran « Accès refusé » — 477 Pest + 99 Vitest. **Lot A ✅ 13/09** (merge `967a60e`) : calendrier multi-salles semaine/jour avec occupants (Q4), salle event en lecture seule, modale de résa (journée/demi-journée/perso), `PATCH /api/bookings/{id}`, liste « à venir » + historique, correction du piège timezone dans `BookingPolicy` — 507 Pest + 128 Vitest + e2e 23/23 après review Opus. ⏸️ Décisions ouvertes : opt-out annuaire dans le calendrier, fuseau Postgres (cf. doc 08). **Lot C ✅ 13/09** (merge `1d1dd51`) : `PATCH /api/absences`, récurrence bornée, note, bureau attitré, Policies bornées au début (SQL), `DeskAbsence`/`MemberProfile` auditables, Resource Filament absences — 534 Pest + 135 Vitest. **Lot D ✅ 13/09** (merge `94515c1`) : tri/filtres/recherche factures, `GET /api/billing/entity`, bloc entité partagé, IBAN-4 + mode de paiement sous Policy — 563 Pest + 150 Vitest. **Lot E ✅ 13/09** (merge `8a81195`) : mes bureaux réservés + annulation avec restitution, Policy external, fériés côté dispo, détail tickets, mailto — 556 Pest + 143 Vitest. **Lot F ✅ 13/09** (merge `5d0b870`) : mot de passe portail, bio markdown, photo de profil (privée, 3 tailles), email d'accueil (jeton 3 j, table dédiée) — 629 Pest + 181 Vitest. **Lot G ✅ 14/09** (merge `1f92dfb`) : menu profil/thème, footer + pages légales + `/accessibilite`, toasts, hors-ligne, `QueryError`, états vides, cloche paginée, code-splitting, lint a11y strict, notifications document/résa admin/absence admin, purge 90 j — 657 Pest + 212 Vitest. **Les 7 lots sont mergés** : décisions ouvertes et actions manuelles dans `todo_guillaume.md` §C13.6 et doc 08 « Avancement des lots ». Suivi détaillé par lot en fin du doc 08 |
 
 ---
+
+### C14 — Refonte UI/UX du portail (post-recette §3.1)
+
+> Ouvert le 2026-09-16 : UI jugée datée et calendrier des salles inutilisable en recette. Plan, décisions
+> D1→D8 et prompt orchestrateur dans [`refonte_ui/`](./refonte_ui/01-plan-c14.md). Maquettes validées :
+> https://claude.ai/artifact/NtkNBV4suphHbzQ7AKhFjT. Recette §3 à rejouer après ; §4→§7 indépendants.
+
+| Code | Tâche | Statut | Notes |
+|---|---|---|---|
+| C14.0 | U0 docs : ADR-0013, PRD (écart nav ré-acté, §3.5.2), BRIEF §5 | ⬜ | Sonnet |
+| C14.1 | U1 design system : shadcn/ui réel (Tailwind v4), Geist fontsource, migration `components/ui` | ⬜ | Opus |
+| C14.2 | U2 shell : sidebar + top bar + bottom nav mobile, largeur par page | ⬜ | Opus |
+| C14.3 | U3 agenda salles FullCalendar v7 (repli v6), alternative liste + bouton | ⬜ | Opus — ∥ C14.4/C14.5 |
+| C14.4 | U4a pages : dashboard bento, factures DataTable, profil onglets | ⬜ | Sonnet |
+| C14.5 | U4b pages : tickets, documents, actualités, annuaire + plan, présence | ⬜ | Sonnet |
+| C14.6 | U5 finition : axe clair/sombre, Lighthouse, recette §3 mise à jour, docs | ⬜ | Sonnet |
 
 ## 🔮 V1.5 — Déploiement & migration (post-MVP)
 

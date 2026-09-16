@@ -813,9 +813,12 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
 - Optionnel : bureaux en "hors service" (maintenance, vacant durable)
 
 **Présence par défaut implicite** (cf. §6.1 et Q14 résolue) :
-- Un `resident` est considéré présent par défaut tous les jours ouvrés sur son bureau attitré, sauf s'il a déclaré une absence (cf. §3.4.6)
-- Un `staff` est considéré présent par défaut tous les jours ouvrés sur son bureau attitré, sauf s'il a déclaré une absence
+- Un `resident` est considéré présent par défaut **tous les jours** sur son bureau attitré, sauf s'il a déclaré une absence (cf. §3.4.6)
+- Un `staff` est considéré présent par défaut **tous les jours** sur son bureau attitré, sauf s'il a déclaré une absence
 - Aucune déclaration de présence quotidienne n'est demandée
+
+> ✅ **Ré-acté 2026-09-17 (retour de recette)** : la présence implicite ne dépend plus du calendrier ouvré. Un titulaire de bureau attitré (resident ou staff) est présent **7 j/7, week-ends et jours fériés compris** — les résidents ont un accès 24/24 au local, et l'affichage « absent » systématique le samedi ne correspondait pas à l'usage réel. **Le seul cas « absent » est désormais une absence déclarée** couvrant la date / demi-journée. Le bandeau « jour non ouvré » du plan portail est retiré.
+> ⚠️ Ceci ne touche **pas** la règle jours ouvrés des **bureaux nomades / tickets external** (§3.5.9, tranchée le 2026-07-03) ni celle des **salles pour external** (§3.5.3) : elles restent en vigueur. Le drapeau `is_working_day` de l'API `floor-plan` et de la vue admin « Occupation du jour » (§4.8.4) subsiste, mais ne sert plus qu'à signaler la non-réservabilité des bureaux nomades.
 
 **Sélecteur de date**
 - 🟡 Par défaut : "Aujourd'hui"
@@ -826,7 +829,7 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
 
 | État du bureau | Représentation visuelle | Tooltip / clic |
 |---|---|---|
-| Bureau attitré occupé par son résident (par défaut, jour ouvré, pas d'absence déclarée) | Couleur "résident présent" + photo si profil opt-in | Tooltip : prénom, nom, entreprise. Clic : modal détaillée (cf. §3.7.4) |
+| Bureau attitré occupé par son résident (par défaut, tous les jours, pas d'absence déclarée) | Couleur "résident présent" + photo si profil opt-in | Tooltip : prénom, nom, entreprise. Clic : modal détaillée (cf. §3.7.4) |
 | Bureau attitré résident **avec absence déclarée** | Couleur "vacant temporaire" + photo grisée du résident | Tooltip : "Bureau de X (absent)" |
 | **Bureau staff** occupé par le personnel Ecoworking | Couleur "staff" distincte | Tooltip : prénom, nom, "Équipe Ecoworking". Clic : modal détaillée si opt-in |
 | **Bureau staff** avec absence déclarée | Couleur "staff vacant" | Tooltip : "Bureau équipe (absent)" |
@@ -1770,8 +1773,8 @@ Répartition :
 
 Pas de "réservation" classique — gestion par **occupation** et **absence** :
 
-- **`resident`** : occupation **implicite** de son bureau attitré tous les jours ouvrés (pas de déclaration quotidienne). Peut **marquer son bureau vacant** sur des dates précises ou en récurrence (cf. §3.4.6) pour libérer la place
-- **`staff`** : occupation **implicite** de son bureau attitré tous les jours ouvrés. Peut aussi marquer son bureau vacant. Bureau **non utilisable** par d'autres en cas d'absence (sauf cas marginal admin)
+- **`resident`** : occupation **implicite** de son bureau attitré **tous les jours**, week-ends et fériés compris (pas de déclaration quotidienne, cf. l'encadré « Ré-acté 2026-09-17 » en §3.7.2). Peut **marquer son bureau vacant** sur des dates précises ou en récurrence (cf. §3.4.6) pour libérer la place
+- **`staff`** : occupation **implicite** de son bureau attitré **tous les jours**. Peut aussi marquer son bureau vacant. Bureau **non utilisable** par d'autres en cas d'absence (sauf cas marginal admin)
 - **`additional`** : utilise librement les bureaux des résidents de son entité juridique. **Aucun suivi explicite dans l'app** (placement informel)
 - **`external`** : consomme un ticket bureau (crédité par l'admin, cf. §3.5.6) et **choisit un bureau `unassigned` libre** via la vue plan filtrée sur les places libres de la période (cf. §3.5.9). Aucune visibilité sur les bureaux des résidents (présents ou absents)
 

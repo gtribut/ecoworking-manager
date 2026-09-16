@@ -291,9 +291,9 @@ Compte : **Claire** (resident), puis **Camille** (staff), puis **Thomas** (exter
 - [ ] Annuaire liste : Claire, Inès, Julien, Sophie, Karim, Camille (« Équipe Ecoworking ») — **Marc absent** (opt-out) ; jamais d'email ni de téléphone affichés
 - [ ] Fiche coworker : photo/avatar, poste, présentation, intérêts, LinkedIn/site (liens externes `rel=noopener`)
 - [ ] Plan : switch étage 1 / étage 2 ; 29 + 20 bureaux ; sélecteur de date (aujourd'hui par défaut)
-- [ ] États visuels aujourd'hui (jour ouvré) : Bureau 1 Claire présent, Bureau 2 « Coworker (souhaite rester discret) », Bureau 3 Inès présent (sauf vendredi → « absent »), Bureau 29 « staff », Bureau 30 Sophie, Bureau 31 Karim, bureaux libres « disponible », bureau occupé par Thomas (prochain jour ouvré) en « external présent »
+- [ ] États visuels aujourd'hui : Bureau 1 Claire présent, Bureau 2 « Coworker (souhaite rester discret) », Bureau 3 Inès présent (sauf vendredi → « absent »), Bureau 29 « staff », Bureau 30 Sophie, Bureau 31 Karim, bureaux libres « disponible », bureau occupé par Thomas (prochain jour ouvré) en « external présent »
 - [ ] Naviguer à **vendredi prochain** → Inès « Bureau de Inès (absent) » ; semaine prochaine → absente tous les jours (congés)
-- [ ] Naviguer à un **week-end** → indication « jour non ouvré », personne présent par défaut
+- [ ] Naviguer à un **week-end** → **aucun bandeau « jour non ouvré »** ; les bureaux attitrés restent **présents** (présence 7 j/7, ré-acté 2026-09-17 — seule une absence déclarée rend absent). Vérifier notamment Bureau 1 (Claire) présent le samedi, et Inès absente si le samedi tombe dans sa semaine de congés
 - [ ] Clic sur **son propre bureau** (Claire → Bureau 1) → panneau enrichi + bouton « Gérer mes absences » → ouvre §3.3
 - [ ] Clic bureau libre → « Bureau libre — pour réserver, contactez-nous »
 - [ ] Le panneau de détail bureau s'ouvre en **Sheet** (panneau latéral, C14) : le focus part sur
@@ -458,6 +458,7 @@ Compte : `admin@ecoworking.fr`.
 - [ ] **Capacité libre restante** cohérente avec le plan portail
 - [ ] Résas salles du jour chronologiques avec ticket consommé pour Thomas
 - [ ] Naviguer au prochain jour ouvré → occupation de Thomas listée ; Sophie absente l'après-midi
+- [ ] Naviguer à un **week-end** → encart « bureaux nomades non réservables » (la mention « résidents pas attendus » a disparu) ; les résidents restent **présents** sauf absence déclarée
 - [ ] Page réservée admin (403 en membre)
 
 ### 4.9 Documents — InternalDocuments, AdministrativeDocuments (PRD §4.10, C3.6, C12.4)

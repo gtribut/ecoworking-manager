@@ -40,6 +40,24 @@ describe('ConfirmButton', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
   })
 
+  it('rend le focus au déclencheur AVANT d’exécuter l’action', async () => {
+    // Plusieurs appelants déplacent le focus depuis `onConfirm` (report sur un
+    // titre de section quand la ligne supprimée disparaît de la liste) : la
+    // restauration de focus de Radix doit donc être déjà faite à cet instant,
+    // sinon elle écraserait leur déplacement.
+    let focusedOnConfirm: Element | null = null
+    const onConfirm = vi.fn(() => {
+      focusedOnConfirm = document.activeElement
+    })
+    const { user, trigger } = renderConfirmButton(onConfirm)
+
+    await user.click(trigger)
+    await user.click(await screen.findByRole('button', { name: 'Oui, supprimer' }))
+
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1))
+    expect(focusedOnConfirm).toBe(trigger)
+  })
+
   it('n’exécute rien au clic sur l’annulation et rend le focus au déclencheur', async () => {
     const { user, onConfirm, trigger } = renderConfirmButton()
 

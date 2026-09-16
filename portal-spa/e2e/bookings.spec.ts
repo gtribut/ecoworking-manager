@@ -44,7 +44,9 @@ test.describe('Réservation de salle', () => {
   test.beforeEach(async ({ page }) => {
     await loginViaApi(page)
     await page.goto('/bookings')
-    await expect(page.getByRole('heading', { level: 1, name: 'Réservations' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Réservations de salles' }),
+    ).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Calendrier des salles' })).toBeVisible()
   })
 
@@ -173,8 +175,11 @@ test.describe('Réservation de salle', () => {
       })
       .click()
 
-    await expect(page.getByText('Pour réserver cette salle, contactez-nous.')).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Nous contacter' })).toHaveAttribute(
+    // Le lien est cherché DANS le bandeau : la top bar du shell (C14) porte
+    // désormais son propre « Nous contacter », visible en desktop.
+    const notice = page.getByRole('status').filter({ hasText: 'Pour réserver cette salle' })
+    await expect(notice).toBeVisible()
+    await expect(notice.getByRole('link', { name: 'Nous contacter' })).toHaveAttribute(
       'href',
       /mailto:contact@ecoworking\.fr/,
     )

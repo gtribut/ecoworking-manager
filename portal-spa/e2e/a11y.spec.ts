@@ -95,7 +95,9 @@ test.describe('Audit a11y — thème sombre', () => {
 
   test('réservations (page dense) en thème sombre', async ({ page, checkA11y }) => {
     await page.goto('/bookings')
-    await expect(page.getByRole('heading', { level: 1, name: 'Réservations' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Réservations de salles' }),
+    ).toBeVisible()
 
     // Grille du calendrier affichée : c'est la partie dense/riche de l'écran.
     await expect(page.getByRole('heading', { name: 'Calendrier des salles' })).toBeVisible()

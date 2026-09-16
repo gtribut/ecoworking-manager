@@ -279,3 +279,146 @@
   background: #d6d3d1;
   border-color: #78716c;
 }
+
+/* ============================================================================
+ * Agenda des salles — FullCalendar v7 (ADR-0013 D3 / D6)
+ * ----------------------------------------------------------------------------
+ * Deux systèmes de variables cohabitent sur cette page (trade-off acté dans
+ * l'ADR) : les jetons shadcn du portail et les variables de FullCalendar.
+ *
+ * En v7 les variables sont préfixées par le **thème** (`--fc-classic-*`, posées
+ * sur `:root` par `themes/classic/palette.css`) et le mode sombre natif passe
+ * par `[data-color-scheme=dark]`, que le portail n'utilise pas : on les
+ * redéfinit donc ici sur `.fc.ew-agenda` (spécificité 2 classes, indépendante
+ * de l'ordre d'import) et sur `.dark .fc.ew-agenda`.
+ *
+ * `.fc` n'existe plus comme classe racine en v7 (classes hachées) : c'est le
+ * conteneur de `RoomsCalendar` qui la porte, et c'est le sélecteur d'exclusion
+ * de l'audit axe (`FULLCALENDAR_AXE_EXCLUDE`, e2e/support/fixtures.ts).
+ * ========================================================================== */
+
+:root {
+  /* Couleurs de bloc par salle (D6 : palette inchangée sky / amber / violet /
+     teal). Contrastes texte/fond vérifiés AA dans les deux thèmes. */
+  --ew-ev-sky-bg: #e0f2fe;
+  --ew-ev-sky-fg: #0c4a6e;
+  --ew-ev-sky-accent: #38bdf8;
+  --ew-ev-amber-bg: #fef3c7;
+  --ew-ev-amber-fg: #78350f;
+  --ew-ev-amber-accent: #f59e0b;
+  --ew-ev-violet-bg: #ede9fe;
+  --ew-ev-violet-fg: #4c1d95;
+  --ew-ev-violet-accent: #8b5cf6;
+  --ew-ev-teal-bg: #ccfbf1;
+  --ew-ev-teal-fg: #134e4a;
+  --ew-ev-teal-accent: #14b8a6;
+  /* Salle événementielle : neutre + hachures (jamais la couleur seule). */
+  --ew-ev-event-bg: #f5f5f5;
+  --ew-ev-event-fg: #404040;
+  --ew-ev-event-accent: #737373;
+  /* Mes réservations : vert brand plein, contour renforcé (PRD §3.5.2). */
+  --ew-ev-mine-bg: var(--color-brand-600);
+  --ew-ev-mine-fg: #ffffff;
+  --ew-ev-mine-accent: var(--color-brand-700);
+}
+
+.dark {
+  --ew-ev-sky-bg: #0c4a6e;
+  --ew-ev-sky-fg: #e0f2fe;
+  --ew-ev-amber-bg: #78350f;
+  --ew-ev-amber-fg: #fef3c7;
+  --ew-ev-violet-bg: #4c1d95;
+  --ew-ev-violet-fg: #ede9fe;
+  --ew-ev-teal-bg: #134e4a;
+  --ew-ev-teal-fg: #ccfbf1;
+  --ew-ev-event-bg: #262626;
+  --ew-ev-event-fg: #e5e5e5;
+  --ew-ev-event-accent: #a3a3a3;
+  --ew-ev-mine-fg: #ffffff;
+}
+
+.fc.ew-agenda {
+  --fc-classic-background: var(--card);
+  --fc-classic-foreground: var(--card-foreground);
+  --fc-classic-muted-foreground: var(--muted-foreground);
+  --fc-classic-faint-foreground: var(--muted-foreground);
+  --fc-classic-border: var(--border);
+  --fc-classic-strong-border: var(--border);
+  --fc-classic-faint: color-mix(in oklab, var(--foreground) 4%, transparent);
+  --fc-classic-muted: color-mix(in oklab, var(--foreground) 7%, transparent);
+  --fc-classic-strong: color-mix(in oklab, var(--foreground) 12%, transparent);
+  /* Jour courant surligné en vert brand très pâle, indicateur « maintenant »
+     rouge, sélection en cours en vert brand translucide (maquettes C14). */
+  --fc-classic-today: color-mix(in oklab, var(--color-brand-600) 8%, transparent);
+  --fc-classic-now: #dc2626;
+  --fc-classic-highlight: color-mix(in oklab, var(--color-brand-600) 18%, transparent);
+  --fc-classic-primary: var(--color-brand-600);
+  --fc-classic-primary-foreground: #ffffff;
+}
+
+.dark .fc.ew-agenda {
+  --fc-classic-now: #f87171;
+  --fc-classic-today: color-mix(in oklab, var(--color-brand-500) 14%, transparent);
+}
+
+/* Bloc de réservation : liseré de couleur à gauche, comme sur la maquette.
+   Le fond et le texte viennent de `color` / `contrastColor` (styles inline
+   `--fc-event-color` posés par FullCalendar, cf. calendarEvents.ts). */
+.ew-ev {
+  border-inline-start: 3px solid var(--ew-ev-accent, transparent);
+}
+.ew-ev--sky {
+  --ew-ev-accent: var(--ew-ev-sky-accent);
+}
+.ew-ev--amber {
+  --ew-ev-accent: var(--ew-ev-amber-accent);
+}
+.ew-ev--violet {
+  --ew-ev-accent: var(--ew-ev-violet-accent);
+}
+.ew-ev--teal {
+  --ew-ev-accent: var(--ew-ev-teal-accent);
+}
+.ew-ev--event {
+  --ew-ev-accent: var(--ew-ev-event-accent);
+  /* Hachures : la salle événementielle se distingue aussi sans la couleur. */
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--ew-ev-event-accent) 22%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+}
+.ew-ev--mine {
+  --ew-ev-accent: var(--ew-ev-mine-accent);
+  outline: 2px solid var(--ew-ev-mine-accent);
+  outline-offset: -1px;
+}
+
+/* Pastille de couleur des chips de filtre (toujours doublée du nom de salle). */
+.ew-chip-dot {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: none;
+  border-radius: 0.25rem;
+  background: var(--ew-chip-color, var(--muted-foreground));
+}
+.ew-chip-dot--sky {
+  --ew-chip-color: var(--ew-ev-sky-accent);
+}
+.ew-chip-dot--amber {
+  --ew-chip-color: var(--ew-ev-amber-accent);
+}
+.ew-chip-dot--violet {
+  --ew-chip-color: var(--ew-ev-violet-accent);
+}
+.ew-chip-dot--teal {
+  --ew-chip-color: var(--ew-ev-teal-accent);
+}
+.ew-chip-dot--event {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--ew-ev-event-accent) 0 3px,
+    var(--card) 3px 6px
+  );
+}

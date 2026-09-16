@@ -38,10 +38,16 @@ function sidebarLabels(): string[] {
   return Array.from(nav.querySelectorAll('a')).map((link) => link.textContent?.trim() ?? '')
 }
 
-/** Libellés des onglets de la bottom nav mobile, « Plus » compris. */
+/**
+ * Noms accessibles des onglets de la bottom nav, « Plus » compris : l'écran
+ * affiche des libellés abrégés (« Résas », « Actus », maquettes C14) mais le
+ * nom accessible reste complet, via `aria-label`.
+ */
 function bottomNavLabels(): string[] {
   const nav = screen.getByRole('navigation', { name: 'Navigation rapide' })
-  return Array.from(nav.querySelectorAll('a, button')).map((item) => item.textContent?.trim() ?? '')
+  return Array.from(nav.querySelectorAll('a, button')).map(
+    (item) => item.getAttribute('aria-label') ?? item.textContent?.trim() ?? '',
+  )
 }
 
 /*
@@ -114,6 +120,39 @@ describe('Layout — navigation filtrée par rôle (PRD §2.5)', () => {
       'href',
       '/profile',
     )
+  })
+})
+
+describe('Layout — structure du shell', () => {
+  it('le logo reste un lien nommé (mode icône) et ne double pas l’entrée courante', async () => {
+    await renderShell(makeAuthUser({ has_desk: true, permissions: MEMBER_PERMISSIONS }))
+
+    // Le mot « Ecoworking » disparaît en mode icône : le nom accessible est
+    // porté par le lien (axe `link-name`).
+    const logo = screen.getByRole('link', { name: 'Ecoworking — accueil' })
+    expect(logo).toHaveAttribute('href', '/')
+    // `Link` et non `NavLink` : sinon l'accueil aurait deux `aria-current`.
+    expect(logo).not.toHaveAttribute('aria-current')
+
+    const nav = screen.getByRole('navigation', { name: 'Navigation principale' })
+    expect(nav.querySelectorAll('[aria-current="page"]')).toHaveLength(1)
+  })
+
+  it('le lien d’évitement mène au contenu, sous la top bar', async () => {
+    await renderShell(makeAuthUser({ has_desk: true, permissions: MEMBER_PERMISSIONS }))
+
+    expect(screen.getByRole('link', { name: 'Aller au contenu principal' })).toHaveAttribute(
+      'href',
+      '#main-content',
+    )
+
+    const target = document.querySelector('#main-content')
+    expect(target).not.toBeNull()
+    // Focalisable par programme (focus au changement de route, RGAA 12.x)…
+    expect(target).toHaveAttribute('tabindex', '-1')
+    // …et placé APRÈS la top bar : les actions globales ne sont plus à
+    // refranchir avant d'atteindre la page.
+    expect(target?.contains(screen.getByRole('button', { name: /^Thème/ }))).toBe(false)
   })
 })
 

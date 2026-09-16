@@ -189,7 +189,10 @@ export function BookingsPage() {
               </p>
               <a
                 href="#my-bookings-heading"
-                className="inline-block font-medium text-primary underline underline-offset-2 hover:no-underline"
+                // `text-primary` (brand-600) ne tient pas le contraste AA sur
+                // la carte sombre (3,78:1) : ton foncé en clair, clair en
+                // sombre, comme les autres liens colorés du portail.
+                className="inline-block font-medium text-brand-700 underline underline-offset-2 hover:no-underline dark:text-brand-300"
               >
                 Voir toutes mes réservations (liste)
               </a>

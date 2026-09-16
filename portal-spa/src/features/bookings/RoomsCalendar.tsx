@@ -521,7 +521,9 @@ function EventPopover({
             <ConfirmButton
               variant="outline"
               size="sm"
-              className="flex-1 text-destructive"
+              // Même raison que le lien de la page : `text-destructive` tombe
+              // à 3,76:1 sur la carte sombre. Rouge foncé / clair par thème.
+              className="flex-1 text-red-700 dark:text-red-300"
               confirmMessage="Annuler cette réservation ?"
               confirmLabel="Oui, annuler"
               cancelLabel="Non"

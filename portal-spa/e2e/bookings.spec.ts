@@ -41,6 +41,11 @@ async function selectRoom(dialog: Locator, roomName: string): Promise<void> {
   await dialog.getByLabel('Salle', { exact: true }).selectOption(value)
 }
 
+/** Ligne de « Mes prochaines réservations » portant ce libellé. */
+function bookingRow(table: Locator, label: string): Locator {
+  return table.getByRole('row').filter({ hasText: label })
+}
+
 /** Remplit la modale de création : salle, date, créneau personnalisé, libellé. */
 async function fillBooking(
   page: Page,
@@ -163,10 +168,10 @@ test.describe('Réservation de salle', () => {
     await expect(myBookings.getByText('Atelier e2e')).toBeVisible()
 
     // « Modifier » depuis la liste : c'est l'alternative accessible au popover
-    // de la grille (ADR-0013 D4).
-    await page
+    // de la grille (ADR-0013 D4). La liste est triée par date et contient les
+    // résas des tests précédents : on cible la LIGNE, jamais le premier bouton.
+    await bookingRow(myBookings, 'Atelier e2e')
       .getByRole('button', { name: /Modifier/ })
-      .first()
       .click()
     const editDialog = page.getByRole('dialog', { name: `Ma réservation — ${seed.rooms.small}` })
     await expect(editDialog.getByLabel('Libellé (optionnel)')).toHaveValue('Atelier e2e')
@@ -177,9 +182,8 @@ test.describe('Réservation de salle', () => {
     await expect(page.getByText('Réservation modifiée.').first()).toBeVisible()
     await expect(myBookings.getByText('Atelier e2e modifié')).toBeVisible()
 
-    await page
+    await bookingRow(myBookings, 'Atelier e2e modifié')
       .getByRole('button', { name: /Modifier/ })
-      .first()
       .click()
     const deleteDialog = page.getByRole('dialog', { name: `Ma réservation — ${seed.rooms.small}` })
     await deleteDialog.getByRole('button', { name: 'Supprimer', exact: true }).click()

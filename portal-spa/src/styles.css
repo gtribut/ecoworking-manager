@@ -11,6 +11,18 @@
  * `dark` sur <html> (préférence utilisateur persistée via /api/profile).
  */
 @custom-variant dark (&:where(.dark, .dark *));
+/*
+ * Variantes `data-horizontal:` / `data-vertical:` attendues par les primitives
+ * shadcn de style `radix-nova` (tabs, separator, scroll-area, toggle-group —
+ * et leurs pendants `group-data-horizontal/*` `group-data-vertical/*`, dérivés
+ * automatiquement par Tailwind de la variante nommée). Oubli de l'init shadcn
+ * (U1, C14) : `data-active:`/`data-inset:`/`data-placeholder:` sont gérés
+ * nativement par Tailwind v4 (présence d'attribut), mais `[data-orientation]`
+ * porte une *valeur* ("horizontal"/"vertical"), donc pas de variante native
+ * correspondante — d'où le bug de recette (TabsList empilée verticalement).
+ */
+@custom-variant data-horizontal (&[data-orientation="horizontal"]);
+@custom-variant data-vertical (&[data-orientation="vertical"]);
 
 @theme {
   --font-sans: "Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif;

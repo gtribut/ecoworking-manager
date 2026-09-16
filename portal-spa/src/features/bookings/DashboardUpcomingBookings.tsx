@@ -1,62 +1,110 @@
+import { Plus } from 'lucide-react'
 import { Link } from 'react-router'
 import { QueryError } from '@/components/QueryError'
-import { Spinner } from '@/components/ui/spinner'
-import { formatBookingRange } from './format'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useUpcomingBookings } from './useBookings'
+
+const WEEKDAY_FORMAT = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' })
+
+/** Pastille jour de semaine + quantième, comme la maquette C14 (Main.dc.html). */
+function DayPill({ iso }: { iso: string }) {
+  const date = new Date(iso)
+  return (
+    <span
+      aria-hidden="true"
+      className="flex size-11 flex-none flex-col items-center justify-center rounded-lg bg-muted"
+    >
+      {/* `text-muted-foreground` (neutral-500) tombe sous 4.5:1 sur `bg-muted`
+          (contrairement à `bg-card`) : neutral-600/300 reste AA ici. */}
+      <span className="text-[10px] font-semibold uppercase text-neutral-600 dark:text-neutral-300">
+        {WEEKDAY_FORMAT.format(date).replace('.', '')}
+      </span>
+      <span className="text-base leading-none font-semibold">{date.getDate()}</span>
+    </span>
+  )
+}
+
+function timeRange(startsAt: string, endsAt: string): string {
+  const time = (iso: string) =>
+    new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return `${time(startsAt)} – ${time(endsAt)}`
+}
 
 /**
  * Bloc « Mes prochaines réservations » du dashboard (PRD §3.3.2, recette
- * R-05) : 3 résas confirmées à venir max — libellé, salle, date + créneau.
- *
- * Le nom de la ressource (salle) est affiché à droite du libellé sur chaque
- * ligne (recette R-07) — déjà porté par `booking.resource_name`, couvert par
- * DashboardUpcomingBookings.test.tsx et par le payload `BookingResource`
- * (`resource_name`, cf. tests/Feature/Api/BookingUpcomingTest.php).
+ * R-05, maquette C14) : 3 résas confirmées à venir max — pastille jour,
+ * libellé, horaire · salle en badge, bouton « Nouvelle réservation ».
  */
 export function DashboardUpcomingBookings() {
   const { data: bookings, isLoading, isError, refetch } = useUpcomingBookings(3)
 
   return (
-    <section aria-labelledby="dashboard-bookings-title" className="space-y-3">
-      <h2 id="dashboard-bookings-title" className="text-lg font-semibold">
-        Mes prochaines réservations
-      </h2>
+    <section aria-labelledby="dashboard-bookings-title">
+      <Card className="flex h-full flex-col">
+        <CardContent className="flex flex-1 flex-col gap-3">
+          <div className="flex items-center justify-between gap-2">
+            <h2 id="dashboard-bookings-title" className="text-base font-semibold">
+              Mes prochaines réservations
+            </h2>
+            <Link
+              to="/bookings"
+              className="text-sm font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
+            >
+              Tout voir
+            </Link>
+          </div>
 
-      {isLoading && <Spinner label="Chargement des réservations…" />}
-      {isError && (
-        <QueryError
-          message="Impossible de charger vos réservations."
-          onRetry={() => void refetch()}
-        />
-      )}
+          {isLoading && (
+            <div className="space-y-2">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+          )}
+          {isError && (
+            <QueryError
+              message="Impossible de charger vos réservations."
+              onRetry={() => void refetch()}
+            />
+          )}
 
-      {bookings && bookings.length === 0 && (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Aucune réservation à venir.
-        </p>
-      )}
+          {bookings && bookings.length === 0 && (
+            <p className="text-sm text-muted-foreground">Aucune réservation à venir.</p>
+          )}
 
-      {bookings && bookings.length > 0 && (
-        <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
-          {bookings.map((booking) => (
-            <li key={booking.id} className="px-4 py-3 text-sm">
-              <span className="block font-medium">
-                {booking.title ? `${booking.title} — ` : ''}
-                {booking.resource_name}
-              </span>
-              <span className="block text-neutral-500 dark:text-neutral-400">
-                {formatBookingRange(booking.starts_at, booking.ends_at)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
+          {bookings && bookings.length > 0 && (
+            <ul className="divide-y divide-border">
+              {bookings.map((booking) => (
+                <li key={booking.id} className="flex items-center gap-3 py-3 first:pt-0">
+                  <DayPill iso={booking.starts_at} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">
+                      {booking.title ?? booking.resource_name}
+                    </span>
+                    <span className="block truncate text-sm text-muted-foreground">
+                      {timeRange(booking.starts_at, booking.ends_at)}
+                    </span>
+                  </span>
+                  <Badge variant="secondary" className="flex-none">
+                    {booking.resource_name}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
 
-      <p>
-        <Link to="/bookings" className="text-sm text-brand-700 underline dark:text-brand-300">
-          Module réservations →
-        </Link>
-      </p>
+          <div className="mt-auto pt-1">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/bookings">
+                <Plus aria-hidden="true" />
+                Nouvelle réservation
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </section>
   )
 }

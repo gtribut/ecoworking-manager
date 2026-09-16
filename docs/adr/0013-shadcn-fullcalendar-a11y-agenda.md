@@ -22,9 +22,10 @@ partagés, et un écart doc/code qui s'est creusé sans être remonté en ADR.
 
 ### 2. Calendrier des salles illisible
 
-Le calendrier actuel (lot A, C13.6) affiche les résa de 3 salles + la salle event dans une seule
-colonne centrale étroite, sans réelle grille horaire. Il faut une vraie librairie de calendrier
-pour une grille temps multi-ressources lisible.
+Le calendrier actuel (lot A, C13.6) est une grille semaine/jour maison qui affiche les résa des
+3 salles + la salle event, contrainte dans la colonne centrale étroite du layout (max ~1024 px) :
+créneaux tassés, chevauchements illisibles, pas de vue mois ni de glisser pour créer. Il faut une
+vraie librairie de calendrier pour une grille temps multi-salles lisible en pleine largeur.
 
 ### 3. Tension accessibilité vs richesse d'interaction
 

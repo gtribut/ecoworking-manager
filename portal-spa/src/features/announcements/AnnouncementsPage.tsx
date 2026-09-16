@@ -2,6 +2,8 @@ import { CalendarDays, MapPin, Megaphone, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -39,8 +41,8 @@ export function AnnouncementsPage() {
   const { data, isLoading, isError, refetch } = useAnnouncements(page)
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold">Actualités Ecoworking</h1>
+    <PageContainer width="wide" className="space-y-6">
+      <PageHeader title="Actualités Ecoworking" />
 
       {isLoading && <Spinner label="Chargement des actualités…" />}
       {isError && (
@@ -151,6 +153,6 @@ export function AnnouncementsPage() {
           )}
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -58,3 +58,29 @@
 - Confirmation d'action destructrice : `ConfirmButton` (wrapper sur
   `AlertDialog`). Attention en test : la boîte est rendue dans un **portail**,
   donc hors du DOM du composant appelant.
+
+## Shell du portail (C14 — U2)
+
+- `Layout` assemble : `SidebarProvider` → `AppSidebar` (256 px, repli en mode
+  icône persisté) + `SidebarInset asChild` (top bar 60 px, `<main>`, `Footer`)
+  + `BottomNav` (5 onglets sous `md`). La top bar vit **dans** le `<main>` :
+  le titre de page y est rendu par portail et reste l'unique `<h1>` du contenu.
+- **Chaque page authentifiée** se compose ainsi :
+  ```tsx
+  <PageContainer width="wide">          {/* full | wide | narrow */}
+    <PageHeader title="…" description="…" actions={…} />
+    …contenu…
+  </PageContainer>
+  ```
+  `PageHeader` rend le `<h1>` (dans la top bar en desktop, au-dessus du contenu
+  en mobile) : **jamais de `<h1>` en dur dans une page**. `usePageTitle` reste
+  responsable du `document.title`. Largeurs déjà arbitrées : `full` pour
+  réservations / annuaire / plan / factures, `narrow` pour profil et détail
+  d'actualité, `wide` pour le reste.
+- La navigation (entrées, icônes, filtrage par rôle) vit dans
+  `useNavEntries()` — un seul endroit pour la sidebar, la bottom nav et le
+  Sheet « Plus ». « Mon profil » n'est pas une entrée de nav : il est dans le
+  bloc profil (`ProfileMenu`) et dans le Sheet « Plus ».
+- `ProfileMenu` (bloc profil de la sidebar, avatar de la barre mobile) et
+  `ThemeToggle` (top bar) partagent `useThemeSelection()` ; les deux sont des
+  `DropdownMenu` Radix — panneau en **portail**, nommé par son déclencheur.

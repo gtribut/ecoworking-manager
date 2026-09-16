@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { MarkdownContent } from '@/components/MarkdownContent'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -131,8 +133,8 @@ export function ProfilePage() {
   })
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <h1 className="text-2xl font-semibold">Mon profil</h1>
+    <PageContainer width="narrow" className="space-y-8">
+      <PageHeader title="Mon profil" />
 
       {hasProfile && (
         <PhotoSection
@@ -322,6 +324,6 @@ export function ProfilePage() {
       {/* Sécurité (PRD §3.2 / §3.4.5) — hors du formulaire profil : ses propres appels Fortify. */}
       <PasswordSection />
       <TwoFactorSection />
-    </div>
+    </PageContainer>
   )
 }

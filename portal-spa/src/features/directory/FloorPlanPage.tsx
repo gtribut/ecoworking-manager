@@ -1,5 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -61,8 +63,8 @@ export function FloorPlanPage() {
   }, [selectedDesk, floor])
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="text-2xl font-semibold">Plan des étages</h1>
+    <PageContainer width="full" className="space-y-6">
+      <PageHeader title="Plan des étages" />
       <DirectoryTabs />
 
       <div className="flex flex-wrap items-end gap-2">
@@ -159,6 +161,6 @@ export function FloorPlanPage() {
           <FloorPlanTextList desks={data.desks} />
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }

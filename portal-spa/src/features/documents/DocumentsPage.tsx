@@ -1,6 +1,8 @@
 import { Download, FileText } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState } from '@/components/EmptyState'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -38,8 +40,8 @@ export function DocumentsPage() {
   const validated = internal.data?.data.filter((document) => document.is_validated) ?? []
 
   return (
-    <div className="mx-auto max-w-4xl space-y-10">
-      <h1 className="text-2xl font-semibold">Documents</h1>
+    <PageContainer width="wide" className="space-y-10">
+      <PageHeader title="Documents" />
 
       <section aria-labelledby="internal-documents-title" className="space-y-4">
         <h2 id="internal-documents-title" className="text-lg font-semibold">
@@ -199,6 +201,6 @@ export function DocumentsPage() {
           )}
         </section>
       )}
-    </div>
+    </PageContainer>
   )
 }

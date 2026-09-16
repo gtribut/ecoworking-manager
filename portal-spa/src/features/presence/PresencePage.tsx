@@ -2,6 +2,8 @@ import { CalendarOff } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { EmptyState } from '@/components/EmptyState'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
 import { ConfirmButton } from '@/components/ui/confirm-button'
@@ -115,9 +117,9 @@ function PresenceContent() {
   const desk = data?.desk ?? null
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10">
+    <PageContainer width="wide" className="space-y-10">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Ma présence</h1>
+        <PageHeader title="Ma présence" />
         {desk !== null && (
           <p className="text-sm text-neutral-600 dark:text-neutral-300">
             Votre bureau attitré : <strong className="font-medium">{desk.name}</strong>
@@ -252,6 +254,6 @@ function PresenceContent() {
           </ul>
         )}
       </section>
-    </div>
+    </PageContainer>
   )
 }

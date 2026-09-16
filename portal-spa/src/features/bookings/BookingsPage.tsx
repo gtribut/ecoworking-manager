@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { Alert } from '@/components/ui/alert'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { CalendarSubscription } from '@/features/calendar/CalendarSubscription'
@@ -84,8 +86,8 @@ export function BookingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10">
-      <h1 className="text-2xl font-semibold">Réservations</h1>
+    <PageContainer width="full" className="space-y-10">
+      <PageHeader title="Réservations de salles" />
 
       {notice !== null && (
         <Alert variant="info">
@@ -128,6 +130,6 @@ export function BookingsPage() {
       <MyBookingsList isExternal={isExternal} onEdit={onEditFromList} />
 
       <CalendarSubscription />
-    </div>
+    </PageContainer>
   )
 }

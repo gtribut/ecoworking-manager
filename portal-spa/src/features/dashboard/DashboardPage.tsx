@@ -1,12 +1,15 @@
 import type { LucideIcon } from 'lucide-react'
 import { Armchair, CalendarOff, Mail, UserCircle } from 'lucide-react'
 import { Link } from 'react-router'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { DashboardAnnouncements } from '@/features/announcements/DashboardAnnouncements'
 import { useAuth } from '@/features/auth/useAuth'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { DashboardUpcomingBookings } from '@/features/bookings/DashboardUpcomingBookings'
 import { DashboardDocumentsToValidate } from '@/features/documents/DashboardDocumentsToValidate'
 import { DashboardInvoices } from '@/features/invoices/DashboardInvoices'
+import { CONTACT_MAILTO } from '@/lib/contact'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { cn } from '@/lib/utils'
 
@@ -17,9 +20,16 @@ interface Tile {
   description: string
 }
 
-/** PRD §3.3.2 « Nous contacter » : simple mailto au sujet pré-rempli. */
-export const CONTACT_MAILTO =
-  'mailto:contact@ecoworking.fr?subject=[backend ecowo] Demande d’informations'
+/** Date du jour en toutes lettres, sous le titre d'accueil (maquettes C14). */
+function today(): string {
+  const label = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date())
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
 
 /**
  * Accueil du portail (PRD §3.3, recette R-05) : vue récapitulative —
@@ -68,8 +78,8 @@ export function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Bonjour {user?.first_name}</h1>
+    <PageContainer width="wide" className="space-y-8">
+      <PageHeader title={user ? `Bonjour ${user.first_name}` : 'Bonjour'} description={today()} />
 
       {/* Documents à valider en tête (ordre mobile PRD §3.3.3) ; masqué si tout est à jour. */}
       <DashboardDocumentsToValidate />
@@ -123,6 +133,6 @@ export function DashboardPage() {
           Nous contacter
         </a>
       </p>
-    </div>
+    </PageContainer>
   )
 }

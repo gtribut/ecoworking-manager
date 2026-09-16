@@ -20,28 +20,26 @@ interface EmptyStateProps {
  * `<Alert variant="info">« Aucun·e … »` sèches par un bloc avec icône
  * décorative, message et — quand il y a une action évidente — un lien vers
  * elle (« Réservez votre première salle → »).
+ *
+ * Contour pointillé (au lieu du `Card` plein utilisé pour le contenu réel) :
+ * signale visuellement un emplacement vide, cohérent sur les deux thèmes via
+ * les jetons `border` / `card` / `muted-foreground` plutôt que des teintes
+ * neutres codées en dur (lot U4b).
  */
 export function EmptyState({ icon: Icon, title, description, cta, className }: EmptyStateProps) {
   return (
     <div
       role="status"
-      className={`rounded-lg border border-dashed border-neutral-300 bg-white px-4 py-8 text-center dark:border-neutral-700 dark:bg-neutral-900 ${className ?? ''}`}
+      className={`rounded-xl border border-dashed border-border bg-card px-4 py-8 text-center ${className ?? ''}`}
     >
-      {Icon && (
-        <Icon
-          className="mx-auto size-8 text-neutral-400 dark:text-neutral-500"
-          aria-hidden="true"
-        />
-      )}
-      <p className="mt-2 font-medium text-neutral-700 dark:text-neutral-200">{title}</p>
-      {description && (
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
-      )}
+      {Icon && <Icon className="mx-auto size-8 text-muted-foreground" aria-hidden="true" />}
+      <p className="mt-2 font-medium text-foreground">{title}</p>
+      {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       {cta && (
         <p className="mt-3">
           <Link
             to={cta.to}
-            className="text-sm font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
+            className="text-sm font-medium text-primary underline underline-offset-2"
           >
             {cta.label} →
           </Link>

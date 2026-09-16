@@ -5,7 +5,7 @@
 > défini par [`BRIEF.md` §18](./BRIEF.md#18-découpage-mvp--v1--v2--v3) et le **détail fonctionnel**
 > par [`PRD.md`](./PRD.md) ; ce fichier ne fait que tracer l'état d'avancement.
 >
-> **Dernière mise à jour : 2026-09-16 — C14 refonte UI portail planifié (`docs/refonte_ui/`), recette §3.1 faite, §3.2+ suspendue jusqu'à C14.** Précédent : 2026-09-13 (soir) — C13.6 lot B mergé, lot A livré (branche `feature/portail-lot-a`, à relire + rejouer Playwright). Reprise 12/09 après 2 mois. MVP COMPLET ✅ depuis le 03/07 (444 Pest + 72 Vitest + 26 e2e). Chantier ouvert : C13 recette manuelle** (`docs/recette.md` + `DemoSeeder`, livrés le 12/09, validés le 13/09 : 446 Pest verts). Ensuite : corrections issues de la recette, puis V1.5 (Clever Cloud, import Cosoft) — cf. `todo_guillaume.md`.
+> **Dernière mise à jour : 2026-09-16 — C14 démarré : U0 (docs) livré ; suite U1→U5 en session orchestrateur.** Précédent : 2026-09-16 — C14 refonte UI portail planifié (`docs/refonte_ui/`), recette §3.1 faite, §3.2+ suspendue jusqu'à C14. 2026-09-13 (soir) — C13.6 lot B mergé, lot A livré (branche `feature/portail-lot-a`, à relire + rejouer Playwright). Reprise 12/09 après 2 mois. MVP COMPLET ✅ depuis le 03/07 (444 Pest + 72 Vitest + 26 e2e). Chantier ouvert : C13 recette manuelle (`docs/recette.md` + `DemoSeeder`, livrés le 12/09, validés le 13/09 : 446 Pest verts). Ensuite : corrections issues de la recette, puis V1.5 (Clever Cloud, import Cosoft) — cf. `todo_guillaume.md`.
 
 ---
 
@@ -217,7 +217,7 @@
 
 | Code | Tâche | Statut | Notes |
 |---|---|---|---|
-| C14.0 | U0 docs : ADR-0013, PRD (écart nav ré-acté, §3.5.2), BRIEF §5 | ⬜ | Sonnet |
+| C14.0 | U0 docs : ADR-0013, PRD (écart nav ré-acté, §3.5.2), BRIEF §5 | 🚧 | Sonnet — U0 livré (branche `feature/ui-0-docs`) : ADR-0013, PRD §3.1/§3.5.2/§3.9 ré-actés, BRIEF §5.3 ; l'orchestrateur passera en ✅ au merge |
 | C14.1 | U1 design system : shadcn/ui réel (Tailwind v4), Geist fontsource, migration `components/ui` | ⬜ | Opus |
 | C14.2 | U2 shell : sidebar + top bar + bottom nav mobile, largeur par page | ⬜ | Opus |
 | C14.3 | U3 agenda salles FullCalendar v7 (repli v6), alternative liste + bouton | ⬜ | Opus — ∥ C14.4/C14.5 |

@@ -24,6 +24,7 @@ Format inspiré de la convention popularisée par Michael Nygard.
 | [0010](./0010-timezone-europe-paris.md) | Timezone applicative Europe/Paris | Accepté | 2026-07 |
 | [0011](./0011-magic-link-jetons-en-table.md) | Magic link — jetons à usage unique hashés en table dédiée | Accepté | 2026-07 |
 | [0012](./0012-fuseau-horaire-postgres.md) | Décalage horaire porté par le format de date Postgres | Accepté | 2026-09 |
+| [0013](./0013-shadcn-fullcalendar-a11y-agenda.md) | shadcn/ui réel, FullCalendar pour l'agenda des salles, a11y de l'agenda relâchée avec alternative | Accepté | 2026-09 |
 
 ## Conventions
 

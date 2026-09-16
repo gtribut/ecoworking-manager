@@ -3,9 +3,20 @@ import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { EmptyState } from '@/components/EmptyState'
 import { QueryError } from '@/components/QueryError'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { ConfirmButton } from '@/components/ui/confirm-button'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { getApiErrorMessage } from '@/lib/errors'
 import type { DeskOccupation, DeskOccupationStatus, DeskPeriod } from './types'
 import { useCancelDeskOccupation, useDeskOccupations } from './useTickets'
@@ -20,6 +31,14 @@ const STATUS_LABELS: Record<DeskOccupationStatus, string> = {
   present: 'Réservé',
   absent: 'Absent',
   cancelled: 'Annulé',
+}
+
+// `bg-muted`/`text-muted-foreground` ne fait que 4,35:1 en clair (review
+// axe) : neutral-200/700 à la place, cohérent avec `MyTicketsTable`.
+const STATUS_CLASSES: Record<DeskOccupationStatus, string> = {
+  present: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
+  absent: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+  cancelled: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
 }
 
 type Scope = 'upcoming' | 'past'
@@ -89,7 +108,14 @@ export function MyDeskOccupationsList() {
         </Button>
       </div>
 
-      {isLoading && <Spinner label="Chargement de vos bureaux réservés…" />}
+      {isLoading && (
+        <div role="status" className="space-y-2">
+          <span className="sr-only">Chargement de vos bureaux réservés…</span>
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      )}
       {isError && (
         <QueryError
           message="Impossible de charger vos bureaux réservés."
@@ -110,81 +136,79 @@ export function MyDeskOccupationsList() {
 
       {data && data.data.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-            <table className="w-full text-left text-sm">
-              <caption className="sr-only">
-                {scope === 'upcoming'
-                  ? 'Mes bureaux nomades réservés à venir'
-                  : 'Historique de mes bureaux nomades réservés'}
-              </caption>
-              <thead className="bg-neutral-50 text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
-                <tr>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Bureau
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Date
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Période
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Ticket
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Statut
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {data.data.map((occupation) => (
-                  <tr key={occupation.id}>
-                    <th scope="row" className="px-4 py-3 font-medium">
-                      {occupation.desk_name}
-                      {occupation.desk_floor !== null && (
-                        <span className="block text-xs font-normal text-neutral-500 dark:text-neutral-400">
-                          Étage {occupation.desk_floor}
-                        </span>
-                      )}
-                    </th>
-                    <td className="px-4 py-3">{formatDate(occupation.date)}</td>
-                    <td className="px-4 py-3">{PERIOD_LABELS[occupation.period]}</td>
-                    <td className="px-4 py-3">
-                      {occupation.ticket ? `nº ${occupation.ticket.id}` : '—'}
-                    </td>
-                    <td className="px-4 py-3">{STATUS_LABELS[occupation.status]}</td>
-                    <td className="px-4 py-3 text-right">
-                      {occupation.cancellable ? (
-                        <ConfirmButton
-                          variant="destructive"
-                          size="sm"
-                          disabled={cancelOccupation.isPending}
-                          confirmMessage="Annuler cette réservation ?"
-                          confirmLabel="Oui, annuler"
-                          cancelLabel="Non"
-                          onConfirm={() => void onCancel(occupation)}
-                        >
-                          Annuler
-                          <span className="sr-only">
-                            {' '}
-                            la réservation du bureau {occupation.desk_name} du{' '}
-                            {formatDate(occupation.date)}
+          <Card>
+            <CardContent className="px-0">
+              {/* `[&_th]:px-4 [&_td]:px-4` (review F-1) : les cellules `p-2` par
+                  défaut collaient à 8 px du bord de la Card, moins que le
+                  padding de carte habituel (16 px). */}
+              <Table className="[&_td]:px-4 [&_th]:px-4">
+                <TableCaption className="sr-only">
+                  {scope === 'upcoming'
+                    ? 'Mes bureaux nomades réservés à venir'
+                    : 'Historique de mes bureaux nomades réservés'}
+                </TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bureau</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Période</TableHead>
+                    <TableHead>Ticket</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.data.map((occupation) => (
+                    <TableRow key={occupation.id}>
+                      {/* `<th scope="row">` (review M-1) plutôt qu'un `TableCell`. */}
+                      <th scope="row" className="p-2 align-middle font-medium whitespace-nowrap">
+                        {occupation.desk_name}
+                        {occupation.desk_floor !== null && (
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            Étage {occupation.desk_floor}
                           </span>
-                        </ConfirmButton>
-                      ) : (
-                        <span className="text-neutral-500 dark:text-neutral-400">
-                          {scope === 'upcoming' ? 'Non annulable (délai dépassé)' : '—'}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        )}
+                      </th>
+                      <TableCell>{formatDate(occupation.date)}</TableCell>
+                      <TableCell>{PERIOD_LABELS[occupation.period]}</TableCell>
+                      <TableCell>
+                        {occupation.ticket ? `nº ${occupation.ticket.id}` : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={STATUS_CLASSES[occupation.status]}>
+                          {STATUS_LABELS[occupation.status]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right whitespace-normal">
+                        {occupation.cancellable ? (
+                          <ConfirmButton
+                            variant="destructive"
+                            size="sm"
+                            disabled={cancelOccupation.isPending}
+                            confirmMessage="Annuler cette réservation ?"
+                            confirmLabel="Oui, annuler"
+                            cancelLabel="Non"
+                            onConfirm={() => void onCancel(occupation)}
+                          >
+                            Annuler
+                            <span className="sr-only">
+                              {' '}
+                              la réservation du bureau {occupation.desk_name} du{' '}
+                              {formatDate(occupation.date)}
+                            </span>
+                          </ConfirmButton>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {scope === 'upcoming' ? 'Non annulable (délai dépassé)' : '—'}
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
           {data.meta.last_page > 1 && (
             <nav

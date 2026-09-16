@@ -5,7 +5,17 @@ import { PageContainer } from '@/components/PageContainer'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
+import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { administrativeDocumentPdfUrl } from './api'
@@ -47,12 +57,18 @@ export function DocumentsPage() {
         <h2 id="internal-documents-title" className="text-lg font-semibold">
           Documents à valider
         </h2>
-        <p className="text-sm text-neutral-600 dark:text-neutral-300">
+        <p className="text-sm text-muted-foreground">
           Chaque nouvelle version de ces documents (charte, conditions générales, droit à l’image…)
           doit être validée : téléchargez, lisez, puis validez.
         </p>
 
-        {internal.isLoading && <Spinner label="Chargement des documents…" />}
+        {internal.isLoading && (
+          <div role="status" className="space-y-3">
+            <span className="sr-only">Chargement des documents…</span>
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        )}
         {internal.isError && (
           <QueryError
             message="Impossible de charger vos documents."
@@ -61,7 +77,7 @@ export function DocumentsPage() {
         )}
 
         {internal.data && toValidate.length === 0 && (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400" role="status">
+          <p className="text-sm text-muted-foreground" role="status">
             Tous vos documents sont à jour.
           </p>
         )}
@@ -76,9 +92,7 @@ export function DocumentsPage() {
 
         {validated.length > 0 && (
           <>
-            <h3 className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">
-              Documents déjà validés
-            </h3>
+            <h3 className="text-sm font-semibold text-muted-foreground">Documents déjà validés</h3>
             <ul className="space-y-3">
               {validated.map((document) => (
                 <InternalDocumentItem key={document.id} document={document} />
@@ -94,7 +108,13 @@ export function DocumentsPage() {
             Mes documents administratifs
           </h2>
 
-          {administrative.isLoading && <Spinner label="Chargement des documents administratifs…" />}
+          {administrative.isLoading && (
+            <div role="status" className="space-y-2">
+              <span className="sr-only">Chargement des documents administratifs…</span>
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          )}
           {administrative.isError && (
             <QueryError
               message="Impossible de charger vos documents administratifs."
@@ -108,64 +128,63 @@ export function DocumentsPage() {
 
           {administrative.data && administrative.data.data.length > 0 && (
             <>
-              <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-                <table className="w-full text-left text-sm">
-                  <caption className="sr-only">Liste de mes documents administratifs</caption>
-                  <thead className="bg-neutral-50 text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
-                    <tr>
-                      <th scope="col" className="px-4 py-3 font-medium">
-                        Titre
-                      </th>
-                      <th scope="col" className="px-4 py-3 font-medium">
-                        Type
-                      </th>
-                      <th scope="col" className="px-4 py-3 font-medium">
-                        Entité
-                      </th>
-                      <th scope="col" className="px-4 py-3 font-medium">
-                        Date
-                      </th>
-                      <th scope="col" className="px-4 py-3 text-right font-medium">
-                        PDF
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                    {administrative.data.data.map((document) => (
-                      <tr key={document.id}>
-                        <th scope="row" className="px-4 py-3 font-medium">
-                          {document.title}
-                        </th>
-                        <td className="px-4 py-3">{ADMINISTRATIVE_TYPE_LABELS[document.type]}</td>
-                        <td className="px-4 py-3">{document.company_name ?? '—'}</td>
-                        <td className="px-4 py-3">
-                          {document.document_date
-                            ? formatDocumentDate(document.document_date)
-                            : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {document.pdf_available ? (
-                            <a
-                              href={administrativeDocumentPdfUrl(document.id)}
-                              className="inline-flex items-center gap-1 text-brand-700 dark:text-brand-300 underline"
-                            >
-                              <Download className="size-4" aria-hidden="true" />
-                              <span>
-                                Télécharger
-                                <span className="sr-only"> le document {document.title}</span>
-                              </span>
-                            </a>
-                          ) : (
-                            <span className="text-neutral-500 dark:text-neutral-400">
-                              Indisponible
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Card>
+                <CardContent className="px-0">
+                  {/* `[&_th]:px-4 [&_td]:px-4` (review F-1) : les cellules `p-2`
+                      par défaut collaient à 8 px du bord de la Card, moins que
+                      le padding de carte habituel (16 px). */}
+                  <Table className="[&_td]:px-4 [&_th]:px-4">
+                    <TableCaption className="sr-only">
+                      Liste de mes documents administratifs
+                    </TableCaption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Titre</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Entité</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">PDF</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {administrative.data.data.map((document) => (
+                        <TableRow key={document.id}>
+                          {/* `<th scope="row">` (review M-1) plutôt qu'un `TableCell`. */}
+                          <th
+                            scope="row"
+                            className="p-2 align-middle font-medium whitespace-nowrap"
+                          >
+                            {document.title}
+                          </th>
+                          <TableCell>{ADMINISTRATIVE_TYPE_LABELS[document.type]}</TableCell>
+                          <TableCell>{document.company_name ?? '—'}</TableCell>
+                          <TableCell>
+                            {document.document_date
+                              ? formatDocumentDate(document.document_date)
+                              : '—'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {document.pdf_available ? (
+                              <a
+                                href={administrativeDocumentPdfUrl(document.id)}
+                                className="inline-flex items-center gap-1 text-brand-700 underline dark:text-brand-300"
+                              >
+                                <Download className="size-4" aria-hidden="true" />
+                                <span>
+                                  Télécharger
+                                  <span className="sr-only"> le document {document.title}</span>
+                                </span>
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">Indisponible</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
 
               {administrative.data.meta.last_page > 1 && (
                 <nav
@@ -180,10 +199,7 @@ export function DocumentsPage() {
                   >
                     Précédent
                   </Button>
-                  <span
-                    aria-live="polite"
-                    className="text-sm text-neutral-600 dark:text-neutral-300"
-                  >
+                  <span aria-live="polite" className="text-sm text-muted-foreground">
                     Page {administrative.data.meta.current_page} sur{' '}
                     {administrative.data.meta.last_page}
                   </span>

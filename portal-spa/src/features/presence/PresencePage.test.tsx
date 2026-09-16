@@ -30,15 +30,26 @@ function absence(overrides: Partial<Absence> = {}): Absence {
   }
 }
 
+/** Date locale au format YYYY-MM-DD (même algorithme que `PresencePage`). */
+function todayIso(): string {
+  const now = new Date()
+  const offset = now.getTimezoneOffset()
+  return new Date(now.getTime() - offset * 60_000).toISOString().slice(0, 10)
+}
+
 /** Réponse `/api/presence` ; `all=1` renvoie l'historique. */
-function presenceHandlers(upcoming: Absence[], history: Absence[] = upcoming) {
+function presenceHandlers(
+  upcoming: Absence[],
+  history: Absence[] = upcoming,
+  presentDays: string[] = [],
+) {
   return [
     http.get('/api/user', () => HttpResponse.json(resident())),
     http.get('/api/presence', ({ request }) => {
       const all = new URL(request.url).searchParams.get('all')
       return HttpResponse.json({
         desk,
-        present_days: [],
+        present_days: presentDays,
         absences: all === '1' ? history : upcoming,
       })
     }),
@@ -55,6 +66,22 @@ describe('PresencePage', () => {
     expect(screen.getByText(/étage 2/)).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Mes absences à venir' })).toBeInTheDocument()
     expect(screen.getByText('du 20/06/2026 au 22/06/2026')).toBeInTheDocument()
+  })
+
+  it('affiche l’état du jour du bureau (présent) via `present_days`', async () => {
+    server.use(...presenceHandlers([], [], [todayIso()]))
+
+    renderWithProviders(<PresencePage />, { withAuth: true })
+
+    expect(await screen.findByText('Présent(e) aujourd’hui')).toBeInTheDocument()
+  })
+
+  it('affiche l’état du jour du bureau (absent) quand aujourd’hui n’est pas un jour présent', async () => {
+    server.use(...presenceHandlers([], [], []))
+
+    renderWithProviders(<PresencePage />, { withAuth: true })
+
+    expect(await screen.findByText('Absent(e) aujourd’hui')).toBeInTheDocument()
   })
 
   it('révèle le formulaire au clic sur « Marquer une absence »', async () => {

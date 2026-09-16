@@ -157,7 +157,9 @@ function PresenceContent() {
                       className={
                         presentToday
                           ? 'mt-1 bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200'
-                          : 'mt-1 bg-muted text-muted-foreground'
+                          : // `bg-muted`/`text-muted-foreground` ne fait que 4,35:1 en
+                            // clair (review axe) : neutral-200/700 à la place.
+                            'mt-1 bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
                       }
                     >
                       {presentToday ? 'Présent(e) aujourd’hui' : 'Absent(e) aujourd’hui'}

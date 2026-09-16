@@ -90,7 +90,7 @@ export function DeskDetailPanel({ desk, onClose, returnFocusTo }: DeskDetailPane
                             href={occupant.linkedin_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-primary underline"
+                            className="text-brand-700 underline dark:text-brand-300"
                           >
                             LinkedIn
                             <span className="sr-only">
@@ -106,7 +106,7 @@ export function DeskDetailPanel({ desk, onClose, returnFocusTo }: DeskDetailPane
                             href={occupant.website_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-primary underline"
+                            className="text-brand-700 underline dark:text-brand-300"
                           >
                             Site web
                             <span className="sr-only">
@@ -135,7 +135,7 @@ export function DeskDetailPanel({ desk, onClose, returnFocusTo }: DeskDetailPane
 
               {desk.is_own && (
                 <p>
-                  <Link to="/presence" className="text-primary underline">
+                  <Link to="/presence" className="text-brand-700 underline dark:text-brand-300">
                     Gérer mes absences
                   </Link>
                 </p>

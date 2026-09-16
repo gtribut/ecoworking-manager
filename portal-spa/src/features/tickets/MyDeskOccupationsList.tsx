@@ -33,10 +33,12 @@ const STATUS_LABELS: Record<DeskOccupationStatus, string> = {
   cancelled: 'Annulé',
 }
 
+// `bg-muted`/`text-muted-foreground` ne fait que 4,35:1 en clair (review
+// axe) : neutral-200/700 à la place, cohérent avec `MyTicketsTable`.
 const STATUS_CLASSES: Record<DeskOccupationStatus, string> = {
   present: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
-  absent: 'bg-muted text-muted-foreground',
-  cancelled: 'bg-muted text-muted-foreground',
+  absent: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+  cancelled: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
 }
 
 type Scope = 'upcoming' | 'past'

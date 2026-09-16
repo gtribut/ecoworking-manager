@@ -46,7 +46,7 @@ export function InternalDocumentItem({ document }: { document: InternalDocument 
           {document.pdf_available && (
             <a
               href={internalDocumentPdfUrl(document.id)}
-              className="inline-flex items-center gap-1 text-sm text-primary underline"
+              className="inline-flex items-center gap-1 text-sm text-brand-700 underline dark:text-brand-300"
             >
               <Download className="size-4" aria-hidden="true" />
               <span>

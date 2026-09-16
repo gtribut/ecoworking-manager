@@ -31,7 +31,9 @@ const STATUS_CLASSES: Record<TicketStatus, string> = {
   available: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
   used: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200',
   restituted: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
-  cancelled: 'bg-muted text-muted-foreground',
+  // `bg-muted`/`text-muted-foreground` ne fait que 4,35:1 en clair (review
+  // axe) : neutral-200/700 (repris du kit précédent, déjà audité AA) à la place.
+  cancelled: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
 }
 
 function formatDate(iso: string | null): string {

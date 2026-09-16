@@ -6,7 +6,9 @@ const tabClass = ({ isActive }: { isActive: boolean }) =>
     'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
     isActive
       ? 'bg-background text-foreground shadow-sm'
-      : 'text-muted-foreground hover:text-foreground',
+      : // `text-muted-foreground` (neutral-500) sur `bg-muted` (#f5f5f5) ne fait
+        // que 4,34:1 (review axe) : neutral-600/300 remonte à ≥ 4,5:1 clair et sombre.
+        'text-neutral-600 hover:text-foreground dark:text-neutral-300',
   )
 
 /**

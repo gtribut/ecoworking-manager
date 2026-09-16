@@ -86,7 +86,7 @@ export function AnnouncementsPage() {
                       >
                         <Link
                           to={`/announcements/${announcement.id}`}
-                          className="hover:text-primary hover:underline"
+                          className="hover:text-brand-700 hover:underline dark:hover:text-brand-300"
                         >
                           {announcement.title}
                         </Link>
@@ -120,7 +120,7 @@ export function AnnouncementsPage() {
                       <p className="mt-3">
                         <Link
                           to={`/announcements/${announcement.id}`}
-                          className="text-sm text-primary underline"
+                          className="text-sm text-brand-700 underline dark:text-brand-300"
                         >
                           Voir
                           <span className="sr-only"> l’actualité {announcement.title}</span> →

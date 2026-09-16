@@ -248,8 +248,8 @@
 
 ## C14 — Refonte UI (2026-09-16)
 
-> Lot U5 (finition) livré dans le worktree `ui-5` (`feature/ui-5-finition`, non mergé au moment de
-> l'écriture). Actions manuelles / décisions issues de ce lot :
+> Chantier C14 (U0→U5) mergé sur `main` le 16/09 (dernier merge `5946b40`). Actions manuelles / décisions
+> issues du chantier :
 
 - [ ] 🟡 **Rejouer la recette `docs/recette.md` §3** sur la base de dev — reseed conseillé
   (`migrate:fresh --seed --seeder=DemoSeeder`) avant de dérouler, l'UI a changé de fond en comble

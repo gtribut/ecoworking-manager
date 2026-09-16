@@ -20,6 +20,12 @@ import { cn } from '@/lib/utils'
  * Le focus utilise l'outline brand décollé, comme le reste du portail
  * (`:focus-visible` global dans styles.css), et non l'anneau translucide de
  * nova, illisible sur un fond vert plein.
+ *
+ * 4. `link` utilise l'utilitaire `text-link` (styles.css) plutôt que
+ *    `text-primary` : sur une carte en thème sombre, `text-primary` (vert
+ *    plein) ne tombe qu'à 3,77:1 (review U5, CLAUDE.md §3.5) — `text-link`
+ *    est le même brand-700/brand-300 vérifié AA que tous les liens du
+ *    portail.
  */
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -35,7 +41,7 @@ const buttonVariants = cva(
           'hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50',
         destructive:
           'bg-destructive text-destructive-foreground hover:bg-destructive-hover focus-visible:outline-destructive',
-        link: 'text-primary underline-offset-4 hover:underline',
+        link: 'text-link underline-offset-4 hover:underline',
       },
       size: {
         default:

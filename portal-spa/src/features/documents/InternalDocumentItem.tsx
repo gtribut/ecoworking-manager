@@ -46,7 +46,7 @@ export function InternalDocumentItem({ document }: { document: InternalDocument 
           {document.pdf_available && (
             <a
               href={internalDocumentPdfUrl(document.id)}
-              className="inline-flex items-center gap-1 text-sm text-brand-700 underline dark:text-brand-300"
+              className="inline-flex items-center gap-1 text-sm text-link underline"
             >
               <Download className="size-4" aria-hidden="true" />
               <span>
@@ -69,7 +69,10 @@ export function InternalDocumentItem({ document }: { document: InternalDocument 
                   confirmMessage={`Valider « ${document.title} » ? Cette action atteste que vous en avez pris connaissance.`}
                   onConfirm={handleValidate}
                 >
-                  Valider
+                  {/* Plusieurs documents « À valider » sur la même page (dashboard,
+                      Documents) : le titre en `sr-only` distingue les boutons
+                      homonymes « Valider » pour un lecteur d'écran (review U5). */}
+                  Valider<span className="sr-only"> le document {document.title}</span>
                 </ConfirmButton>
               )}
             </>

@@ -188,6 +188,19 @@
   @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-white;
 }
 
+/*
+ * Couleur de lien unifiée (U5, review contrastes) : `text-brand-700
+ * dark:text-brand-300` était répété à l'identique dans une vingtaine de call
+ * sites (liens « Voir → », pieds de bloc dashboard, `Button variant="link"`…).
+ * Un seul utilitaire, une seule source de vérité de contraste (AA vérifié
+ * dans les deux thèmes, cf. styles.css plus haut). `Button variant="link"`
+ * (`components/ui/button.tsx`) l'utilise à la place de `text-primary`, qui
+ * tombe à 3,77:1 sur une carte en thème sombre.
+ */
+@utility text-link {
+  @apply text-brand-700 dark:text-brand-300;
+}
+
 /* C12.5 — Plan des étages : états des bureaux. La couleur n'est JAMAIS seule
    porteuse d'information (aria-label par bureau + liste texte équivalente). */
 .plan-svg svg {

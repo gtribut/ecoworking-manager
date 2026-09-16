@@ -34,10 +34,7 @@ export function DashboardDocumentsToValidate() {
         className="col-span-2 lg:col-span-1"
         value="Indisponible"
         sub={
-          <Link
-            to="/documents"
-            className="font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
-          >
+          <Link to="/documents" className="font-medium text-link underline underline-offset-2">
             Voir mes documents
           </Link>
         }

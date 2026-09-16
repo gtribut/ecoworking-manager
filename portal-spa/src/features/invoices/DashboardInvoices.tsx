@@ -32,7 +32,7 @@ export function DashboardInvoices() {
             </h2>
             <Link
               to="/invoices"
-              className="text-sm font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
+              className="text-sm font-medium text-link underline underline-offset-2"
             >
               Toutes mes factures
             </Link>

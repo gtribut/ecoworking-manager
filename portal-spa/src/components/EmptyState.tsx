@@ -37,10 +37,7 @@ export function EmptyState({ icon: Icon, title, description, cta, className }: E
       {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       {cta && (
         <p className="mt-3">
-          <Link
-            to={cta.to}
-            className="text-sm font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
-          >
+          <Link to={cta.to} className="text-sm font-medium text-link underline underline-offset-2">
             {cta.label} →
           </Link>
         </p>

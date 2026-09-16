@@ -52,7 +52,7 @@ export function DashboardUpcomingBookings() {
             </h2>
             <Link
               to="/bookings"
-              className="text-sm font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
+              className="text-sm font-medium text-link underline underline-offset-2"
             >
               Tout voir
             </Link>

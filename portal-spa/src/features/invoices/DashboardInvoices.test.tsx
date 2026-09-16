@@ -23,14 +23,8 @@ function invoice(id: number, overrides: Partial<Invoice> = {}): Invoice {
   }
 }
 
-/** Bloc entité (PRD §3.6.4) : la tuile ne fait que compléter le titre du bandeau. */
-function withEntities(entities: unknown[] = []) {
-  server.use(http.get('/api/billing/entity', () => HttpResponse.json({ data: entities })))
-}
-
 describe('DashboardInvoices (bandeau bento, PRD §3.3.2, maquette C14)', () => {
-  it('affiche 3 factures max avec numéro, date, statut et lien PDF, puis le lien « toutes mes factures »', async () => {
-    withEntities()
+  it('affiche 3 factures max avec numéro, date, montant, statut et lien PDF, puis le lien « toutes mes factures »', async () => {
     server.use(
       http.get('/api/invoices', () =>
         HttpResponse.json({
@@ -50,6 +44,8 @@ describe('DashboardInvoices (bandeau bento, PRD §3.3.2, maquette C14)', () => {
     expect(await screen.findByText('EW-2026-00001')).toBeInTheDocument()
     expect(screen.getByText('EW-2026-00003')).toBeInTheDocument()
     expect(screen.queryByText('EW-2026-00004')).not.toBeInTheDocument()
+    // Date · montant TTC sur la même ligne (maquette C14 : « 1 sept. 2026 · 1 064,34 € »).
+    expect(screen.getAllByText('01/09/2026 · 120,00 €')).toHaveLength(3)
     expect(screen.getByText('En retard')).toBeInTheDocument()
     expect(screen.getByText('En attente')).toBeInTheDocument()
     expect(screen.getByText('Indisponible')).toBeInTheDocument()
@@ -64,7 +60,6 @@ describe('DashboardInvoices (bandeau bento, PRD §3.3.2, maquette C14)', () => {
   })
 
   it('affiche l’état vide', async () => {
-    withEntities()
     server.use(
       http.get('/api/invoices', () =>
         HttpResponse.json({
@@ -79,20 +74,7 @@ describe('DashboardInvoices (bandeau bento, PRD §3.3.2, maquette C14)', () => {
     expect(await screen.findByText('Aucune facture pour le moment.')).toBeInTheDocument()
   })
 
-  it('complète le titre par le nom de l’entité quand le membre n’en a qu’une seule', async () => {
-    withEntities([
-      {
-        id: 5,
-        entity_type: 'company',
-        name: 'Atelier Lumière',
-        legal_name: 'Atelier Lumière',
-        legal_form: 'SARL',
-        siret: null,
-        vat_number: null,
-        billing_email: null,
-        address: { line1: null, line2: null, postal_code: null, city: null, country: null },
-      },
-    ])
+  it('garde un titre générique, sans requête ni nom d’entité (review U4a)', async () => {
     server.use(
       http.get('/api/invoices', () =>
         HttpResponse.json({
@@ -101,27 +83,9 @@ describe('DashboardInvoices (bandeau bento, PRD §3.3.2, maquette C14)', () => {
         }),
       ),
     )
-
-    renderWithProviders(<DashboardInvoices />)
-
-    expect(
-      await screen.findByRole('heading', {
-        level: 2,
-        name: 'Mes dernières factures · Atelier Lumière',
-      }),
-    ).toBeInTheDocument()
-  })
-
-  it('garde le titre générique sans entité unique (aucune ou plusieurs)', async () => {
-    withEntities()
-    server.use(
-      http.get('/api/invoices', () =>
-        HttpResponse.json({
-          data: [invoice(1)],
-          meta: { current_page: 1, last_page: 1, per_page: 20, total: 1 },
-        }),
-      ),
-    )
+    // Pas de handler pour /api/billing/entity : une requête vers cette route
+    // ferait échouer le test (onUnhandledRequest: 'error', cf. setup.ts) —
+    // preuve que le composant ne l'appelle plus.
 
     renderWithProviders(<DashboardInvoices />)
 

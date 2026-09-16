@@ -4,25 +4,23 @@ import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useBillingEntities } from '@/features/billing/useBillingEntities'
 import { invoicePdfUrl } from './api'
-import { formatInvoiceDate, InvoiceStatusBadge } from './status'
+import { euros, formatInvoiceDate, InvoiceStatusBadge } from './status'
 import { DEFAULT_INVOICE_FILTERS } from './types'
 import { useInvoices } from './useInvoices'
 
 /**
  * Bandeau « Mes dernières factures » du dashboard bento (PRD §3.3.2, maquette
- * C14) : 3 factures max en cartes (numéro, date · statut, PDF). Rendu
- * uniquement pour les contacts facturation — le parent gate sur
- * `view-entity-invoices`. Le nom de l'entité complète le titre quand le
- * membre n'en a qu'une seule (cas le plus courant, PRD §3.6.4) ; avec zéro ou
- * plusieurs entités le titre générique reste plus honnête qu'un choix arbitraire.
+ * C14) : 3 factures max en cartes (numéro, date · montant · statut, PDF).
+ * Rendu uniquement pour les contacts facturation — le parent gate sur
+ * `view-entity-invoices`. Titre générique, sans nom d'entité : cette donnée
+ * n'est chargée nulle part ailleurs sur l'accueil (`useBillingEntities()`
+ * n'est utilisé que par `InvoicesPage`), une requête dédiée pour un simple
+ * ornement de titre n'en valait pas la peine (review U4a, point mineur).
  */
 export function DashboardInvoices() {
   const { data, isLoading, isError, refetch } = useInvoices(DEFAULT_INVOICE_FILTERS)
-  const entities = useBillingEntities()
   const invoices = data?.data.slice(0, 3) ?? []
-  const singleEntityName = entities.data?.length === 1 ? entities.data[0]?.name : null
 
   return (
     <section aria-labelledby="dashboard-invoices-title">
@@ -30,7 +28,7 @@ export function DashboardInvoices() {
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="dashboard-invoices-title" className="text-base font-semibold">
-              Mes dernières factures{singleEntityName ? ` · ${singleEntityName}` : ''}
+              Mes dernières factures
             </h2>
             <Link
               to="/invoices"
@@ -75,7 +73,8 @@ export function DashboardInvoices() {
                       )}
                     </span>
                     <span className="block truncate text-muted-foreground">
-                      {formatInvoiceDate(invoice.issued_at)}
+                      {formatInvoiceDate(invoice.issued_at)} ·{' '}
+                      {euros.format(Number(invoice.total_ttc))}
                     </span>
                   </span>
                   <InvoiceStatusBadge status={invoice.status} />

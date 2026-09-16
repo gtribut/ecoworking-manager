@@ -73,14 +73,30 @@ it('classe les bureaux attitrés par étage avec statut présent / absent / pas 
         ->and($result['floors'][2]['assigned'][0]['status'])->toBe('unknown');
 });
 
-it('marque tous les résidents absents un jour non ouvré', function () {
+// Ré-acté 2026-09-17 : un jour non ouvré reste signalé (`is_working_day`, pour
+// les bureaux nomades non réservables) mais les résidents y restent présents.
+it('garde les résidents présents un jour non ouvré, tout en le signalant', function () {
     residentDesk();
     $sunday = CarbonImmutable::today()->next('sunday');
 
     $result = occupancyService()->forDate($sunday);
 
     expect($result['is_working_day'])->toBeFalse()
-        ->and($result['floors'][1]['assigned'][0]['status'])->toBe('absent');
+        ->and($result['floors'][1]['assigned'][0]['status'])->toBe('present');
+});
+
+it('marque le résident absent un jour non ouvré couvert par une absence déclarée', function () {
+    [$desk, $user] = residentDesk();
+    $sunday = CarbonImmutable::today()->next('sunday');
+    DeskAbsence::factory()->for($user)->create([
+        'desk_id' => $desk->id,
+        'date_start' => $sunday->toDateString(),
+        'period' => Period::FullDay->value,
+    ]);
+
+    $result = occupancyService()->forDate($sunday);
+
+    expect($result['floors'][1]['assigned'][0]['status'])->toBe('absent');
 });
 
 it('liste les bureaux libres avec leur external ou disponibles, et la capacité restante', function () {

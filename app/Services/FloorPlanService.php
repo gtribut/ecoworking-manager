@@ -23,8 +23,9 @@ use Illuminate\Support\Collection;
  * Occupation du jour des 49 bureaux pour le plan des étages (C12.5, PRD §3.7).
  *
  * Modèle de présence (PRD §6.1) :
- * - bureau attitré (résident/staff) : présent par défaut les jours ouvrés,
- *   sauf absence déclarée ({@see PresenceService}) ;
+ * - bureau attitré (résident/staff) : présent par défaut TOUS les jours,
+ *   week-ends et fériés compris, sauf absence déclarée ({@see PresenceService},
+ *   ré-acté 2026-09-17) ;
  * - bureau non attitré : occupé uniquement via une occupation external
  *   (ticket) « present » sur la date ;
  * - bureau hors service : jamais occupé.
@@ -42,6 +43,10 @@ final class FloorPlanService
     public function __construct(private readonly PresenceService $presence) {}
 
     /**
+     * `is_working_day` reste exposé à titre informatif (il ne conditionne PLUS
+     * la présence des bureaux attitrés) : il renseigne le portail sur les jours
+     * où les bureaux nomades ne sont pas réservables ({@see DeskAvailabilityService}).
+     *
      * @return array{date: string, is_working_day: bool, desks: list<array<string, mixed>>}
      */
     public function forDate(CarbonImmutable $date, User $viewer): array

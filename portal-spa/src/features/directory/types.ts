@@ -59,6 +59,11 @@ export interface PlanDesk {
 
 export interface FloorPlan {
   date: string
+  /**
+   * Jour ouvré (L-V hors fériés). Informatif seulement : depuis le 2026-09-17
+   * les bureaux attitrés sont présents 7 j/7 sauf absence déclarée — ce drapeau
+   * ne concerne plus que la réservation des bureaux nomades.
+   */
   is_working_day: boolean
   desks: PlanDesk[]
 }

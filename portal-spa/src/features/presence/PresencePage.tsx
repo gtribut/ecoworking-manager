@@ -52,11 +52,13 @@ const ABSENCE_TODAY_LABELS: Record<AbsencePeriod, string> = {
 }
 
 /**
- * Absence couvrant la date donnée, si elle existe (review I-2) : le back
- * (`PresenceService::presentOn()`) renvoie `false` dans `present_days` pour
- * TOUT jour non travaillé (week-end, férié, absence) — on ne peut donc pas
- * en déduire « absent » sans vérifier qu'une absence déclarée couvre bien le
- * jour, sous peine d'afficher « Absent(e) » un samedi ou un jour férié.
+ * Absence couvrant la date donnée, si elle existe. Garde conservée de la
+ * review I-2 : on n'affiche « Absent(e) » que si une absence de la liste
+ * couvre réellement le jour, jamais par déduction depuis `present_days`.
+ * Depuis le ré-acté 2026-09-17, `present_days` ne vaut d'ailleurs `false` que
+ * sur une absence déclarée (cf. `PresenceService::presentOn()`) — la garde
+ * reste en place pour que le libellé du badge vienne toujours de l'absence
+ * elle-même (période : journée / matin / après-midi).
  * Cherche dans la liste déjà chargée par `usePresence()` (pas de nouvel
  * appel), plage simple ou récurrence hebdomadaire bornée (PRD §3.4.6).
  */
@@ -156,12 +158,13 @@ function PresenceContent() {
 
   const desk = data?.desk ?? null
   const today = isoOf(new Date())
-  // « État du jour » (PRD §3.4.6/§3.7.4) : `present_days` (déjà renvoyé par
-  // `/api/presence`, pas encore affiché avant ce lot) vaut `false` pour tout
-  // jour non travaillé (week-end, férié, absence — cf. `PresenceService::
-  // presentOn()`), pas seulement pour une absence déclarée : on ne peut donc
-  // afficher « Absent(e) » que si une absence de la liste couvre bien
-  // aujourd'hui (review I-2), sinon aucun badge (jour non ouvré/indéterminé).
+  // « État du jour » (PRD §3.4.6/§3.7.4) : depuis le ré-acté 2026-09-17, un
+  // bureau attitré est présent TOUS les jours — week-ends et fériés compris —
+  // sauf absence déclarée (cf. `PresenceService::presentOn()`). Le badge
+  // « Présent(e) » peut donc s'afficher un samedi. Le badge « Absent(e) »
+  // reste conditionné à `todaysAbsence` (review I-2) : c'est de l'absence que
+  // vient son libellé, et c'est une garde défensive contre un faux « Absent »
+  // si `present_days` ne couvrait pas le jour.
   const presentToday = data ? data.present_days.includes(today) : null
   const todaysAbsence = data ? findAbsenceCovering(data.absences, today) : null
 

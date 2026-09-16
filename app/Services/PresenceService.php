@@ -9,7 +9,6 @@ use App\Enums\Period;
 use App\Exceptions\DomainActionException;
 use App\Models\DeskAbsence;
 use App\Models\User;
-use App\Support\FrenchHolidays;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -17,9 +16,13 @@ use Illuminate\Support\Collection;
 /**
  * Présence nomade des résidents (C7.3, PRD §3.4.6 / data_model §4.3).
  *
- * Modèle implicite : un résident avec bureau attitré est présent par défaut les
- * jours ouvrés, SAUF absence déclarée. Les récurrences hebdomadaires sont
- * expansées À LA LECTURE (jamais pré-générées).
+ * Modèle implicite : un résident (ou staff) avec bureau attitré est présent par
+ * défaut TOUS les jours — week-ends et jours fériés compris, les résidents ayant
+ * un accès 24/24 —, SAUF absence déclarée (ré-acté 2026-09-17, PRD §3.7.2). Les
+ * récurrences hebdomadaires sont expansées À LA LECTURE (jamais pré-générées).
+ *
+ * À ne pas confondre avec la garde « jours ouvrés » des tickets nomades
+ * ({@see DeskAvailabilityService}), qui elle reste en vigueur.
  */
 final class PresenceService
 {
@@ -98,7 +101,7 @@ final class PresenceService
     }
 
     /**
-     * Le membre est-il présent (bureau attitré, jour ouvré, hors absence) sur
+     * Le membre est-il présent (bureau attitré, aucune absence déclarée) sur
      * cette date / demi-journée ?
      */
     public function isPresent(User $user, CarbonInterface $date, Period $period = Period::FullDay): bool
@@ -125,8 +128,8 @@ final class PresenceService
     }
 
     /**
-     * Calendrier de présence d'un membre sur une plage (jours ouvrés) :
-     * liste des jours présents au format Y-m-d.
+     * Calendrier de présence d'un membre sur une plage (tous les jours, y
+     * compris week-ends et fériés) : liste des jours présents au format Y-m-d.
      *
      * Les absences sont chargées UNE seule fois pour toute la plage (l'itération
      * jour par jour ne refait aucune requête — ~90 requêtes économisées sur
@@ -157,17 +160,14 @@ final class PresenceService
     }
 
     /**
-     * Présent = jour ouvré ET aucune absence (ponctuelle, plage ou récurrente)
-     * ne couvre le créneau.
+     * Présent = aucune absence (ponctuelle, plage ou récurrente) ne couvre le
+     * créneau. Aucun filtre sur le calendrier : un jour férié ou un week-end
+     * sans absence déclarée reste un jour de présence (ré-acté 2026-09-17).
      *
      * @param  Collection<int, DeskAbsence>  $absences
      */
     private function presentOn(Collection $absences, CarbonInterface $date, Period $period = Period::FullDay): bool
     {
-        if (! FrenchHolidays::isWorkingDay($date)) {
-            return false;
-        }
-
         return ! $absences->contains(fn (DeskAbsence $absence): bool => $this->absenceCovers($absence, $date, $period));
     }
 

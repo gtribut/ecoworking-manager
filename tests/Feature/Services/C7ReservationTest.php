@@ -220,7 +220,7 @@ it('refuse de réserver un bureau déjà occupé sur le créneau', function () {
 
 // --- C7.3 PresenceService ------------------------------------------------
 
-it('considère le résident présent par défaut un jour ouvré, absent si déclaré', function () {
+it('considère le résident présent par défaut, absent si déclaré', function () {
     $desk = Resource::factory()->assignedResident()->create();
     $user = User::factory()->create();
     MemberProfile::factory()->for($user)->create(['desk_id' => $desk->id]);
@@ -236,6 +236,44 @@ it('considère le résident présent par défaut un jour ouvré, absent si décl
     ]);
 
     expect($svc->isPresent($user->fresh(), $day))->toBeFalse();
+});
+
+// Ré-acté 2026-09-17 (PRD §3.7.2) : la présence implicite ne dépend plus du
+// calendrier ouvré — accès 24/24 des résidents. Seule une absence déclarée
+// rend un titulaire absent.
+it('considère le résident présent un samedi et un jour férié sans absence déclarée', function () {
+    $desk = Resource::factory()->assignedResident()->create();
+    $user = User::factory()->create();
+    MemberProfile::factory()->for($user)->create(['desk_id' => $desk->id]);
+    $svc = app(PresenceService::class);
+
+    $saturday = CarbonImmutable::parse('2026-07-04');   // samedi
+    $bastilleDay = CarbonImmutable::parse('2026-07-14'); // férié (14 juillet)
+
+    expect(FrenchHolidays::isWorkingDay($saturday))->toBeFalse()
+        ->and(FrenchHolidays::isWorkingDay($bastilleDay))->toBeFalse()
+        ->and($svc->isPresent($user->fresh(), $saturday))->toBeTrue()
+        ->and($svc->isPresent($user->fresh(), $bastilleDay))->toBeTrue()
+        ->and($svc->presentDays($user->fresh(), $saturday, $bastilleDay))
+        ->toContain('2026-07-04', '2026-07-14');
+});
+
+it('considère le résident absent un samedi couvert par une absence déclarée', function () {
+    $desk = Resource::factory()->assignedResident()->create();
+    $user = User::factory()->create();
+    MemberProfile::factory()->for($user)->create(['desk_id' => $desk->id]);
+    $saturday = CarbonImmutable::parse('2026-07-04');
+
+    DeskAbsence::factory()->for($user)->create([
+        'desk_id' => $desk->id,
+        'date_start' => $saturday->toDateString(),
+        'period' => Period::FullDay->value,
+    ]);
+
+    $svc = app(PresenceService::class);
+
+    expect($svc->isPresent($user->fresh(), $saturday))->toBeFalse()
+        ->and($svc->presentDays($user->fresh(), $saturday, $saturday))->toBe([]);
 });
 
 it('applique une absence récurrente hebdomadaire à la lecture', function () {

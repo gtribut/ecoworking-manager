@@ -1,16 +1,27 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, Download, Receipt } from 'lucide-react'
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
+import { Receipt } from 'lucide-react'
+import { useMemo } from 'react'
 import { EmptyState } from '@/components/EmptyState'
 import { PageContainer } from '@/components/PageContainer'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { EntityBlocks } from '@/features/billing/EntityBlock'
 import { useBillingEntities } from '@/features/billing/useBillingEntities'
 import { usePageTitle } from '@/lib/usePageTitle'
-import { invoicePdfUrl } from './api'
+import { cn } from '@/lib/utils'
+import { invoiceColumns, SORTABLE_COLUMN_IDS } from './columns'
 import { InvoiceFiltersBar } from './InvoiceFiltersBar'
-import { euros, formatInvoiceDate, InvoiceStatusBadge } from './status'
 import type { InvoiceSort, SortDirection } from './types'
 import { useInvoiceFilters } from './useInvoiceFilters'
 import { useInvoices } from './useInvoices'
@@ -36,45 +47,12 @@ function resultSummary(
 }
 
 /**
- * En-tête de colonne triable : bouton dans le `<th>` + `aria-sort` porté par la
- * cellule (RGAA/WCAG). Déclaré hors du composant page pour que le `<th>` ne
- * soit pas remonté à chaque rendu — sinon le focus clavier serait perdu au clic.
+ * Factures (PRD §3.6.2) — DataTable `@tanstack/react-table` (colonnes en
+ * `columns.tsx`) sur la primitive shadcn `Table`. Tri, filtres, recherche et
+ * pagination restent **serveur** : la table ne gère que le rendu des lignes
+ * déjà triées/paginées par l'API (`useInvoiceFilters`/`useInvoices`), pas de
+ * `getSortedRowModel`/`getPaginationRowModel`.
  */
-function SortableHeader({
-  column,
-  label,
-  sort,
-  direction,
-  onToggle,
-}: {
-  column: InvoiceSort
-  label: string
-  sort: InvoiceSort
-  direction: SortDirection
-  onToggle: (column: InvoiceSort) => void
-}) {
-  const active = sort === column
-  const Icon = active ? (direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
-
-  return (
-    <th
-      scope="col"
-      className="px-4 py-3 font-medium"
-      aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-    >
-      <button
-        type="button"
-        aria-label={`Trier par ${label.toLowerCase()}`}
-        onClick={() => onToggle(column)}
-        className="inline-flex items-center gap-1 rounded underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        {label}
-        <Icon className="size-3.5" aria-hidden="true" />
-      </button>
-    </th>
-  )
-}
-
 export function InvoicesPage() {
   usePageTitle('Factures — Portail Ecoworking')
 
@@ -83,6 +61,18 @@ export function InvoicesPage() {
   // Bloc entité du module administratif (PRD §3.6.4) ; masqué si l'utilisateur
   // n'a aucune entité facturable.
   const entities = useBillingEntities()
+
+  // Colonnes créées une seule fois (cf. docstring de `invoiceColumns`) : le
+  // tri courant passe par `meta`, pas par une recréation des colonnes, pour
+  // ne jamais remonter le bouton de tri actif (perte de focus clavier).
+  const columns = useMemo(() => invoiceColumns(), [])
+
+  const table = useReactTable({
+    data: data?.data ?? [],
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    meta: { sort: filters.sort, direction: filters.direction, onToggleSort: toggleSort },
+  })
 
   return (
     <PageContainer width="full" className="space-y-6">
@@ -130,79 +120,70 @@ export function InvoicesPage() {
 
       {data && data.data.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-            <table className="w-full text-left text-sm">
-              <caption className="sr-only">
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <Table>
+              <TableCaption className="sr-only">
                 Liste de mes factures, triable par numéro, date et statut
-              </caption>
-              <thead className="bg-neutral-50 text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
-                <tr>
-                  <SortableHeader
-                    column="number"
-                    label="Numéro"
-                    sort={filters.sort}
-                    direction={filters.direction}
-                    onToggle={toggleSort}
-                  />
-                  <SortableHeader
-                    column="issued_at"
-                    label="Date"
-                    sort={filters.sort}
-                    direction={filters.direction}
-                    onToggle={toggleSort}
-                  />
-                  <SortableHeader
-                    column="status"
-                    label="Statut"
-                    sort={filters.sort}
-                    direction={filters.direction}
-                    onToggle={toggleSort}
-                  />
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
-                    Total TTC
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
-                    PDF
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {data.data.map((invoice) => (
-                  <tr key={invoice.id}>
-                    <th scope="row" className="px-4 py-3 font-medium">
-                      {invoice.number ?? '—'}
-                      {invoice.is_credit_note && (
-                        <span className="ml-2 text-xs text-neutral-500 dark:text-neutral-400">
-                          (avoir)
-                        </span>
-                      )}
-                    </th>
-                    <td className="px-4 py-3">{formatInvoiceDate(invoice.issued_at)}</td>
-                    <td className="px-4 py-3">
-                      <InvoiceStatusBadge status={invoice.status} />
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {euros.format(Number(invoice.total_ttc))}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {invoice.pdf_available ? (
-                        <a
-                          href={invoicePdfUrl(invoice.id)}
-                          className="inline-flex items-center gap-1 text-brand-700 dark:text-brand-300 underline"
+              </TableCaption>
+              {/* Bandeau gris + texte neutral-600/300 (pas `text-muted-foreground`,
+                  qui tombe sous 4.5:1 sur ce fond) — comme l'ancien `<thead>`. */}
+              <TableHeader className="bg-neutral-50 text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      const isSortable = SORTABLE_COLUMN_IDS.includes(
+                        header.column.id as InvoiceSort,
+                      )
+                      const ariaSort = isSortable
+                        ? filters.sort === header.column.id
+                          ? filters.direction === 'asc'
+                            ? ('ascending' as const)
+                            : ('descending' as const)
+                          : ('none' as const)
+                        : undefined
+
+                      return (
+                        <TableHead
+                          key={header.id}
+                          scope="col"
+                          aria-sort={ariaSort}
+                          className={cn(
+                            header.column.columnDef.meta?.align === 'right' && 'text-right',
+                          )}
                         >
-                          <Download className="size-4" aria-hidden="true" />
-                          <span>
-                            Télécharger<span className="sr-only"> la facture {invoice.number}</span>
-                          </span>
-                        </a>
-                      ) : (
-                        <span className="text-neutral-500 dark:text-neutral-400">Indisponible</span>
-                      )}
-                    </td>
-                  </tr>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      )
+                    })}
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) =>
+                      cell.column.id === 'number' ? (
+                        <TableHead key={cell.id} scope="row" className="text-left font-medium">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableHead>
+                      ) : (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            cell.column.columnDef.meta?.align === 'right' &&
+                              'text-right tabular-nums',
+                          )}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ),
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
 
           {data.meta.last_page > 1 && (
@@ -215,7 +196,7 @@ export function InvoicesPage() {
               >
                 Précédent
               </Button>
-              <span aria-live="polite" className="text-sm text-neutral-600 dark:text-neutral-300">
+              <span aria-live="polite" className="text-sm text-muted-foreground">
                 Page {data.meta.current_page} sur {data.meta.last_page}
               </span>
               <Button

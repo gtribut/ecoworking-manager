@@ -141,14 +141,35 @@ describe('FloorPlanPage', () => {
     const desk1 = document.querySelector('#desk-1') as Element
     await user.click(desk1)
 
+    // Panneau de détail rendu en `Sheet` (portail Radix) : le titre reste un
+    // `<h2>` accessible, cherché au niveau du document comme le reste du DOM.
     const panel = await screen.findByRole('heading', { name: /Bureau 1/ })
     expect(panel).toBeInTheDocument()
     expect(screen.getByText('Statut : présent(e)')).toBeInTheDocument()
     expect(screen.getByText('Marie Durand')).toBeInTheDocument()
     expect(screen.getByText('Acme Studio')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Fermer le détail du bureau' }))
+    // Bouton de fermeture par défaut du `Sheet` shadcn (lot U4b) — plus de
+    // bouton « Fermer le détail du bureau » maison.
+    await user.click(screen.getByRole('button', { name: 'Fermer cette fenêtre' }))
     expect(screen.queryByText('Statut : présent(e)')).not.toBeInTheDocument()
+  })
+
+  it('ferme le panneau à l’Échap (fermeture Radix, sans passer par le bouton)', async () => {
+    await renderPlan()
+    await waitFor(() => {
+      expect(document.querySelector('#desk-1')).toHaveAttribute('role', 'button')
+    })
+
+    const user = userEvent.setup()
+    const desk1 = document.querySelector('#desk-1') as HTMLElement
+    desk1.focus()
+    await user.keyboard('{Enter}')
+
+    await screen.findByRole('heading', { name: /Bureau 1/ })
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('heading', { name: /Bureau 1/ })).not.toBeInTheDocument()
   })
 
   it('propose « Gérer mes absences » sur SON propre bureau', async () => {

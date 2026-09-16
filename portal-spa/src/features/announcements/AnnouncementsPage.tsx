@@ -6,7 +6,8 @@ import { PageContainer } from '@/components/PageContainer'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
+import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { AnnouncementBadge } from './AnnouncementBadge'
 import type { Announcement } from './types'
@@ -44,7 +45,13 @@ export function AnnouncementsPage() {
     <PageContainer width="wide" className="space-y-6">
       <PageHeader title="Actualités Ecoworking" />
 
-      {isLoading && <Spinner label="Chargement des actualités…" />}
+      {isLoading && (
+        <div role="status" className="space-y-4">
+          <span className="sr-only">Chargement des actualités…</span>
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-28 w-full" />
+        </div>
+      )}
       {isError && (
         <QueryError
           message="Impossible de charger les actualités."
@@ -58,72 +65,73 @@ export function AnnouncementsPage() {
 
       {data && data.data.length > 0 && (
         <>
-          <ul className="space-y-4">
-            {data.data.map((announcement) => (
-              <li
-                key={announcement.id}
-                className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
-              >
-                <article aria-labelledby={`announcement-${announcement.id}-title`}>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <AnnouncementBadge type={announcement.type} />
-                    {announcement.published_at && (
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                        Publié le {formatAnnouncementDate(announcement.published_at)}
-                      </span>
-                    )}
-                  </div>
+          <Card>
+            <CardContent>
+              <ul>
+                {data.data.map((announcement) => (
+                  <li key={announcement.id} className="border-t py-4 first:border-t-0 first:pt-0">
+                    <article aria-labelledby={`announcement-${announcement.id}-title`}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <AnnouncementBadge type={announcement.type} />
+                        {announcement.published_at && (
+                          <span className="text-xs text-muted-foreground">
+                            Publié le {formatAnnouncementDate(announcement.published_at)}
+                          </span>
+                        )}
+                      </div>
 
-                  <h2
-                    id={`announcement-${announcement.id}-title`}
-                    className="mt-2 text-lg font-medium"
-                  >
-                    <Link
-                      to={`/announcements/${announcement.id}`}
-                      className="hover:text-brand-700 hover:underline dark:hover:text-brand-300"
-                    >
-                      {announcement.title}
-                    </Link>
-                  </h2>
+                      <h2
+                        id={`announcement-${announcement.id}-title`}
+                        className="mt-2 text-base font-medium"
+                      >
+                        <Link
+                          to={`/announcements/${announcement.id}`}
+                          className="hover:text-brand-700 hover:underline dark:hover:text-brand-300"
+                        >
+                          {announcement.title}
+                        </Link>
+                      </h2>
 
-                  {announcement.event_starts_at && (
-                    <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600 dark:text-neutral-300">
-                      <span className="inline-flex items-center gap-1">
-                        <CalendarDays className="size-4" aria-hidden="true" />
-                        {formatEventSlot(announcement)}
-                      </span>
-                      {announcement.location && (
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin className="size-4" aria-hidden="true" />
-                          {announcement.location}
-                        </span>
+                      {announcement.event_starts_at && (
+                        <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <CalendarDays className="size-4" aria-hidden="true" />
+                            {formatEventSlot(announcement)}
+                          </span>
+                          {announcement.location && (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="size-4" aria-hidden="true" />
+                              {announcement.location}
+                            </span>
+                          )}
+                          {announcement.is_registered && (
+                            <span className="inline-flex items-center gap-1 font-medium text-green-700 dark:text-green-300">
+                              <Users className="size-4" aria-hidden="true" />
+                              Inscrit(e)
+                            </span>
+                          )}
+                        </p>
                       )}
-                      {announcement.is_registered && (
-                        <span className="inline-flex items-center gap-1 font-medium text-green-700 dark:text-green-300">
-                          <Users className="size-4" aria-hidden="true" />
-                          Inscrit(e)
-                        </span>
-                      )}
-                    </p>
-                  )}
 
-                  <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
-                    {excerpt(announcement.body)}
-                  </p>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {excerpt(announcement.body)}
+                      </p>
 
-                  <p className="mt-3">
-                    <Link
-                      to={`/announcements/${announcement.id}`}
-                      className="text-sm text-brand-700 dark:text-brand-300 underline"
-                    >
-                      Voir
-                      <span className="sr-only"> l’actualité {announcement.title}</span> →
-                    </Link>
-                  </p>
-                </article>
-              </li>
-            ))}
-          </ul>
+                      <p className="mt-3">
+                        <Link
+                          to={`/announcements/${announcement.id}`}
+                          className="text-sm text-brand-700 underline dark:text-brand-300"
+                        >
+                          Voir
+                          <span className="sr-only"> l’actualité {announcement.title}</span> →
+                        </Link>
+                      </p>
+                    </article>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
 
           {data.meta.last_page > 1 && (
             <nav
@@ -138,7 +146,7 @@ export function AnnouncementsPage() {
               >
                 Précédent
               </Button>
-              <span aria-live="polite" className="text-sm text-neutral-600 dark:text-neutral-300">
+              <span aria-live="polite" className="text-sm text-muted-foreground">
                 Page {data.meta.current_page} sur {data.meta.last_page}
               </span>
               <Button

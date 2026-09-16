@@ -1,6 +1,7 @@
 import { Download } from 'lucide-react'
 import { useState } from 'react'
 import { Alert } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { ConfirmButton } from '@/components/ui/confirm-button'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { getApiErrorMessage } from '@/lib/errors'
@@ -32,11 +33,11 @@ export function InternalDocumentItem({ document }: { document: InternalDocument 
   }
 
   return (
-    <li className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+    <li className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="font-medium">
           {document.title}{' '}
-          <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">
+          <span className="text-xs font-normal text-muted-foreground">
             (version {document.version})
           </span>
         </p>
@@ -45,7 +46,7 @@ export function InternalDocumentItem({ document }: { document: InternalDocument 
           {document.pdf_available && (
             <a
               href={internalDocumentPdfUrl(document.id)}
-              className="inline-flex items-center gap-1 text-sm text-brand-700 dark:text-brand-300 underline"
+              className="inline-flex items-center gap-1 text-sm text-brand-700 underline dark:text-brand-300"
             >
               <Download className="size-4" aria-hidden="true" />
               <span>
@@ -55,20 +56,23 @@ export function InternalDocumentItem({ document }: { document: InternalDocument 
           )}
 
           {document.is_validated && document.validated_at ? (
-            <p className="text-sm font-medium text-green-700 dark:text-green-300">
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200">
               Validé le {formatDocumentDate(document.validated_at)}
-            </p>
+            </Badge>
           ) : (
-            has('validate-internal-document') && (
-              <ConfirmButton
-                size="sm"
-                disabled={validate.isPending}
-                confirmMessage={`Valider « ${document.title} » ? Cette action atteste que vous en avez pris connaissance.`}
-                onConfirm={handleValidate}
-              >
-                Valider
-              </ConfirmButton>
-            )
+            <>
+              <Badge variant="secondary">À valider</Badge>
+              {has('validate-internal-document') && (
+                <ConfirmButton
+                  size="sm"
+                  disabled={validate.isPending}
+                  confirmMessage={`Valider « ${document.title} » ? Cette action atteste que vous en avez pris connaissance.`}
+                  onConfirm={handleValidate}
+                >
+                  Valider
+                </ConfirmButton>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -61,7 +61,7 @@ function withUser() {
 }
 
 describe('ProfilePage', () => {
-  it('affiche les infos perso et l’entité (lecture seule)', async () => {
+  it('affiche les infos perso (onglet Profil, actif par défaut)', async () => {
     server.use(http.get('/api/profile', () => HttpResponse.json(payload)))
 
     withUser()
@@ -69,7 +69,35 @@ describe('ProfilePage', () => {
 
     expect(await screen.findByDisplayValue('Designer')).toBeInTheDocument()
     expect(screen.getByDisplayValue('alex@ex.fr')).toBeDisabled()
-    expect(screen.getByText('Acme SCOP')).toBeInTheDocument()
+  })
+
+  it('affiche l’entité dans l’onglet Entreprise après clic (masquée par défaut)', async () => {
+    const user = userEvent.setup()
+    server.use(http.get('/api/profile', () => HttpResponse.json(payload)))
+
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true, route: '/profile' })
+
+    await screen.findByDisplayValue('Designer')
+    expect(screen.queryByText('Acme SCOP')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Entreprise' }))
+
+    expect(await screen.findByText('Acme SCOP')).toBeInTheDocument()
+  })
+
+  it('ouvre directement l’onglet demandé par ?tab= (lien depuis ailleurs)', async () => {
+    server.use(http.get('/api/profile', () => HttpResponse.json(payload)))
+
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true, route: '/profile?tab=compte' })
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Mot de passe' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Compte', selected: true })).toBeInTheDocument()
+    // Le contenu de l'onglet Profil (démonté) n'est plus dans le DOM.
+    expect(screen.queryByLabelText('Présentation')).not.toBeInTheDocument()
   })
 
   it('propose la section photo de profil avec l’avatar initiales (PRD §3.4.2)', async () => {
@@ -86,6 +114,7 @@ describe('ProfilePage', () => {
   })
 
   it('affiche l’entité complète sans les coordonnées bancaires (PRD §3.4.3)', async () => {
+    const user = userEvent.setup()
     server.use(
       http.get('/api/profile', () =>
         HttpResponse.json({
@@ -103,6 +132,9 @@ describe('ProfilePage', () => {
     withUser()
     renderWithProviders(<ProfilePage />, { withAuth: true })
 
+    await screen.findByDisplayValue('Designer')
+    await user.click(screen.getByRole('tab', { name: 'Entreprise' }))
+
     expect(
       await screen.findByRole('heading', { level: 2, name: 'Mon entreprise' }),
     ).toBeInTheDocument()
@@ -114,10 +146,14 @@ describe('ProfilePage', () => {
   })
 
   it('explique l’absence d’entité juridique rattachée', async () => {
+    const user = userEvent.setup()
     server.use(http.get('/api/profile', () => HttpResponse.json({ ...payload, company: null })))
 
     withUser()
     renderWithProviders(<ProfilePage />, { withAuth: true })
+
+    await screen.findByDisplayValue('Designer')
+    await user.click(screen.getByRole('tab', { name: 'Entreprise' }))
 
     expect(await screen.findByText(/Aucune entité juridique/)).toBeInTheDocument()
     expect(

@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthUser } from '@/features/auth/types'
 import { server } from '@/test/server'
 import { MEMBER_PERMISSIONS, makeAuthUser, renderWithProviders } from '@/test/utils'
@@ -28,13 +28,6 @@ function absence(overrides: Partial<Absence> = {}): Absence {
     can_delete: true,
     ...overrides,
   }
-}
-
-/** Date locale au format YYYY-MM-DD (même algorithme que `PresencePage`). */
-function todayIso(): string {
-  const now = new Date()
-  const offset = now.getTimezoneOffset()
-  return new Date(now.getTime() - offset * 60_000).toISOString().slice(0, 10)
 }
 
 /** Réponse `/api/presence` ; `all=1` renvoie l'historique. */
@@ -68,20 +61,79 @@ describe('PresencePage', () => {
     expect(screen.getByText('du 20/06/2026 au 22/06/2026')).toBeInTheDocument()
   })
 
-  it('affiche l’état du jour du bureau (présent) via `present_days`', async () => {
-    server.use(...presenceHandlers([], [], [todayIso()]))
+  // Date figée (review I-2) : `present_days` vaut `false` pour TOUT jour non
+  // travaillé (week-end, férié, absence — `PresenceService::presentOn()`),
+  // le badge « Absent(e) » ne doit donc s'afficher que si une absence
+  // déclarée couvre réellement le jour, jamais par simple déduction.
+  describe('état du jour (review I-2)', () => {
+    const TODAY = '2026-06-17' // mercredi
+    const SATURDAY = '2026-06-20' // jour non ouvré, sans absence déclarée
 
-    renderWithProviders(<PresencePage />, { withAuth: true })
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      vi.setSystemTime(new Date(`${TODAY}T09:00:00`))
+    })
 
-    expect(await screen.findByText('Présent(e) aujourd’hui')).toBeInTheDocument()
-  })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
 
-  it('affiche l’état du jour du bureau (absent) quand aujourd’hui n’est pas un jour présent', async () => {
-    server.use(...presenceHandlers([], [], []))
+    it('affiche « Présent(e) aujourd’hui » un jour ouvré présent (`present_days`)', async () => {
+      server.use(...presenceHandlers([], [], [TODAY]))
 
-    renderWithProviders(<PresencePage />, { withAuth: true })
+      renderWithProviders(<PresencePage />, { withAuth: true })
 
-    expect(await screen.findByText('Absent(e) aujourd’hui')).toBeInTheDocument()
+      expect(await screen.findByText('Présent(e) aujourd’hui')).toBeInTheDocument()
+    })
+
+    it('affiche « Absent(e) aujourd’hui » quand une absence pleine journée couvre aujourd’hui', async () => {
+      server.use(
+        ...presenceHandlers([absence({ date_start: TODAY, date_end: TODAY, period: 'full_day' })]),
+      )
+
+      renderWithProviders(<PresencePage />, { withAuth: true })
+
+      expect(await screen.findByText('Absent(e) aujourd’hui')).toBeInTheDocument()
+    })
+
+    it('affiche « Absent(e) ce matin » quand une absence demi-journée couvre aujourd’hui', async () => {
+      server.use(
+        ...presenceHandlers([absence({ date_start: TODAY, date_end: TODAY, period: 'morning' })]),
+      )
+
+      renderWithProviders(<PresencePage />, { withAuth: true })
+
+      expect(await screen.findByText('Absent(e) ce matin')).toBeInTheDocument()
+    })
+
+    it('affiche « Absent(e) aujourd’hui » pour une récurrence hebdomadaire couvrant aujourd’hui', async () => {
+      server.use(
+        ...presenceHandlers([
+          absence({
+            date_start: '2026-06-01',
+            date_end: '2026-09-30',
+            period: 'full_day',
+            recurrence_type: 'weekly',
+            recurrence_day_of_week: 3, // mercredi
+          }),
+        ]),
+      )
+
+      renderWithProviders(<PresencePage />, { withAuth: true })
+
+      expect(await screen.findByText('Absent(e) aujourd’hui')).toBeInTheDocument()
+    })
+
+    it('n’affiche aucun badge un jour non ouvré sans absence déclarée (pas de faux « Absent »)', async () => {
+      vi.setSystemTime(new Date(`${SATURDAY}T09:00:00`))
+      server.use(...presenceHandlers([], [], []))
+
+      renderWithProviders(<PresencePage />, { withAuth: true })
+
+      await screen.findByText(/Bureau 12/)
+      expect(screen.queryByText(/Présent\(e\)/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Absent\(e\)/)).not.toBeInTheDocument()
+    })
   })
 
   it('révèle le formulaire au clic sur « Marquer une absence »', async () => {
@@ -331,5 +383,22 @@ describe('PresencePage', () => {
 
     expect(await screen.findByText('du 10/01/2025 au 12/01/2025')).toBeInTheDocument()
     expect(screen.queryByText(/Absence commencée/)).not.toBeInTheDocument()
+  })
+
+  it('garde le bouton « Marquer une absence » pour un admin sans bureau attitré (desk: null, review I-3)', async () => {
+    server.use(
+      http.get('/api/user', () =>
+        HttpResponse.json(makeAuthUser({ has_desk: false, permissions: MEMBER_PERMISSIONS })),
+      ),
+      http.get('/api/presence', () =>
+        HttpResponse.json({ desk: null, present_days: [], absences: [] }),
+      ),
+    )
+
+    renderWithProviders(<PresencePage />, { withAuth: true })
+
+    expect(await screen.findByRole('button', { name: 'Marquer une absence' })).toBeInTheDocument()
+    // Rien à afficher côté « Mon bureau » sans bureau attitré.
+    expect(screen.queryByText(/Votre bureau attitré/)).not.toBeInTheDocument()
   })
 })

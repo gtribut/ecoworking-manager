@@ -130,7 +130,10 @@ export function DocumentsPage() {
             <>
               <Card>
                 <CardContent className="px-0">
-                  <Table>
+                  {/* `[&_th]:px-4 [&_td]:px-4` (review F-1) : les cellules `p-2`
+                      par défaut collaient à 8 px du bord de la Card, moins que
+                      le padding de carte habituel (16 px). */}
+                  <Table className="[&_td]:px-4 [&_th]:px-4">
                     <TableCaption className="sr-only">
                       Liste de mes documents administratifs
                     </TableCaption>
@@ -146,7 +149,13 @@ export function DocumentsPage() {
                     <TableBody>
                       {administrative.data.data.map((document) => (
                         <TableRow key={document.id}>
-                          <TableCell className="font-medium">{document.title}</TableCell>
+                          {/* `<th scope="row">` (review M-1) plutôt qu'un `TableCell`. */}
+                          <th
+                            scope="row"
+                            className="p-2 align-middle font-medium whitespace-nowrap"
+                          >
+                            {document.title}
+                          </th>
                           <TableCell>{ADMINISTRATIVE_TYPE_LABELS[document.type]}</TableCell>
                           <TableCell>{document.company_name ?? '—'}</TableCell>
                           <TableCell>

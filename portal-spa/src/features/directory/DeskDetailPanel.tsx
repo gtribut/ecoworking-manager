@@ -37,10 +37,17 @@ export function DeskDetailPanel({ desk, onClose, returnFocusTo }: DeskDetailPane
     <Sheet open={desk !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side={isMobile ? 'bottom' : 'right'}
+        // Pas de `SheetDescription` : le titre (`SheetTitle`) suffit à nommer
+        // le panneau, `aria-describedby={undefined}` évite l'avertissement
+        // Radix (même écart assumé que `BookingDialog`/`ConfirmButton`).
         aria-describedby={undefined}
         className="overflow-y-auto"
         onCloseAutoFocus={(event) => {
-          if (!returnFocusTo) return
+          // `returnFocusTo` est `null` (aucun opener capturé) ou déjà
+          // `document.body` : rien à faire, on laisse Radix restaurer son
+          // comportement par défaut plutôt que de forcer un focus sur `body`
+          // (review M-4 — un focus explicite sur `body` n'apporte rien).
+          if (!returnFocusTo || returnFocusTo === document.body) return
           event.preventDefault()
           returnFocusTo.focus()
         }}

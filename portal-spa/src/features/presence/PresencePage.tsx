@@ -40,6 +40,42 @@ function formatDate(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString('fr-FR')
 }
 
+/**
+ * Libellé du badge « état du jour » quand une absence couvre aujourd'hui
+ * (review I-2) — distinct de `PERIOD_LABELS` (utilisé pour les lignes de la
+ * liste), au singulier « ce matin / cet après-midi » plutôt que « Matin ».
+ */
+const ABSENCE_TODAY_LABELS: Record<AbsencePeriod, string> = {
+  morning: 'Absent(e) ce matin',
+  afternoon: 'Absent(e) cet après-midi',
+  full_day: 'Absent(e) aujourd’hui',
+}
+
+/**
+ * Absence couvrant la date donnée, si elle existe (review I-2) : le back
+ * (`PresenceService::presentOn()`) renvoie `false` dans `present_days` pour
+ * TOUT jour non travaillé (week-end, férié, absence) — on ne peut donc pas
+ * en déduire « absent » sans vérifier qu'une absence déclarée couvre bien le
+ * jour, sous peine d'afficher « Absent(e) » un samedi ou un jour férié.
+ * Cherche dans la liste déjà chargée par `usePresence()` (pas de nouvel
+ * appel), plage simple ou récurrence hebdomadaire bornée (PRD §3.4.6).
+ */
+function findAbsenceCovering(absences: Absence[], dateIso: string): Absence | null {
+  if (absences.length === 0) return null
+  const dayOfWeek = new Date(`${dateIso}T12:00:00`).getDay()
+
+  return (
+    absences.find((absence) => {
+      if (dateIso < absence.date_start) return false
+      if (absence.recurrence_type === 'weekly') {
+        if (absence.recurrence_day_of_week !== dayOfWeek) return false
+        return absence.date_end === null || dateIso <= absence.date_end
+      }
+      return dateIso <= (absence.date_end ?? absence.date_start)
+    }) ?? null
+  )
+}
+
 /** Résumé lisible d'une absence, réutilisé par les libellés d'action. */
 function absenceSummary(absence: Absence): string {
   if (absence.recurrence_type === 'weekly' && absence.recurrence_day_of_week !== null) {
@@ -119,9 +155,15 @@ function PresenceContent() {
   }
 
   const desk = data?.desk ?? null
-  // « État du jour » (PRD §3.4.6/§3.7.4) : dérivé de `present_days`, déjà
-  // renvoyé par `/api/presence` mais pas encore affiché avant ce lot.
-  const presentToday = data ? data.present_days.includes(isoOf(new Date())) : null
+  const today = isoOf(new Date())
+  // « État du jour » (PRD §3.4.6/§3.7.4) : `present_days` (déjà renvoyé par
+  // `/api/presence`, pas encore affiché avant ce lot) vaut `false` pour tout
+  // jour non travaillé (week-end, férié, absence — cf. `PresenceService::
+  // presentOn()`), pas seulement pour une absence déclarée : on ne peut donc
+  // afficher « Absent(e) » que si une absence de la liste couvre bien
+  // aujourd'hui (review I-2), sinon aucun badge (jour non ouvré/indéterminé).
+  const presentToday = data ? data.present_days.includes(today) : null
+  const todaysAbsence = data ? findAbsenceCovering(data.absences, today) : null
 
   return (
     <PageContainer width="wide" className="space-y-10">
@@ -141,47 +183,31 @@ function PresenceContent() {
 
         {data && desk && (
           <Card>
-            <CardContent className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Armchair className="size-5 shrink-0 text-primary" aria-hidden="true" />
-                <p>
-                  {/* Libellé repris tel quel de la description posée par U2 dans
-                      le `PageHeader` (remontée ici, pas dupliquée — cf.
-                      portal-spa/CLAUDE.md « Shell du portail »). */}
-                  <span className="block font-medium">
-                    Votre bureau attitré : <strong className="font-medium">{desk.name}</strong>
-                    {desk.floor !== null && <> — étage {desk.floor}</>}
-                  </span>
-                  {presentToday !== null && (
-                    <Badge
-                      className={
-                        presentToday
-                          ? 'mt-1 bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200'
-                          : // `bg-muted`/`text-muted-foreground` ne fait que 4,35:1 en
-                            // clair (review axe) : neutral-200/700 à la place.
-                            'mt-1 bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
-                      }
-                    >
-                      {presentToday ? 'Présent(e) aujourd’hui' : 'Absent(e) aujourd’hui'}
-                    </Badge>
-                  )}
-                </p>
-              </div>
-              <Button
-                // `aria-expanded` ne décrit QUE le formulaire de déclaration : en
-                // modification, ce bouton rouvre une déclaration vierge.
-                aria-expanded={editing !== null && editing.absence === null}
-                aria-controls="absence-form"
-                onClick={(event) => {
-                  if (editing !== null && editing.absence === null) {
-                    closeForm()
-                    return
-                  }
-                  openForm(null, event.currentTarget)
-                }}
-              >
-                Marquer une absence
-              </Button>
+            <CardContent className="flex items-center gap-3">
+              <Armchair className="size-5 shrink-0 text-primary" aria-hidden="true" />
+              <p>
+                {/* Libellé repris tel quel de la description posée par U2 dans
+                    le `PageHeader` (remontée ici, pas dupliquée — cf.
+                    portal-spa/CLAUDE.md « Shell du portail »). */}
+                <span className="block font-medium">
+                  Votre bureau attitré : <strong className="font-medium">{desk.name}</strong>
+                  {desk.floor !== null && <> — étage {desk.floor}</>}
+                </span>
+                {presentToday === true && (
+                  <Badge className="mt-1 bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200">
+                    Présent(e) aujourd’hui
+                  </Badge>
+                )}
+                {presentToday === false && todaysAbsence && (
+                  <Badge
+                    // `bg-muted`/`text-muted-foreground` ne fait que 4,35:1 en
+                    // clair (review axe) : neutral-200/700 à la place.
+                    className="mt-1 bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                  >
+                    {ABSENCE_TODAY_LABELS[todaysAbsence.period]}
+                  </Badge>
+                )}
+              </p>
             </CardContent>
           </Card>
         )}
@@ -194,6 +220,28 @@ function PresenceContent() {
         <p className="text-sm text-muted-foreground">
           Signalez vos jours d’absence pour libérer votre bureau aux membres nomades.
         </p>
+
+        {/* Sous `data &&` (pas `desk &&`, review I-3) : un admin avec
+            `declare-presence-for-others` mais sans bureau attitré (desk:
+            null) garde la fonction — seule la carte « Mon bureau » ci-dessus
+            dépend d'un bureau. */}
+        {data && (
+          <Button
+            // `aria-expanded` ne décrit QUE le formulaire de déclaration : en
+            // modification, ce bouton rouvre une déclaration vierge.
+            aria-expanded={editing !== null && editing.absence === null}
+            aria-controls="absence-form"
+            onClick={(event) => {
+              if (editing !== null && editing.absence === null) {
+                closeForm()
+                return
+              }
+              openForm(null, event.currentTarget)
+            }}
+          >
+            Marquer une absence
+          </Button>
+        )}
 
         {editing !== null && (
           <div id="absence-form">

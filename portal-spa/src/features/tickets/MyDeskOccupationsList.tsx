@@ -138,7 +138,10 @@ export function MyDeskOccupationsList() {
         <>
           <Card>
             <CardContent className="px-0">
-              <Table>
+              {/* `[&_th]:px-4 [&_td]:px-4` (review F-1) : les cellules `p-2` par
+                  défaut collaient à 8 px du bord de la Card, moins que le
+                  padding de carte habituel (16 px). */}
+              <Table className="[&_td]:px-4 [&_th]:px-4">
                 <TableCaption className="sr-only">
                   {scope === 'upcoming'
                     ? 'Mes bureaux nomades réservés à venir'
@@ -157,14 +160,15 @@ export function MyDeskOccupationsList() {
                 <TableBody>
                   {data.data.map((occupation) => (
                     <TableRow key={occupation.id}>
-                      <TableCell className="font-medium">
+                      {/* `<th scope="row">` (review M-1) plutôt qu'un `TableCell`. */}
+                      <th scope="row" className="p-2 align-middle font-medium whitespace-nowrap">
                         {occupation.desk_name}
                         {occupation.desk_floor !== null && (
                           <span className="block text-xs font-normal text-muted-foreground">
                             Étage {occupation.desk_floor}
                           </span>
                         )}
-                      </TableCell>
+                      </th>
                       <TableCell>{formatDate(occupation.date)}</TableCell>
                       <TableCell>{PERIOD_LABELS[occupation.period]}</TableCell>
                       <TableCell>

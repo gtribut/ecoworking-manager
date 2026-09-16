@@ -64,7 +64,10 @@ export function MyTicketsTable({ tickets }: { tickets: Ticket[] }) {
       ) : (
         <Card>
           <CardContent className="px-0">
-            <Table>
+            {/* `[&_th]:px-4 [&_td]:px-4` (review F-1) : les cellules `p-2` par
+                défaut collaient à 8 px du bord de la Card, moins que le
+                padding de carte habituel (16 px). */}
+            <Table className="[&_td]:px-4 [&_th]:px-4">
               <TableCaption className="sr-only">
                 Détail de mes tickets, du plus récent au plus ancien
               </TableCaption>
@@ -79,7 +82,11 @@ export function MyTicketsTable({ tickets }: { tickets: Ticket[] }) {
               <TableBody>
                 {sorted.map((ticket) => (
                   <TableRow key={ticket.id}>
-                    <TableCell className="font-medium">{TYPE_LABELS[ticket.type]}</TableCell>
+                    {/* `<th scope="row">` (review M-1) plutôt qu'un `TableCell` :
+                        identifie la ligne, comme avant la migration vers `Table`. */}
+                    <th scope="row" className="p-2 align-middle font-medium whitespace-nowrap">
+                      {TYPE_LABELS[ticket.type]}
+                    </th>
                     <TableCell>
                       <Badge className={STATUS_CLASSES[ticket.status]}>
                         {STATUS_LABELS[ticket.status]}

@@ -3,8 +3,8 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
 import { QueryError } from '@/components/QueryError'
-import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { AnnouncementBadge } from './AnnouncementBadge'
 import type { Announcement } from './types'
@@ -129,7 +129,7 @@ export function AnnouncementsPage() {
               aria-label="Pagination des actualités"
             >
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -140,7 +140,7 @@ export function AnnouncementsPage() {
                 Page {data.meta.current_page} sur {data.meta.last_page}
               </span>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 disabled={page >= data.meta.last_page}
                 onClick={() => setPage((p) => p + 1)}

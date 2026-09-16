@@ -1,8 +1,8 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, Receipt } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
 import { QueryError } from '@/components/QueryError'
-import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { EntityBlocks } from '@/features/billing/EntityBlock'
 import { useBillingEntities } from '@/features/billing/useBillingEntities'
 import { usePageTitle } from '@/lib/usePageTitle'
@@ -119,7 +119,7 @@ export function InvoicesPage() {
             }
           />
           {hasActiveFilters && (
-            <Button variant="secondary" size="sm" onClick={reset}>
+            <Button variant="outline" size="sm" onClick={reset}>
               Réinitialiser les filtres
             </Button>
           )}
@@ -206,7 +206,7 @@ export function InvoicesPage() {
           {data.meta.last_page > 1 && (
             <nav className="flex items-center justify-between" aria-label="Pagination des factures">
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 disabled={filters.page <= 1}
                 onClick={() => setPage(Math.max(1, filters.page - 1))}
@@ -217,7 +217,7 @@ export function InvoicesPage() {
                 Page {data.meta.current_page} sur {data.meta.last_page}
               </span>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 disabled={filters.page >= data.meta.last_page}
                 onClick={() => setPage(filters.page + 1)}

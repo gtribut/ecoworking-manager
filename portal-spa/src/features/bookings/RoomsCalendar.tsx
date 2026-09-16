@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { QueryError } from '@/components/QueryError'
-import { Alert } from '@/components/ui/Alert'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Spinner } from '@/components/ui/Spinner'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Spinner } from '@/components/ui/spinner'
 import {
   addDays,
   atHour,
@@ -148,13 +148,13 @@ export function RoomsCalendar({ isExternal, onPick, onPickEventRoom }: RoomsCale
 
       <div className="flex flex-wrap items-end gap-3">
         <nav aria-label="Navigation du calendrier" className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => shift(-1)}>
+          <Button variant="outline" size="sm" onClick={() => shift(-1)}>
             {view === 'week' ? 'Semaine précédente' : 'Jour précédent'}
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => setAnchor(atHour(new Date(), 0))}>
+          <Button variant="outline" size="sm" onClick={() => setAnchor(atHour(new Date(), 0))}>
             Aujourd’hui
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => shift(1)}>
+          <Button variant="outline" size="sm" onClick={() => shift(1)}>
             {view === 'week' ? 'Semaine suivante' : 'Jour suivant'}
           </Button>
         </nav>
@@ -178,7 +178,7 @@ export function RoomsCalendar({ isExternal, onPick, onPickEventRoom }: RoomsCale
         <fieldset className="flex items-center gap-2">
           <legend className="sr-only">Affichage du calendrier</legend>
           <Button
-            variant={view === 'week' ? 'primary' : 'secondary'}
+            variant={view === 'week' ? 'default' : 'outline'}
             size="sm"
             aria-pressed={view === 'week'}
             onClick={() => setView('week')}
@@ -186,7 +186,7 @@ export function RoomsCalendar({ isExternal, onPick, onPickEventRoom }: RoomsCale
             Semaine
           </Button>
           <Button
-            variant={view === 'day' ? 'primary' : 'secondary'}
+            variant={view === 'day' ? 'default' : 'outline'}
             size="sm"
             aria-pressed={view === 'day'}
             onClick={() => setView('day')}

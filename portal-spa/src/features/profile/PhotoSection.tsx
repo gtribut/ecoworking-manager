@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useId, useRef, useState } from 'react'
 import { Avatar, type PhotoUrls } from '@/components/Avatar'
-import { Alert } from '@/components/ui/Alert'
-import { Button } from '@/components/ui/Button'
-import { Label } from '@/components/ui/Label'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { getApiErrorMessage, getApiFieldErrors } from '@/lib/errors'
 import {
   deleteProfilePhoto,
@@ -132,7 +132,7 @@ export function PhotoSection({ firstName, lastName, photo }: PhotoSectionProps) 
           {photo && (
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="sm"
               disabled={busy}
               onClick={() => {

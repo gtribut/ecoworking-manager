@@ -1,8 +1,8 @@
 import { type FormEvent, useState } from 'react'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { NativeSelect } from '@/components/ui/native-select'
 import { INVOICE_STATUS_LABELS } from './status'
 import type { InvoiceFilters } from './types'
 
@@ -64,7 +64,7 @@ export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters
       >
         <div>
           <Label htmlFor="invoice-year">Année</Label>
-          <Select
+          <NativeSelect
             id="invoice-year"
             value={filters.year}
             onChange={(event) => onChange({ year: event.target.value, month: '' })}
@@ -75,12 +75,12 @@ export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters
                 {year}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
         </div>
 
         <div>
           <Label htmlFor="invoice-month">Mois</Label>
-          <Select
+          <NativeSelect
             id="invoice-month"
             value={filters.month}
             disabled={!filters.year}
@@ -93,7 +93,7 @@ export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters
                 {label}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
           {!filters.year && (
             <p
               id="invoice-month-help"
@@ -106,7 +106,7 @@ export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters
 
         <div>
           <Label htmlFor="invoice-status">Statut</Label>
-          <Select
+          <NativeSelect
             id="invoice-status"
             value={filters.status}
             onChange={(event) => onChange({ status: event.target.value })}
@@ -117,7 +117,7 @@ export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters
                 {label}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
         </div>
 
         <div>
@@ -131,7 +131,7 @@ export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters
               onChange={(event) => setSearch(event.target.value)}
               placeholder="EW-2026-…"
             />
-            <Button type="submit" variant="secondary">
+            <Button type="submit" variant="outline">
               Rechercher
             </Button>
           </div>
@@ -139,7 +139,7 @@ export function InvoiceFiltersBar({ filters, onChange, onReset, hasActiveFilters
 
         {hasActiveFilters && (
           <div className="sm:col-span-2 lg:col-span-4">
-            <Button type="button" variant="secondary" size="sm" onClick={onReset}>
+            <Button type="button" variant="outline" size="sm" onClick={onReset}>
               Réinitialiser les filtres
             </Button>
           </div>

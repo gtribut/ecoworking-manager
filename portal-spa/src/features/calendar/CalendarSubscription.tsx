@@ -1,9 +1,9 @@
 import { Check, Copy } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { Button } from '@/components/ui/Button'
-import { ConfirmButton } from '@/components/ui/ConfirmButton'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
+import { Button } from '@/components/ui/button'
+import { ConfirmButton } from '@/components/ui/confirm-button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   useCalendarSubscription,
   useRegenerateCalendarToken,
@@ -41,7 +41,7 @@ export function CalendarSubscription() {
 
           <div className="flex flex-wrap gap-3 pt-2">
             <ConfirmButton
-              variant="secondary"
+              variant="outline"
               size="sm"
               confirmMessage="Les anciens liens seront invalidés immédiatement."
               confirmLabel="Oui, régénérer"
@@ -110,7 +110,7 @@ function FeedField({ id, label, url }: { id: string; label: string; url: string 
         <Input id={id} value={url} readOnly className="font-mono text-xs" />
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           size="sm"
           onClick={() => void copy()}
           aria-label={`Copier le lien « ${label} »`}

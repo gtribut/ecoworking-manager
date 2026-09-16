@@ -2,12 +2,12 @@ import { Armchair, Ticket as TicketIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { QueryError } from '@/components/QueryError'
-import { Alert } from '@/components/ui/Alert'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Select } from '@/components/ui/Select'
-import { Spinner } from '@/components/ui/Spinner'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { NativeSelect } from '@/components/ui/native-select'
+import { Spinner } from '@/components/ui/spinner'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
@@ -209,7 +209,7 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
         </div>
         <div>
           <Label htmlFor="desk-period">Période</Label>
-          <Select
+          <NativeSelect
             id="desk-period"
             value={period}
             onChange={(event) => {
@@ -220,7 +220,7 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
             <option value="full_day">Journée complète</option>
             <option value="morning">Matin</option>
             <option value="afternoon">Après-midi</option>
-          </Select>
+          </NativeSelect>
         </div>
         <Button type="submit">Voir les bureaux disponibles</Button>
       </form>
@@ -267,7 +267,7 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
                     </span>
                     <Button
                       size="sm"
-                      variant="secondary"
+                      variant="outline"
                       disabled={createOccupation.isPending}
                       onClick={() => void onBook(desk)}
                     >

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Alert } from '@/components/ui/Alert'
+import { Alert } from '@/components/ui/alert'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { CalendarSubscription } from '@/features/calendar/CalendarSubscription'
 import { useTickets } from '@/features/tickets/useTickets'

@@ -4,10 +4,10 @@ import { Avatar, initialsOf } from '@/components/Avatar'
 import { EmptyState } from '@/components/EmptyState'
 import { MarkdownContent } from '@/components/MarkdownContent'
 import { QueryError } from '@/components/QueryError'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Spinner } from '@/components/ui/Spinner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Spinner } from '@/components/ui/spinner'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { DirectoryTabs } from './DirectoryTabs'
 import type { DirectoryEntry } from './types'
@@ -55,7 +55,7 @@ export function DirectoryPage() {
               onChange={(event) => setSearchInput(event.target.value)}
             />
           </div>
-          <Button type="submit" variant="secondary">
+          <Button type="submit" variant="outline">
             <Search className="size-4" aria-hidden="true" />
             <span>Rechercher</span>
           </Button>
@@ -163,7 +163,7 @@ export function DirectoryPage() {
               aria-label="Pagination de l’annuaire"
             >
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 disabled={page <= 1}
                 onClick={() => setPage((value) => Math.max(1, value - 1))}
@@ -174,7 +174,7 @@ export function DirectoryPage() {
                 Page {data.meta.current_page} sur {data.meta.last_page}
               </span>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 disabled={page >= data.meta.last_page}
                 onClick={() => setPage((value) => value + 1)}

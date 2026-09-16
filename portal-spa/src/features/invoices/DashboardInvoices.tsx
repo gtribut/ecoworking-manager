@@ -1,7 +1,7 @@
 import { Download } from 'lucide-react'
 import { Link } from 'react-router'
 import { QueryError } from '@/components/QueryError'
-import { Spinner } from '@/components/ui/Spinner'
+import { Spinner } from '@/components/ui/spinner'
 import { invoicePdfUrl } from './api'
 import { formatInvoiceDate, InvoiceStatusBadge } from './status'
 import { DEFAULT_INVOICE_FILTERS } from './types'

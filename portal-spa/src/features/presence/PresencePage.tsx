@@ -3,9 +3,9 @@ import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { EmptyState } from '@/components/EmptyState'
 import { QueryError } from '@/components/QueryError'
-import { Button } from '@/components/ui/Button'
-import { ConfirmButton } from '@/components/ui/ConfirmButton'
-import { Spinner } from '@/components/ui/Spinner'
+import { Button } from '@/components/ui/button'
+import { ConfirmButton } from '@/components/ui/confirm-button'
+import { Spinner } from '@/components/ui/spinner'
 import { getApiErrorMessage, getApiFieldErrors } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { AbsenceForm, WEEKDAYS } from './AbsenceForm'
@@ -168,7 +168,7 @@ function PresenceContent() {
             {showHistory ? 'Toutes mes absences' : 'Mes absences à venir'}
           </h2>
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             aria-pressed={showHistory}
             onClick={() => setShowHistory(!showHistory)}
@@ -224,7 +224,7 @@ function PresenceContent() {
                 <span className="flex flex-wrap items-center gap-2">
                   {absence.can_edit && (
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={(event) => openForm(absence, event.currentTarget)}
                     >
@@ -234,7 +234,7 @@ function PresenceContent() {
                   )}
                   {absence.can_delete && (
                     <ConfirmButton
-                      variant="danger"
+                      variant="destructive"
                       size="sm"
                       disabled={deleteAbsence.isPending}
                       confirmMessage="Supprimer cette absence ?"

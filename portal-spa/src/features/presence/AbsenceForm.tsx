@@ -2,11 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Select } from '@/components/ui/Select'
-import { Textarea } from '@/components/ui/Textarea'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { NativeSelect } from '@/components/ui/native-select'
+import { Textarea } from '@/components/ui/textarea'
 import { getApiFieldErrors } from '@/lib/errors'
 import type { Absence, CreateAbsenceInput, RecurrenceType } from './types'
 
@@ -179,25 +179,25 @@ export function AbsenceForm({ absence, submitting, onSubmit, onCancel }: Absence
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="period">Période</Label>
-          <Select id="period" {...form.register('period')}>
+          <NativeSelect id="period" {...form.register('period')}>
             <option value="full_day">Journée complète</option>
             <option value="morning">Matin</option>
             <option value="afternoon">Après-midi</option>
-          </Select>
+          </NativeSelect>
         </div>
         <div>
           <Label htmlFor="recurrence_type">Récurrence</Label>
-          <Select id="recurrence_type" {...form.register('recurrence_type')}>
+          <NativeSelect id="recurrence_type" {...form.register('recurrence_type')}>
             <option value="none">Ponctuelle</option>
             <option value="weekly">Hebdomadaire</option>
-          </Select>
+          </NativeSelect>
         </div>
       </div>
 
       {recurrenceType === 'weekly' && (
         <div>
           <Label htmlFor="recurrence_day_of_week">Jour de la semaine</Label>
-          <Select
+          <NativeSelect
             id="recurrence_day_of_week"
             aria-invalid={errors.recurrence_day_of_week !== undefined}
             aria-describedby={
@@ -213,7 +213,7 @@ export function AbsenceForm({ absence, submitting, onSubmit, onCancel }: Absence
                 {WEEKDAYS[value]}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
           {errors.recurrence_day_of_week && (
             <p
               id="recurrence_day_of_week-error"
@@ -250,7 +250,7 @@ export function AbsenceForm({ absence, submitting, onSubmit, onCancel }: Absence
         <Button type="submit" disabled={submitting}>
           {absence === null ? 'Enregistrer l’absence' : 'Enregistrer les modifications'}
         </Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
       </div>

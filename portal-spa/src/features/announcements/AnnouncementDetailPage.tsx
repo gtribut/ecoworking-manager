@@ -1,7 +1,7 @@
 import { ArrowLeft, CalendarDays, MapPin, Users } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { QueryError } from '@/components/QueryError'
-import { Spinner } from '@/components/ui/Spinner'
+import { Spinner } from '@/components/ui/spinner'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { AnnouncementBadge } from './AnnouncementBadge'
 import { formatAnnouncementDate, formatEventSlot } from './AnnouncementsPage'

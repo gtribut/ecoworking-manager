@@ -2,8 +2,8 @@ import { CalendarPlus } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState } from '@/components/EmptyState'
 import { QueryError } from '@/components/QueryError'
-import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { formatBookingRange } from './format'
 import type { Booking, BookingStatus } from './types'
 import { useBookings } from './useBookings'
@@ -54,7 +54,7 @@ export function MyBookingsList({ isExternal, onEdit }: MyBookingsListProps) {
 
       <div className="flex flex-wrap gap-2">
         <Button
-          variant={scope === 'upcoming' ? 'primary' : 'secondary'}
+          variant={scope === 'upcoming' ? 'default' : 'outline'}
           size="sm"
           aria-pressed={scope === 'upcoming'}
           onClick={() => switchScope('upcoming')}
@@ -62,7 +62,7 @@ export function MyBookingsList({ isExternal, onEdit }: MyBookingsListProps) {
           À venir
         </Button>
         <Button
-          variant={scope === 'past' ? 'primary' : 'secondary'}
+          variant={scope === 'past' ? 'default' : 'outline'}
           size="sm"
           aria-pressed={scope === 'past'}
           onClick={() => switchScope('past')}
@@ -153,7 +153,7 @@ export function MyBookingsList({ isExternal, onEdit }: MyBookingsListProps) {
                     </td>
                     <td className="px-4 py-3 text-right">
                       {booking.cancellable ? (
-                        <Button variant="secondary" size="sm" onClick={() => onEdit(booking)}>
+                        <Button variant="outline" size="sm" onClick={() => onEdit(booking)}>
                           Modifier
                           <span className="sr-only">
                             {' '}
@@ -177,7 +177,7 @@ export function MyBookingsList({ isExternal, onEdit }: MyBookingsListProps) {
               aria-label="Pagination des réservations"
             >
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 disabled={page <= 1}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
@@ -188,7 +188,7 @@ export function MyBookingsList({ isExternal, onEdit }: MyBookingsListProps) {
                 Page {data.meta.current_page} sur {data.meta.last_page}
               </span>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 disabled={page >= data.meta.last_page}
                 onClick={() => setPage((current) => current + 1)}

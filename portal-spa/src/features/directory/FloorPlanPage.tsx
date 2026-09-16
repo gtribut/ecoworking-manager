@@ -1,11 +1,11 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { QueryError } from '@/components/QueryError'
-import { Alert } from '@/components/ui/Alert'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Spinner } from '@/components/ui/Spinner'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Spinner } from '@/components/ui/spinner'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { cn } from '@/lib/utils'
 import { DeskDetailPanel } from './DeskDetailPanel'
@@ -67,7 +67,7 @@ export function FloorPlanPage() {
 
       <div className="flex flex-wrap items-end gap-2">
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           onClick={() => setDate((value) => shiftIsoDate(value, -1))}
         >
@@ -87,7 +87,7 @@ export function FloorPlanPage() {
           />
         </div>
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           onClick={() => setDate((value) => shiftIsoDate(value, 1))}
         >

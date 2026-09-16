@@ -1,9 +1,9 @@
 import { type FormEvent, useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/Button'
-import { ConfirmButton } from '@/components/ui/ConfirmButton'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
+import { Button } from '@/components/ui/button'
+import { ConfirmButton } from '@/components/ui/confirm-button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   confirmPassword,
   confirmTwoFactor,
@@ -152,7 +152,7 @@ export function TwoFactorSection() {
             <Button type="submit" disabled={busy || password.length === 0}>
               Confirmer
             </Button>
-            <Button type="button" variant="secondary" onClick={() => setMode({ kind: 'idle' })}>
+            <Button type="button" variant="outline" onClick={() => setMode({ kind: 'idle' })}>
               Annuler
             </Button>
           </div>
@@ -193,7 +193,7 @@ export function TwoFactorSection() {
             <Button type="submit" disabled={busy || code.length < 6}>
               Activer
             </Button>
-            <Button type="button" variant="secondary" onClick={() => setMode({ kind: 'idle' })}>
+            <Button type="button" variant="outline" onClick={() => setMode({ kind: 'idle' })}>
               Annuler
             </Button>
           </div>
@@ -216,7 +216,7 @@ export function TwoFactorSection() {
               </li>
             ))}
           </ul>
-          <Button type="button" variant="secondary" onClick={() => setMode({ kind: 'idle' })}>
+          <Button type="button" variant="outline" onClick={() => setMode({ kind: 'idle' })}>
             J’ai noté mes codes
           </Button>
         </div>
@@ -228,7 +228,7 @@ export function TwoFactorSection() {
             <>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 disabled={busy}
                 onClick={() => showRecoveryCodes(false)}
               >
@@ -236,14 +236,14 @@ export function TwoFactorSection() {
               </Button>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 disabled={busy}
                 onClick={() => showRecoveryCodes(true)}
               >
                 Régénérer les codes
               </Button>
               <ConfirmButton
-                variant="danger"
+                variant="destructive"
                 disabled={busy}
                 confirmMessage="Désactiver la double authentification ?"
                 onConfirm={() => void disable()}

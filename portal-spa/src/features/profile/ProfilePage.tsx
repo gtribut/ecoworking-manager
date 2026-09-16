@@ -5,12 +5,12 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { MarkdownContent } from '@/components/MarkdownContent'
 import { QueryError } from '@/components/QueryError'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Select } from '@/components/ui/Select'
-import { Spinner } from '@/components/ui/Spinner'
-import { Textarea } from '@/components/ui/Textarea'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { NativeSelect } from '@/components/ui/native-select'
+import { Spinner } from '@/components/ui/spinner'
+import { Textarea } from '@/components/ui/textarea'
 import { EntityBlock } from '@/features/billing/EntityBlock'
 import { getApiErrorMessage } from '@/lib/errors'
 import { usePageTitle } from '@/lib/usePageTitle'
@@ -166,11 +166,11 @@ export function ProfilePage() {
 
           <div>
             <Label htmlFor="theme">Thème</Label>
-            <Select id="theme" {...form.register('theme')}>
+            <NativeSelect id="theme" {...form.register('theme')}>
               <option value="">Automatique (système)</option>
               <option value="light">Clair</option>
               <option value="dark">Sombre</option>
-            </Select>
+            </NativeSelect>
           </div>
         </fieldset>
 
@@ -217,7 +217,7 @@ export function ProfilePage() {
                 )}
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   aria-pressed={bioPreview}
                   onClick={() => setBioPreview((previous) => !previous)}

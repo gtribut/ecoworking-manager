@@ -6,9 +6,11 @@ import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { getApiErrorMessage } from '@/lib/errors'
@@ -72,7 +74,13 @@ export function TicketsPage() {
     <PageContainer width="wide" className="space-y-10">
       <PageHeader title="Tickets & bureaux nomades" />
 
-      {isLoading && <Spinner label="Chargement de vos tickets…" />}
+      {isLoading && (
+        <div role="status" className="grid gap-4 sm:grid-cols-2">
+          <span className="sr-only">Chargement de vos tickets…</span>
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      )}
       {isError && (
         <QueryError message="Impossible de charger vos tickets." onRetry={() => void refetch()} />
       )}
@@ -84,27 +92,35 @@ export function TicketsPage() {
               Mes soldes de tickets
             </h2>
             <ul className="grid gap-4 sm:grid-cols-2">
-              <li className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
-                <Armchair className="size-6 text-brand-600" aria-hidden="true" />
-                <span>
-                  <span className="block text-2xl font-semibold tabular-nums">
-                    {data.balances.desk_half_day}
-                  </span>
-                  <span className="block text-sm text-neutral-500 dark:text-neutral-400">
-                    Demi-journées bureau nomade
-                  </span>
-                </span>
+              <li>
+                <Card>
+                  <CardContent className="flex items-center gap-3">
+                    <Armchair className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <span>
+                      <span className="block text-sm font-medium text-muted-foreground">
+                        Demi-journées bureau nomade
+                      </span>
+                      <span className="block text-xl font-semibold tabular-nums">
+                        {data.balances.desk_half_day}
+                      </span>
+                    </span>
+                  </CardContent>
+                </Card>
               </li>
-              <li className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
-                <TicketIcon className="size-6 text-brand-600" aria-hidden="true" />
-                <span>
-                  <span className="block text-2xl font-semibold tabular-nums">
-                    {data.balances.meeting_room_half_day}
-                  </span>
-                  <span className="block text-sm text-neutral-500 dark:text-neutral-400">
-                    Demi-journées salle de réunion
-                  </span>
-                </span>
+              <li>
+                <Card>
+                  <CardContent className="flex items-center gap-3">
+                    <TicketIcon className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <span>
+                      <span className="block text-sm font-medium text-muted-foreground">
+                        Demi-journées salle de réunion
+                      </span>
+                      <span className="block text-xl font-semibold tabular-nums">
+                        {data.balances.meeting_room_half_day}
+                      </span>
+                    </span>
+                  </CardContent>
+                </Card>
               </li>
             </ul>
 
@@ -251,34 +267,33 @@ function DeskBookingForm({ deskTicketBalance }: { deskTicketBalance: number }) {
             </Alert>
           )}
           {availability.data?.available && availability.data.desks.length > 0 && (
-            <div className="rounded-lg border border-neutral-200 dark:border-neutral-800">
-              <h3 className="border-b border-neutral-200 px-4 py-2 text-sm font-medium dark:border-neutral-800">
-                {availability.data.count} bureau(x) disponible(s) — {PERIOD_LABELS[period]}
-              </h3>
-              <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {availability.data.desks.map((desk) => (
-                  <li key={desk.id} className="flex items-center justify-between px-4 py-2">
-                    <span className="text-sm">
-                      {desk.name}
-                      {desk.floor !== null && (
-                        <span className="text-neutral-500 dark:text-neutral-400">
-                          {' '}
-                          · étage {desk.floor}
-                        </span>
-                      )}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={createOccupation.isPending}
-                      onClick={() => void onBook(desk)}
-                    >
-                      Réserver<span className="sr-only"> le bureau {desk.name}</span>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <Card>
+              <CardContent className="px-0">
+                <h3 className="border-b px-4 pb-3 text-sm font-medium">
+                  {availability.data.count} bureau(x) disponible(s) — {PERIOD_LABELS[period]}
+                </h3>
+                <ul className="divide-y">
+                  {availability.data.desks.map((desk) => (
+                    <li key={desk.id} className="flex items-center justify-between px-4 py-2">
+                      <span className="text-sm">
+                        {desk.name}
+                        {desk.floor !== null && (
+                          <span className="text-muted-foreground"> · étage {desk.floor}</span>
+                        )}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={createOccupation.isPending}
+                        onClick={() => void onBook(desk)}
+                      >
+                        Réserver<span className="sr-only"> le bureau {desk.name}</span>
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
           )}
         </div>
       )}

@@ -1,5 +1,16 @@
 import { Ticket as TicketIcon } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import type { Ticket, TicketStatus, TicketType } from './types'
 
 const TYPE_LABELS: Record<TicketType, string> = {
@@ -14,11 +25,13 @@ const STATUS_LABELS: Record<TicketStatus, string> = {
   cancelled: 'Annulé',
 }
 
+/* Couleurs reprises telles quelles du kit précédent (déjà auditées AA) : pas
+ * de variante `Badge` shadcn équivalente pour ces quatre statuts métier. */
 const STATUS_CLASSES: Record<TicketStatus, string> = {
   available: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
   used: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200',
   restituted: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
-  cancelled: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+  cancelled: 'bg-muted text-muted-foreground',
 }
 
 function formatDate(iso: string | null): string {
@@ -47,51 +60,41 @@ export function MyTicketsTable({ tickets }: { tickets: Ticket[] }) {
       {sorted.length === 0 ? (
         <EmptyState icon={TicketIcon} title="Aucun ticket pour le moment." />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-          <table className="w-full text-left text-sm">
-            <caption className="sr-only">
-              Détail de mes tickets, du plus récent au plus ancien
-            </caption>
-            <thead className="bg-neutral-50 text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
-              <tr>
-                <th scope="col" className="px-4 py-3 font-medium">
-                  Type
-                </th>
-                <th scope="col" className="px-4 py-3 font-medium">
-                  Statut
-                </th>
-                <th scope="col" className="px-4 py-3 font-medium">
-                  Crédité le
-                </th>
-                <th scope="col" className="px-4 py-3 font-medium">
-                  Utilisation
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-              {sorted.map((ticket) => (
-                <tr key={ticket.id}>
-                  <th scope="row" className="px-4 py-3 font-medium">
-                    {TYPE_LABELS[ticket.type]}
-                  </th>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[ticket.status]}`}
-                    >
-                      {STATUS_LABELS[ticket.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">{formatDate(ticket.credited_at)}</td>
-                  <td className="px-4 py-3">
-                    {ticket.usage
-                      ? `${ticket.usage.resource_name ?? '—'} · ${formatDate(ticket.usage.date)}`
-                      : '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Card>
+          <CardContent className="px-0">
+            <Table>
+              <TableCaption className="sr-only">
+                Détail de mes tickets, du plus récent au plus ancien
+              </TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Crédité le</TableHead>
+                  <TableHead>Utilisation</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sorted.map((ticket) => (
+                  <TableRow key={ticket.id}>
+                    <TableCell className="font-medium">{TYPE_LABELS[ticket.type]}</TableCell>
+                    <TableCell>
+                      <Badge className={STATUS_CLASSES[ticket.status]}>
+                        {STATUS_LABELS[ticket.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formatDate(ticket.credited_at)}</TableCell>
+                    <TableCell className="whitespace-normal">
+                      {ticket.usage
+                        ? `${ticket.usage.resource_name ?? '—'} · ${formatDate(ticket.usage.date)}`
+                        : '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </section>
   )

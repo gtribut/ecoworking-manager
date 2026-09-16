@@ -174,9 +174,27 @@ describe('BookingsPage — agenda des salles', () => {
       'false',
     )
 
-    // Panneau droit : mini-mois, renvoi vers la liste, abonnement iCal.
-    expect(screen.getByRole('link', { name: /Voir toutes mes réservations/ })).toBeVisible()
+    // Panneau droit : mini-mois, abonnement iCal (retour de recette 16/09 :
+    // plus de carte de renvoi, la liste des réservations est remontée dans
+    // la colonne de l'agenda — cf. assertion de placement ci-dessous).
     expect(screen.getByRole('heading', { name: 'Abonnement agenda' })).toBeVisible()
+    expect(
+      screen.queryByRole('link', { name: /Voir toutes mes réservations/ }),
+    ).not.toBeInTheDocument()
+
+    // « Mes prochaines réservations » vit dans la colonne de l'agenda, pas
+    // dans le panneau droit (« Abonnement agenda ») — et la précède dans le
+    // DOM (retour de recette 16/09 : plus tout en bas de page).
+    const asideColumn = screen.getByRole('heading', { name: 'Abonnement agenda' }).closest('aside')
+    const bookingsHeading = await screen.findByRole('heading', {
+      name: 'Mes prochaines réservations',
+    })
+    expect(asideColumn).not.toBeNull()
+    expect(asideColumn).not.toContainElement(bookingsHeading)
+    expect(
+      bookingsHeading.compareDocumentPosition(asideColumn as HTMLElement) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
   it('francise les libellés de navigation du mini-mois', async () => {
@@ -264,18 +282,6 @@ describe('BookingsPage — agenda des salles', () => {
     const views = await screen.findByRole('radiogroup', { name: 'Affichage du calendrier' })
     expect(within(views).getByRole('radio', { name: 'Jour' })).toBeChecked()
     expect(screen.getByText('mercredi 10 juin 2026')).toBeInTheDocument()
-  })
-
-  it('bascule sur la vue mois via le sélecteur de vue', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    setup()
-    renderWithProviders(<BookingsPage />, { withAuth: true })
-    await screen.findByRole('button', { name: 'Nouvelle réservation' })
-
-    await user.click(screen.getByRole('radio', { name: 'Mois' }))
-
-    // Le libellé de période, pas la légende du mini-mois du panneau droit.
-    expect(await screen.findByText('juin 2026', { selector: 'p' })).toBeInTheDocument()
   })
 
   it('étend la plage horaire à 24 h via le toggle', async () => {

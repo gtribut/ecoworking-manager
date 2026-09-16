@@ -102,15 +102,11 @@ export function formatDayLabel(day: Date): string {
 
 /**
  * Libellé de la période affichée par l'agenda (barre d'outils C14) :
- * « lundi 14 septembre 2026 », « 14 – 20 septembre 2026 », « septembre 2026 ».
- * `endInclusive` est le dernier jour affiché (pas la borne exclusive de
- * FullCalendar).
+ * « lundi 14 septembre 2026 », « 14 – 20 septembre 2026 ». `endInclusive` est
+ * le dernier jour affiché (pas la borne exclusive de FullCalendar). Le cas
+ * « mois » (« septembre 2026 ») a été retiré avec la vue Mois (16/09).
  */
-export function formatPeriodLabel(
-  period: 'day' | 'week' | 'month',
-  start: Date,
-  endInclusive: Date,
-): string {
+export function formatPeriodLabel(period: 'day' | 'week', start: Date, endInclusive: Date): string {
   if (period === 'day') {
     return start.toLocaleDateString('fr-FR', {
       weekday: 'long',
@@ -118,12 +114,6 @@ export function formatPeriodLabel(
       month: 'long',
       year: 'numeric',
     })
-  }
-  if (period === 'month') {
-    // La vue mois déborde sur les mois voisins : le mois du milieu de plage
-    // est celui réellement affiché.
-    const middle = new Date((start.getTime() + endInclusive.getTime()) / 2)
-    return middle.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
   }
   const sameMonth =
     start.getMonth() === endInclusive.getMonth() &&

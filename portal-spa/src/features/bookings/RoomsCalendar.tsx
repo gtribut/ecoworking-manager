@@ -6,7 +6,6 @@ import type {
   EventDisplayInfo,
 } from '@fullcalendar/react'
 import FullCalendar from '@fullcalendar/react'
-import dayGridPlugin from '@fullcalendar/react/daygrid'
 import interactionPlugin from '@fullcalendar/react/interaction'
 import frLocale from '@fullcalendar/react/locales/fr'
 import classicTheme from '@fullcalendar/react/themes/classic'
@@ -62,19 +61,23 @@ import '@fullcalendar/react/skeleton.css'
 import '@fullcalendar/react/themes/classic/theme.css'
 import '@fullcalendar/react/themes/classic/palette.css'
 
-/** Vues exposées par la barre d'outils (ADR-0013 D3). */
-export type AgendaView = 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'
+/**
+ * Vues exposées par la barre d'outils (ADR-0013 D3). La vue Mois
+ * (`dayGridMonth`) a été retirée en recette (16/09) : sur cet agenda, un mois
+ * de blocs de salles empilés était illisible et n'apportait rien de plus que
+ * la vue Semaine pour se projeter — `@fullcalendar/react/daygrid` n'est donc
+ * plus importé.
+ */
+export type AgendaView = 'timeGridDay' | 'timeGridWeek'
 
 const VIEW_LABELS: Record<AgendaView, string> = {
   timeGridDay: 'Jour',
   timeGridWeek: 'Semaine',
-  dayGridMonth: 'Mois',
 }
 
-const PERIOD_OF_VIEW: Record<AgendaView, 'day' | 'week' | 'month'> = {
+const PERIOD_OF_VIEW: Record<AgendaView, 'day' | 'week'> = {
   timeGridDay: 'day',
   timeGridWeek: 'week',
-  dayGridMonth: 'month',
 }
 
 /** Créneau choisi dans la grille, transmis à la modale de réservation. */
@@ -127,6 +130,29 @@ function initialRange(): { from: string; to: string } {
 const META_MIN_MINUTES = 30
 const OCCUPANT_MIN_MINUTES = 60
 
+/**
+ * Hauteur des lignes horaires (retour de recette 16/09 : « +50 % »).
+ *
+ * FullCalendar v7 (thème classic) n'expose **aucun** levier CSS pour ça :
+ * `themes/classic/theme.css` et `skeleton.css` ne posent ni règle
+ * `.fc-timegrid-slot` (classes hachées en v7, cf. commentaire plus bas) ni
+ * variable `--fc-*-slot-height` — vérifié dans les sources du paquet et dans
+ * la doc officielle (aucune option `slotHeight`). Avec `height="auto"`
+ * (comportement précédent), la hauteur d'une ligne est un défaut interne figé
+ * (mesuré : ~24,98 px/heure, ~27 px d'en-tête des jours), et une simple
+ * surcharge CSS `!important` sur `[data-time]` ne suffit pas : FullCalendar
+ * réaffecte lui-même le `style` inline sans recalculer la position des
+ * événements, qui se retrouvent désynchronisés de la grille (testé).
+ *
+ * La hauteur d'une ligne **est** en revanche pilotée par la combinaison
+ * documentée `height` (nombre de px) + `expandRows` : FullCalendar redistribue
+ * alors l'espace entre les lignes via son propre moteur de layout, qui
+ * repositionne aussi les événements en cohérence (vérifié avec un événement
+ * réel). D'où le calcul ci-dessous plutôt qu'une règle dans `styles.css`.
+ */
+const AGENDA_HEADER_HEIGHT_PX = 28
+const AGENDA_ROW_HEIGHT_PX = 25 * 1.5 // 24,98 px mesurés → 37,5 px (+50 %)
+
 function durationMinutes(start: Date | null, end: Date | null): number {
   if (start === null || end === null) {
     return 0
@@ -138,12 +164,13 @@ function durationMinutes(start: Date | null, end: Date | null): number {
  * Contenu d'un bloc (maquettes C14) : titre, puis horaire · salle, puis
  * occupant · entité. Le **nom de la salle** y figure explicitement : la couleur
  * seule ne doit jamais porter l'information (CLAUDE.md §3.5, WCAG 1.4.1).
- * En vue mois, les blocs sont des lignes : titre et horaire seulement.
+ * Rendu compact (titre + horaire seuls) en secours si les `extendedProps` sont
+ * absents — le cas « vue Mois » qui l'utilisait aussi a été retiré (16/09).
  */
-function renderEventContent(info: EventDisplayInfo, compact: boolean) {
+function renderEventContent(info: EventDisplayInfo) {
   const props = readEventSlotProps(info.event.extendedProps as Record<string, unknown>)
 
-  if (props === null || compact) {
+  if (props === null) {
     return (
       <span className="ew-ev-line ew-ev-title">
         {info.timeText !== '' && <span className="ew-ev-time">{info.timeText} </span>}
@@ -230,6 +257,11 @@ export function RoomsCalendar({
   )
 
   const bounds = isExternal ? EXTERNAL_HOURS : showAllHours ? FULL_DAY_HOURS : DEFAULT_HOURS
+  // Hauteur totale = en-tête (fixe) + une ligne par heure affichée. Le calcul
+  // s'ajuste automatiquement à `bounds` (8-20 h, 9-18 h external, 0-24 h en
+  // « Voir 24 h »), sans scrollbar (pas de contenu au-delà de cette hauteur).
+  const calendarHeight =
+    AGENDA_HEADER_HEIGHT_PX + (bounds.end - bounds.start) * AGENDA_ROW_HEIGHT_PX
   const eventRoom = (catalog ?? []).find((room) => !room.is_bookable) ?? null
   const firstBookableVisible =
     (catalog ?? []).find((room) => room.is_bookable && visibleIds.includes(room.id)) ?? null
@@ -315,11 +347,6 @@ export function RoomsCalendar({
       })
     },
     [firstBookableVisible, onPickRange],
-  )
-
-  const renderEvent = useCallback(
-    (info: EventDisplayInfo) => renderEventContent(info, view === 'dayGridMonth'),
-    [view],
   )
 
   const handleEventClick = useCallback(
@@ -491,13 +518,13 @@ export function RoomsCalendar({
       <div className="fc ew-agenda min-w-0">
         <FullCalendar
           ref={calendarRef}
-          plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin, classicTheme]}
+          plugins={[timeGridPlugin, interactionPlugin, classicTheme]}
           initialView={initialView}
           initialDate={initialDate}
           locale={frLocale}
           firstDay={1}
           headerToolbar={false}
-          height="auto"
+          height={calendarHeight}
           expandRows
           allDaySlot={false}
           nowIndicator
@@ -517,7 +544,7 @@ export function RoomsCalendar({
           }
           selectConstraint={isExternal ? EXTERNAL_SELECT_CONSTRAINT : undefined}
           eventClick={handleEventClick}
-          eventContent={renderEvent}
+          eventContent={renderEventContent}
           events={events}
           datesSet={handleDatesSet}
           dayMaxEvents={3}

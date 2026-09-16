@@ -11,6 +11,18 @@
  * `dark` sur <html> (préférence utilisateur persistée via /api/profile).
  */
 @custom-variant dark (&:where(.dark, .dark *));
+/*
+ * Variantes `data-horizontal:` / `data-vertical:` attendues par les primitives
+ * shadcn de style `radix-nova` (tabs, separator, scroll-area, toggle-group —
+ * et leurs pendants `group-data-horizontal/*` `group-data-vertical/*`, dérivés
+ * automatiquement par Tailwind de la variante nommée). Oubli de l'init shadcn
+ * (U1, C14) : `data-active:`/`data-inset:`/`data-placeholder:` sont gérés
+ * nativement par Tailwind v4 (présence d'attribut), mais `[data-orientation]`
+ * porte une *valeur* ("horizontal"/"vertical"), donc pas de variante native
+ * correspondante — d'où le bug de recette (TabsList empilée verticalement).
+ */
+@custom-variant data-horizontal (&[data-orientation="horizontal"]);
+@custom-variant data-vertical (&[data-orientation="vertical"]);
 
 @theme {
   --font-sans: "Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -308,6 +320,15 @@
  * `.fc` n'existe plus comme classe racine en v7 (classes hachées) : c'est le
  * conteneur de `RoomsCalendar` qui la porte, et c'est le sélecteur d'exclusion
  * de l'audit axe (`FULLCALENDAR_AXE_EXCLUDE`, e2e/support/fixtures.ts).
+ *
+ * Hauteur des lignes horaires (demande de recette 16/09, +50 %) : **pas ici**.
+ * FullCalendar v7/thème classic n'expose aucune règle `.fc-timegrid-slot` ni
+ * variable `--fc-*-slot-height` à surcharger (classes hachées, vérifié dans
+ * les sources du paquet et la doc officielle) ; une surcharge CSS directe
+ * désynchronise en plus la position des événements de la grille (testé). Le
+ * réglage vit donc dans `RoomsCalendar.tsx` (constantes `AGENDA_ROW_HEIGHT_PX`
+ * / `AGENDA_HEADER_HEIGHT_PX`, prop `height` + `expandRows` de `<FullCalendar>`
+ * — seul levier documenté qui repositionne aussi les événements).
  * ========================================================================== */
 
 :root {

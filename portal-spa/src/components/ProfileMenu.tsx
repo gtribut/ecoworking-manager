@@ -74,7 +74,7 @@ export function ProfileMenu({ variant = 'sidebar' }: ProfileMenuProps) {
           )}
         >
           <Avatar className="size-8">
-            <AvatarFallback className="bg-brand-50 text-xs font-semibold text-brand-700 dark:bg-neutral-800 dark:text-brand-300">
+            <AvatarFallback className="bg-brand-50 text-xs font-semibold text-link dark:bg-neutral-800">
               {initials}
             </AvatarFallback>
           </Avatar>

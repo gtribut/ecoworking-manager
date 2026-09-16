@@ -76,6 +76,23 @@ Repli documenté : si le connecteur `@fullcalendar/react` v7 s'avère instable a
 Vite 8 (Rolldown), rétrograder vers `@fullcalendar/react` v6 — l'API des plugins core/timegrid/
 daygrid/interaction est stable d'une version majeure à l'autre, le coût de repli est donc faible.
 
+> ✅ **Corrigé 2026-09-16 (U5)** — packaging réel constaté à l'usage (U3 puis vérifié en finition) :
+> contrairement à la description ci-dessus (héritée de la doc FullCalendar v6, plugins séparés),
+> **v7 est un seul paquet** `@fullcalendar/react@7.1`, plugins en **sous-chemins** du même paquet
+> (`@fullcalendar/react/timegrid`, `/daygrid`, `/interaction`, `/locales/fr`,
+> `/themes/classic`) — pas de `@fullcalendar/core` ni `@fullcalendar/timegrid` séparés en
+> dépendances npm. Deux peers obligatoires non anticipés : `temporal-polyfill` (v7 utilise
+> `Temporal` en interne) et `@full-ui/headless-calendar`. Le thème **classic** (import CSS
+> obligatoire, `themes/classic/palette.css`) fournit les variables `--fc-classic-*`, préfixées par
+> le nom du thème (pas `--fc-*` génériques comme en v6) — remappées sur les jetons shadcn dans
+> `portal-spa/src/styles.css` (`.fc.ew-agenda` / `.dark .fc.ew-agenda`). Les classes générées par
+> FullCalendar v7 sont hachées (pas de `.fc` stable) : `RoomsCalendar` pose donc lui-même la classe
+> `.ew-agenda` (et rajoute `.fc` manuellement) sur son conteneur, qui devient le point d'exclusion
+> axe documenté (`FULLCALENDAR_AXE_EXCLUDE`, `e2e/support/fixtures.ts`) — sans ce filet, l'exclusion
+> `.fc` de la description initiale ne matcherait plus rien. Le repli v6 reste **requalifié
+> structurant** (packaging et système de thème différents, migration non triviale) mais s'est avéré
+> **non nécessaire** : stabilité constatée avec React 19.2 / Vite 8 sur tout C14 (U3 → U5).
+
 ### D4 — A11y de l'agenda relâchée, alternative accessible obligatoire
 
 La grille FullCalendar (sélecteur `.fc`) est **exclue de l'audit `axe-core`** dans les tests
@@ -172,6 +189,23 @@ et de la sémantique ARIA de FullCalendar, hors de portée raisonnable pour un p
 **Pourquoi écarté** : jugée en recette moins lisible qu'une sidebar à ce nombre d'entrées (6 +
 2 administratif), et `recette.md` §3.12 attend déjà une bottom nav mobile. Revirement assumé,
 documenté dans le PRD plutôt que silencieusement remplacé (cf. ci-dessous).
+
+## Mise en œuvre (U1 → U5)
+
+Résumé de ce que chaque lot a livré par rapport aux décisions ci-dessus (détail dans
+`docs/SUIVI.md` C14.0-C14.6) :
+
+- **U1-U2** : jetons shadcn mappés sur le vert brand oklch (`portal-spa/src/styles.css`), shell
+  sidebar + bottom nav.
+- **U3** : agenda FullCalendar réel (packaging v7 corrigé ci-dessus), alternative D4 livrée (liste
+  « Mes réservations » + bouton « Nouvelle réservation »).
+- **U4a/U4b** : pages restylées, aucun changement sur D3/D4.
+- **U5 (finition)** : utilitaire de lien unifié `text-link` (styles.css, `@utility`) remplaçant la
+  paire répétée `text-brand-700 dark:text-brand-300` sur ~20 call sites et `Button
+  variant="link"` ; contraste `text-destructive` corrigé (`dark:text-red-300`) sur `Badge` et
+  `DropdownMenuItem` destructifs ; exclusion axe `.fc` (D4) revérifiée en clair **et** sombre sur
+  la page réservations, plus une passe axe complète du reste du portail (voir rapport de lot U5) ;
+  aucune régression sur le packaging v7 ni sur le thème `.fc.ew-agenda` documenté ci-dessus.
 
 ## Références
 

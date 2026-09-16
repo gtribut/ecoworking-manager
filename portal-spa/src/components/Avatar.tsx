@@ -1,6 +1,20 @@
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
+/*
+ * Coexiste volontairement avec `components/ui/avatar.tsx` (review U5,
+ * CLAUDE.md §3.5) : ce composant porte une logique propre au portail que la
+ * primitive Radix ne couvre pas — trois tailles liées à trois rendus serveur
+ * distincts (`GET /api/users/{id}/photo/{size}`, jamais une seule image
+ * redimensionnée en CSS), un état `muted` (résident absent sur le plan des
+ * étages) et un repli initiales -> `onError` géré nous-mêmes (Radix
+ * `Avatar.Fallback` ne se déclenche que sur `onLoadingStatusChange`, pas sur
+ * une 404 après un premier affichage réussi). Utilisé par l'annuaire, le plan
+ * des étages et l'aperçu de profil. `components/ui/avatar.tsx` (primitive
+ * shadcn/ui) reste pour les avatars simples sans ces contraintes (menu
+ * profil : initiales seules, pas de photo ni de tailles serveur).
+ */
+
 /** URLs des trois rendus servis par l'API (80 / 200 / 400 px), ou null. */
 export interface PhotoUrls {
   sm: string

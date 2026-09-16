@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { useMemo } from 'react'
+import { cn } from '@/lib/utils'
 
 marked.setOptions({ gfm: true, breaks: true })
 
@@ -42,7 +43,11 @@ export function MarkdownContent({ markdown, className }: MarkdownContentProps) {
 
   return (
     <div
-      className={className}
+      // Puces/numéros visibles (review U5) : sans ça, `<ul>`/`<ol>` rendus par
+      // `marked` n'ont ni marqueur ni retrait (pas de feuille de style Tailwind
+      // par défaut sur les listes), illisibles visuellement bien que corrects
+      // sémantiquement pour un lecteur d'écran.
+      className={cn('[&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5', className)}
       // biome-ignore lint/security/noDangerouslySetInnerHtml: HTML sanitizé par DOMPurify (allow-list stricte) juste au-dessus.
       dangerouslySetInnerHTML={{ __html: html }}
     />

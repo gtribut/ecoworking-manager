@@ -64,10 +64,7 @@ function NextBookingKpi() {
             {booking.title ? ` · ${booking.title}` : ''}
           </>
         ) : (
-          <Link
-            to="/bookings"
-            className="font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
-          >
+          <Link to="/bookings" className="font-medium text-link underline underline-offset-2">
             Réserver une salle
           </Link>
         )
@@ -100,10 +97,7 @@ function DeskKpi() {
       sub={
         <>
           {desk?.floor !== null && desk?.floor !== undefined ? `Étage ${desk.floor} · ` : ''}
-          <Link
-            to="/presence"
-            className="font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
-          >
+          <Link to="/presence" className="font-medium text-link underline underline-offset-2">
             Ma présence
           </Link>
         </>
@@ -133,10 +127,7 @@ function TicketsKpi() {
           {balances
             ? `${balances.meeting_room_half_day} salle${balances.meeting_room_half_day > 1 ? 's' : ''} · `
             : ''}
-          <Link
-            to="/tickets"
-            className="font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
-          >
+          <Link to="/tickets" className="font-medium text-link underline underline-offset-2">
             Bureaux nomades
           </Link>
         </>
@@ -170,10 +161,7 @@ function LastInvoiceKpi() {
             {invoice.number ?? '—'} · <InvoiceStatusBadge status={invoice.status} />
           </>
         ) : (
-          <Link
-            to="/invoices"
-            className="font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
-          >
+          <Link to="/invoices" className="font-medium text-link underline underline-offset-2">
             Voir mes factures
           </Link>
         )
@@ -202,7 +190,10 @@ export function DashboardKpiGrid() {
       <h2 id="dashboard-kpis-title" className="sr-only">
         Indicateurs clés
       </h2>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* `auto-fit` plutôt que `lg:grid-cols-4` figé (review U5) : avec 2
+          tuiles (ex. contact facturation pur), 4 colonnes fixes laissaient un
+          vide à droite au lieu de répartir l'espace disponible. */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))]">
         {canViewBookings && <NextBookingKpi />}
         {isResident && <DeskKpi />}
         {isExternal && <TicketsKpi />}

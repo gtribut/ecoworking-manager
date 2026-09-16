@@ -1,4 +1,3 @@
-import { Mail } from 'lucide-react'
 import { PageContainer } from '@/components/PageContainer'
 import { PageHeader } from '@/components/PageHeader'
 import { DashboardAnnouncements } from '@/features/announcements/DashboardAnnouncements'
@@ -6,7 +5,6 @@ import { useAuth } from '@/features/auth/useAuth'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { DashboardUpcomingBookings } from '@/features/bookings/DashboardUpcomingBookings'
 import { DashboardInvoices } from '@/features/invoices/DashboardInvoices'
-import { CONTACT_MAILTO } from '@/lib/contact'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { cn } from '@/lib/utils'
 import { DashboardKpiGrid } from './DashboardKpiGrid'
@@ -38,9 +36,10 @@ function today(): string {
  *
  * Écarts assumés avec l'ancienne version (cf. rapport U4a) : la section
  * « Accès rapides » est retirée (Ma présence/Bureaux nomades sont désormais
- * dans les KPI, Mon profil est déjà dans la sidebar — U2) ; le bouton
- * « Nous contacter » local ne reste qu'en mobile (`md:hidden`), la top bar
- * le porte déjà en desktop (`TopBar.tsx`).
+ * dans les KPI, Mon profil est déjà dans la sidebar — U2). Le bouton
+ * « Nous contacter » local en mobile a été retiré en U5 (review) : le pied
+ * de page (`Footer.tsx`, `pb-20` sous la bottom nav) porte déjà un lien
+ * « Contact » identique, quel que soit le viewport — doublon supprimé.
  */
 export function DashboardPage() {
   usePageTitle('Accueil — Portail Ecoworking')
@@ -66,16 +65,6 @@ export function DashboardPage() {
       </div>
 
       {canSeeInvoices && <DashboardInvoices />}
-
-      <p className="md:hidden">
-        <a
-          href={CONTACT_MAILTO}
-          className="inline-flex items-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted"
-        >
-          <Mail className="size-4" aria-hidden="true" />
-          Nous contacter
-        </a>
-      </p>
     </PageContainer>
   )
 }

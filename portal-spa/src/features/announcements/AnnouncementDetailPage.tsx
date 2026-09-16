@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { AnnouncementBadge } from './AnnouncementBadge'
-import { formatAnnouncementDate, formatEventSlot } from './AnnouncementsPage'
+import { formatAnnouncementDate, formatEventSlot } from './format'
 import { RsvpButton } from './RsvpButton'
 import { useAnnouncement } from './useAnnouncements'
 
@@ -25,7 +25,7 @@ export function AnnouncementDetailPage() {
       <p>
         <Link
           to="/announcements"
-          className="inline-flex items-center gap-1 text-sm text-brand-700 dark:text-brand-300 underline"
+          className="inline-flex items-center gap-1 text-sm text-link underline"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           Toutes les actualités

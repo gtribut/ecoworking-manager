@@ -72,7 +72,11 @@ describe('DocumentsPage', () => {
     renderPage()
 
     expect(await screen.findByText('Charte interne')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Valider' })).toBeInTheDocument()
+    // Le titre du document est en sr-only dans le nom accessible (review U5 :
+    // distingue les boutons homonymes « Valider » sur la même page).
+    expect(
+      screen.getByRole('button', { name: 'Valider le document Charte interne' }),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: 'Télécharger le document Charte interne (PDF)' }),
     ).toHaveAttribute('href', '/api/documents/internal/1/pdf')
@@ -101,12 +105,16 @@ describe('DocumentsPage', () => {
     renderPage()
     const user = userEvent.setup()
 
-    await user.click(await screen.findByRole('button', { name: 'Valider' }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Valider le document Charte interne' }),
+    )
     // Confirmation en deux temps (pas de window.confirm).
     await user.click(screen.getByRole('button', { name: 'Confirmer' }))
 
     expect(await screen.findByText('Validé le 02/07/2026')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Valider' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Valider le document Charte interne' }),
+    ).not.toBeInTheDocument()
   })
 
   it('affiche l’état « à jour » quand tout est validé', async () => {

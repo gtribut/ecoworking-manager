@@ -167,7 +167,7 @@ export function DocumentsPage() {
                             {document.pdf_available ? (
                               <a
                                 href={administrativeDocumentPdfUrl(document.id)}
-                                className="inline-flex items-center gap-1 text-brand-700 underline dark:text-brand-300"
+                                className="inline-flex items-center gap-1 text-link underline"
                               >
                                 <Download className="size-4" aria-hidden="true" />
                                 <span>

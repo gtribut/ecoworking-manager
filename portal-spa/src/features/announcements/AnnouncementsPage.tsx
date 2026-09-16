@@ -10,30 +10,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { AnnouncementBadge } from './AnnouncementBadge'
-import type { Announcement } from './types'
+import { excerpt, formatAnnouncementDate, formatEventSlot } from './format'
 import { useAnnouncements } from './useAnnouncements'
-
-export function formatAnnouncementDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString('fr-FR') : ''
-}
-
-export function formatEventSlot(announcement: Announcement): string {
-  if (!announcement.event_starts_at) return ''
-  const start = new Date(announcement.event_starts_at)
-  const day = start.toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-  const time = start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-  return `${day} à ${time}`
-}
-
-/** Extrait court pour les cards (PRD §3.3.2 : mini-description ~100 caractères). */
-export function excerpt(body: string, max = 100): string {
-  return body.length > max ? `${body.slice(0, max).trimEnd()}…` : body
-}
 
 export function AnnouncementsPage() {
   usePageTitle('Actualités — Portail Ecoworking')
@@ -69,7 +47,10 @@ export function AnnouncementsPage() {
             <CardContent>
               <ul>
                 {data.data.map((announcement) => (
-                  <li key={announcement.id} className="border-t py-4 first:border-t-0 first:pt-0">
+                  <li
+                    key={announcement.id}
+                    className="border-t py-4 first:border-t-0 first:pt-0 last:pb-0"
+                  >
                     <article aria-labelledby={`announcement-${announcement.id}-title`}>
                       <div className="flex flex-wrap items-center gap-2">
                         <AnnouncementBadge type={announcement.type} />
@@ -120,7 +101,7 @@ export function AnnouncementsPage() {
                       <p className="mt-3">
                         <Link
                           to={`/announcements/${announcement.id}`}
-                          className="text-sm text-brand-700 underline dark:text-brand-300"
+                          className="text-sm text-link underline"
                         >
                           Voir
                           <span className="sr-only"> l’actualité {announcement.title}</span> →

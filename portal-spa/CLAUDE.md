@@ -48,6 +48,14 @@
 - Jetons de thème dans `src/styles.css` : variables shadcn (`--primary`, `--ring`,
   `--sidebar-*`…) mappées sur le vert brand `oklch` et les neutres Tailwind.
   Mode sombre via la classe `dark` sur `<html>` (`@custom-variant dark`).
+- **Couleur de lien = utilitaire `text-link`** (`styles.css`, `@utility`), jamais
+  `text-primary` ni `text-destructive` en texte sur une carte en thème sombre (U5,
+  review) : `text-primary` tombe à 3,77:1 et `text-destructive` à 3,76:1 sur
+  `bg-card` sombre — sous le seuil AA (4.5:1). `text-link` encapsule le
+  brand-700/brand-300 déjà vérifié AA dans les deux thèmes. Pour un texte
+  destructif (bouton, item de menu), utiliser la variante `dark:text-red-300`
+  déjà posée sur `badge.tsx`/`dropdown-menu.tsx`/`ConfirmButton`, pas
+  `text-destructive` seul.
 - Champs de formulaire : `Input`, `Textarea` et `NativeSelect` acceptent
   `error` / `describedBy` et câblent seuls `aria-invalid` + `aria-describedby`.
   `NativeSelect` (`<select>` natif) est le composant à utiliser avec
@@ -92,3 +100,13 @@
 - `ProfileMenu` (bloc profil de la sidebar, avatar de la barre mobile) et
   `ThemeToggle` (top bar) partagent `useThemeSelection()` ; les deux sont des
   `DropdownMenu` Radix — panneau en **portail**, nommé par son déclencheur.
+  `useThemeSelection()` ne garde **aucun état local** : le thème est dérivé de
+  `useAuth().user.theme` (query `authQueryKey`), l'optimisme vivant dans la
+  mutation elle-même (`useUpdateTheme`, `useProfile.ts`) — sinon les
+  multiples instances du hook se désynchronisent tant que le serveur n'a pas
+  répondu (bug réel, corrigé U5).
+- **Agenda des salles** (`RoomsCalendar`, ADR-0013 D3/D4) : `FULLCALENDAR_AXE_EXCLUDE`
+  (`e2e/support/fixtures.ts`) est la **seule** exclusion d'audit axe du
+  portail — elle cible `.ew-agenda`/`.fc`, posé explicitement par le composant
+  (FullCalendar v7 n'a plus de classe racine stable). Toute nouvelle exclusion
+  doit rester aussi exceptionnelle et documentée au point d'appel.

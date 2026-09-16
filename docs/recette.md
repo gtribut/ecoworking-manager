@@ -98,19 +98,37 @@ Compte : n'importe quel membre (commencer par Claire).
 
 Tester avec **Claire**, puis **Julien** (additional), puis **Léa** (external sans ticket).
 
-- [x] Entête « Bonjour {prénom} »
+> ⚠️ **UI refondue en C14** (sidebar + bottom nav, dashboard « bento » en tuiles KPI) : rejouer
+> l'intégralité de §3 sur la nouvelle UI, y compris les lignes déjà `[x]` avant C14 dont le
+> comportement fonctionnel n'a pas changé — seul l'habillage visuel a bougé, mais une régression
+> de layout doit pouvoir être détectée.
+
+- [ ] Entête « Bonjour {prénom} », puis **rangée de tuiles KPI** (bento, jusqu'à 4 selon le rôle :
+      prochaine résa, bureau attitré/tickets restants, documents à valider, dernière facture) —
+      grille en 2 colonnes sur mobile, `auto-fit` au-delà de `lg` (pas de colonnes vides si < 4 tuiles)
 - [x] Bloc **Mes dernières factures** (Claire) : 3 max, numéro `EW-AAAA-NNNNN`, date, badge statut coloré, bouton PDF ; lien « Voir toutes mes factures »
 - [x] Bloc factures **masqué** pour Julien (pas billing_contact) et Marc
 - [x] Bloc **Actualités** : 3 dernières, badge Info / Alerte / Événement, lien « Voir toutes »
-- [x] Bloc **Documents à valider** (Claire) : « Charte du coworking v2.0 » listée à valider ; CGU affichée « validée le … » ; « Autorisation de droit à l'image » présente (audience résidents)
-- [x] Bloc documents chez Marc : « Tous vos documents sont à jour » (ou bloc masqué) — sauf droit à l'image non validé, à vérifier
+- [ ] **Tuile KPI « Documents à valider »** (Claire, teinte ambre) : titre du premier document en
+      attente + lien « Lire et valider » vers `/documents` — **plus de bouton Télécharger/Valider
+      directement sur l'accueil**, uniquement sur la page Documents (§3.8)
+- [ ] Tuile documents **entièrement masquée** chez Marc si rien à valider (recette R-06) — la
+      grille passe à 3 tuiles sans laisser de vide
 - [x] Bloc **Mes prochaines réservations** : 3 max, ressource + date + créneau ; résa annulée **absente**
 - [ ] États vides chez Léa : messages rassurants (aucune facture / résa / actualité restreinte aux résidents non visible)
-- [x] Bouton **Nous contacter** = `mailto:contact@ecoworking.fr` avec sujet pré-rempli
+- [ ] **Bouton « Nous contacter » retiré de l'accueil** (desktop et mobile) : le lien `mailto:`
+      identique se trouve dans le **pied de page** (toutes tailles d'écran) et dans la **top bar**
+      en desktop uniquement
 - [x] Skeletons pendant le chargement (throttling réseau « Slow 3G » dans DevTools), jamais de spinner plein écran
 
 ### 3.2 Profil (PRD §3.4)
 
+- [ ] Page organisée en **4 onglets** (Profil / Compte / Préférences / Entreprise), état dans
+      l'URL (`?tab=`) — recharger la page sur `/profile?tab=compte` rouvre directement cet onglet
+- [ ] Soumettre le formulaire d'un onglet avec un champ en erreur pendant qu'un autre onglet est
+      affiché → **bascule automatiquement** sur l'onglet contenant l'erreur
+- [ ] Onglet **Entreprise** toujours présent (jamais masqué) ; pour un compte sans entité
+      rattachée, affiche un message explicite au lieu du bloc entité
 - [ ] Nom / prénom **en lecture seule** ; **email non modifiable** (décision D : admin only) — aucun champ email éditable
 - [ ] Éditer poste, présentation, centres d'intérêt, LinkedIn, site web → enregistrer → toast succès → rechargement : valeurs persistées
 - [ ] URL LinkedIn invalide (`pas-une-url`) → erreur de validation lisible sous le champ (422), pas de toast succès
@@ -138,23 +156,47 @@ Compte : **Inès**, puis **Camille** (staff), puis **Julien** (ne doit pas voir 
 
 ### 3.4 Réservation de salles (PRD §3.5, C5.5)
 
+> ⚠️ **Agenda entièrement réécrit en C14 (U3, FullCalendar v7, ADR-0013)** : la grille maison
+> semaine/jour a été remplacée. La grille FullCalendar elle-même est **hors périmètre de l'audit
+> a11y** (dérogation D4, ADR-0013) — vérifier ci-dessous surtout son alternative accessible (liste
+> « Mes réservations » + bouton « Nouvelle réservation »), qui elle reste couverte à 100 %.
+
 Compte : **Claire** (resident).
 
-- [ ] Calendrier : les 3 salles + la salle événementielle affichées, filtre par salle, semaine courante par défaut, navigation semaine préc./suiv./aujourd'hui, date picker
-- [ ] **Vue liste accessible** (alternative au calendrier) disponible et synchronisée
-- [ ] Résas des autres visibles ; survol/clic → prénom + nom + entité + libellé (transparence Q4) ; non modifiables
-- [ ] Ses propres résas mises en avant (contour / couleur primaire)
-- [ ] **Afterwork Ecoworking** (salle événementielle, résa interne admin) visible en lecture seule
-- [ ] Clic sur un créneau libre **salle événementielle** → message « contactez-nous » + mailto, jamais de formulaire de résa
-- [ ] Créer une résa : demain 15 h–17 h, salle 1, libellé → toast succès, calendrier rafraîchi, résa dans « Mes prochaines réservations »
-- [ ] Toggles Journée / Matin / Après-midi / Créneau perso pré-remplissent correctement
-- [ ] Résa **hors heures ouvrées** (23 h–1 h) acceptée pour un resident (24/7)
+- [ ] Grille FullCalendar : les 3 salles + la salle événementielle affichées simultanément, une
+      **chip de filtre par salle** (masquer/afficher), vue semaine par défaut, jour < 768 px,
+      navigation « Période précédente/suivante/Aujourd'hui », **mini-mois** (panneau droit) pour
+      sauter à une date arbitraire
+- [ ] Toggle « Voir 24 h » (resident/additional) bascule la plage horaire 8 h–20 h ↔ 0 h–24 h
+- [ ] **Glisser-déposer** sur un créneau libre de la grille ouvre la modale de résa, salle
+      pré-remplie avec la **première salle réservable affichée** (pas nécessairement celle du
+      créneau glissé — modifiable dans la modale avant de valider)
+- [ ] Bouton **« Nouvelle réservation »** (toujours visible, hors grille) ouvre la même modale en
+      saisie 100 % manuelle (date, heure début/fin, salle) — c'est l'**alternative accessible**
+      complète à la grille (D4), à tester spécifiquement au clavier/lecteur d'écran
+- [ ] Liste **« Mes prochaines réservations »** (panneau droit) : entièrement accessible,
+      synchronisée avec la grille, actions Modifier/Annuler
+- [ ] Résas des autres visibles dans la grille ; clic → **popover** → prénom + nom + entité +
+      libellé (transparence Q4) ; aucune action Modifier/Annuler (résa d'un tiers)
+- [ ] Clic sur **sa propre résa** dans la grille → popover avec boutons **Modifier** / **Annuler**
+      (confirmation en deux temps pour Annuler)
+- [ ] Ses propres résas mises en avant (contour renforcé + couleur brand pleine dans le bloc)
+- [ ] **Afterwork Ecoworking** (salle événementielle, résa interne admin) visible en lecture seule,
+      distinguée visuellement par un motif hachuré (pas la couleur seule)
+- [ ] Bouton dédié « [Salle événementielle] : sur demande » **et** clic sur un bloc **occupé** de
+      la salle event → même message « contactez-nous » + mailto, jamais de formulaire de résa
+- [ ] Créer une résa (modale, glisser ou bouton) : demain 15 h–17 h, salle 1, libellé → toast
+      succès, grille rafraîchie, résa dans « Mes prochaines réservations »
+- [ ] Toggles Journée / Matin / Après-midi / Créneau perso (dans la modale) pré-remplissent correctement
+- [ ] Résa **hors heures ouvrées** (23 h–1 h) acceptée pour un resident (24/7, toggle 24 h activé)
 - [ ] **Conflit** : tenter la salle 3 le jour de la journée complète de Sophie → 409, message clair, aucune résa créée
 - [ ] Course : ouvrir 2 onglets, créer la même résa dans chacun → un seul succès, l'autre 409 (backstop GiST)
 - [ ] Fin ≤ début → erreur de validation 422 lisible
-- [ ] **Annuler** sa résa à venir → confirmation → disparaît ; tenter d'annuler une résa **passée** (Kick-off refonte site) → impossible (bouton absent ou 422)
-- [ ] Résa de Marc : aucun bouton modifier/annuler pour Claire
+- [ ] **Annuler** sa résa à venir (popover grille **ou** liste) → confirmation → disparaît ;
+      tenter d'annuler une résa **passée** (Kick-off refonte site) → impossible (bouton absent ou 422)
+- [ ] Résa de Marc : aucun bouton modifier/annuler pour Claire, ni dans le popover ni dans la liste
 - [ ] Vérifier côté admin (Bookings) : la résa créée porte `user` = Claire, statut confirmée, prix vide (gratuit resident) ; l'annulation est **dans l'audit log**
+- [ ] Mobile 390 px : la page réservations tient sans scroll horizontal (vue jour par défaut)
 
 Compte : **Julien** (additional) — même flow gratuit, une résa créée OK.
 
@@ -199,7 +241,9 @@ Compte : **Claire**, puis **Sophie**, puis **Thomas**. Puis **Marc** (ne doit ri
 
 - [ ] Module **absent de la navigation** pour Marc, Inès, Julien, Léa ; URL directe `/invoices` → liste vide ou 403, jamais les factures d'autrui
 - [ ] Claire : liste des factures **Atelier Lumière** uniquement (M-3, M-2, M-1 payées + la facture annulée + son avoir) — aucune facture Studio Verger, aucun brouillon du mois courant
-- [ ] Colonnes : numéro, date d'émission, statut (badge), total TTC, PDF ; tri date décroissante ; pagination
+- [ ] Liste rendue en **DataTable** (tri par colonne au clic sur l'en-tête, `aria-sort` mis à jour,
+      focus restauré sur le bouton de tri après le rechargement des données)
+- [ ] Colonnes : numéro, date d'émission, statut (badge), total TTC, PDF ; tri date décroissante par défaut ; pagination
 - [ ] Filtres : statut, mois/année ; recherche par numéro
 - [ ] **Facture annulée** : statut « annulée », avoir associé visible (numéro suivant, montants négatifs)
 - [ ] Télécharger un PDF → ouvre le PDF : en-tête Ecoworking, mentions CGI art. 289, adresse facturation snapshotée, lignes regroupées par prestation (3 × Bureau résident, 1 × Personne supplémentaire, Domiciliation), **remise 10 %** visible, TVA 20 %, totaux corrects au centime
@@ -248,6 +292,9 @@ Compte : **Claire** (resident), puis **Camille** (staff), puis **Thomas** (exter
 - [ ] Naviguer à un **week-end** → indication « jour non ouvré », personne présent par défaut
 - [ ] Clic sur **son propre bureau** (Claire → Bureau 1) → panneau enrichi + bouton « Gérer mes absences » → ouvre §3.3
 - [ ] Clic bureau libre → « Bureau libre — pour réserver, contactez-nous »
+- [ ] Le panneau de détail bureau s'ouvre en **Sheet** (panneau latéral, C14) : le focus part sur
+      le titre du panneau à l'ouverture et **revient sur le bureau cliqué** à la fermeture (Échap
+      ou bouton fermer) — jamais perdu sur `<body>`
 - [ ] **Alternative texte** : tableau/liste de l'occupation synchronisée avec le plan (mêmes libellés, même date)
 - [ ] **Clavier** : Tab parcourt les bureaux dans un ordre logique, Entrée ouvre le panneau, Échap ferme, focus visible sur le SVG
 - [ ] Zoom navigateur 200 % : plan et liste restent utilisables
@@ -265,12 +312,55 @@ Compte : **Claire** (resident), puis **Camille** (staff), puis **Thomas** (exter
 - [ ] URL inconnue `/nimportequoi` → page 404 avec lien accueil
 - [ ] Couper le réseau (DevTools offline) → bandeau hors-ligne ; retour réseau → données rafraîchies
 - [ ] Erreur 500 simulée (arrêter `pgsql` puis naviguer) → toast erreur + bouton réessayer, pas d'écran blanc ; relancer `pgsql`
-- [ ] Mobile 400 px (DevTools) : bottom nav, 1 colonne, pas de scroll horizontal, calendrier en mode jour
+- [ ] **Sidebar desktop** (≥ 768 px) : rétractable en mode icône (bouton de repli ou Ctrl/Cmd+B),
+      état persisté après rechargement ; groupe « Administratif » visible seulement si au moins un
+      module gardé est autorisé pour le rôle
+- [ ] **Bottom nav mobile** (< 768 px, tester à 390 px) : 5 entrées fixes selon le rôle (Accueil,
+      Réservations/Tickets, Présence, Actualités, Plus), bouton **« Plus »** ouvre un Sheet listant
+      les modules restants + Mon profil + Déconnexion ; aucun scroll horizontal sur l'accueil, les
+      réservations, les factures et l'annuaire à 390 px
+- [ ] Zoom navigateur 200 % (ou fenêtre réduite à ~640 px de large) : pas de scroll horizontal,
+      lien d'évitement et bottom nav toujours utilisables
 - [ ] Navigation **100 % clavier** sur un parcours complet (login → résa → annulation) : focus toujours visible, ordre logique, modales piègent le focus et se ferment à Échap
 - [ ] Lecteur d'écran (NVDA) 10 min : titres de page annoncés au changement de route, erreurs de formulaire annoncées, cloche et badge lisibles
-- [ ] Thème sombre : contrastes lisibles sur dashboard, résa, plan
-- [ ] `prefers-reduced-motion` activé (OS) → pas d'animations
-- [ ] Lighthouse a11y ≥ 95 sur dashboard, résa, factures, plan
+- [ ] **Thème sombre partout** : contrastes AA vérifiés sur toutes les pages authentifiées (pas
+      seulement dashboard/résa/plan) — profil (4 onglets), factures, annuaire, documents, tickets,
+      présence, notifications, pages publiques (mentions légales, CGU, accessibilité) ; liens en
+      `text-link` (brand-700 clair / brand-300 sombre), jamais `text-primary` ni `text-destructive`
+      brut sur une carte sombre
+- [ ] `prefers-reduced-motion` activé (OS) → pas d'animations (Sheet, Dialog, Popover s'ouvrent
+      sans transition perceptible)
+- [ ] Lighthouse a11y ≥ 95 sur dashboard, résa (hors grille agenda, exclusion D4 assumée),
+      factures, profil, annuaire — en clair **et** en sombre
+
+> ✅ **Mesuré 2026-09-16 (U5)** : Lighthouse a11y (dans le conteneur Sail, contre le serveur e2e,
+> compte `membre.e2e`, procédure ci-dessous) — **100/100** sur `/login`, `/` (accueil), `/invoices`,
+> `/profile`, `/directory`, en clair **et** en sombre (thème forcé via `PATCH /api/profile`). Seul
+> signal récurrent (toutes pages, poids **0** dans le score Lighthouse, sans effet dessus) :
+> `label-content-name-mismatch` sur les onglets abrégés de la bottom nav (« Résas » visible,
+> « Réservations » dans l'`aria-label` — WCAG 2.5.3, règle axe **expérimentale** donc hors du
+> périmètre `wcag2a/wcag2aa/wcag21a/wcag21aa` strict audité par la suite e2e, cf.
+> `e2e/support/fixtures.ts`). Existant depuis U2, non introduit en U5, non corrigé ici (changer le
+> texte visible ou l'aria-label des tuiles nav est un choix de contenu, pas une finition
+> mécanique) — noté dans `docs/todo_guillaume.md`.
+>
+> **Procédure rejouable** (pages authentifiées, dans le conteneur Sail) :
+> ```bash
+> # 1. Serveur e2e (build + migrate:fresh --seed sur la base `e2e`)
+> docker compose exec -u sail -w /var/www/html/portal-spa laravel.test bash e2e/serve.sh &
+> # 2. Session par API (Sanctum) — cf. e2e/support/auth.ts pour le détail CSRF/cookie
+> #    curl .../sanctum/csrf-cookie puis POST /login avec X-XSRF-TOKEN, cookies dans un jar
+> # 3. Thème sombre : PATCH /api/profile {"theme":"dark"} avec la même session (remettre "light" ensuite)
+> # 4. Lighthouse, cookies de session en Cookie header (fichier JSON via --extra-headers)
+> docker compose exec -u sail -w /var/www/html/portal-spa \
+>   -e CHROME_PATH=/var/www/html/.playwright-browsers/chromium-*/chrome-linux64/chrome \
+>   laravel.test npx --yes lighthouse "http://127.0.0.1:8091/invoices" \
+>   --chrome-flags="--headless --no-sandbox" --only-categories=accessibility \
+>   --extra-headers=/tmp/extra-headers.json --disable-storage-reset --output=json \
+>   --output-path=/tmp/lh-invoices.json --quiet
+> ```
+> Pages publiques (`/login`, `/mentions-legales`, `/cgu`, `/accessibilite`) : aucune session
+> nécessaire, lancer directement `lighthouse http://127.0.0.1:8091/<page>`.
 - [ ] Aucune donnée d'un autre membre dans les réponses réseau (onglet Network : `/api/user`, `/api/profile`, `/api/invoices` ne contiennent que le périmètre du compte, jamais d'IBAN, de token, de hash)
 
 ---

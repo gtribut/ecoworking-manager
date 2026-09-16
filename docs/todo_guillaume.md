@@ -246,6 +246,48 @@
 - [x] 🟠 **`APP_URL` prod vérifié** = `https://admin.ecoworking.fr` (valeur LastPass — Clever Cloud pas encore provisionné, cf. V1.5). La `GOOGLE_REDIRECT_URI` prod qui en dérivait était donc correcte, le login Google admin n'est pas impacté
 - [x] 🟡 Vérifier en recette que les emails de notif arrivent bien avec un lien `portail.` (Mailpit : republier un document interne, ouvrir le mail « Nouveau document à valider »)
 
+## C14 — Refonte UI (2026-09-16)
+
+> Lot U5 (finition) livré dans le worktree `ui-5` (`feature/ui-5-finition`, non mergé au moment de
+> l'écriture). Actions manuelles / décisions issues de ce lot :
+
+- [ ] 🟡 **Rejouer la recette `docs/recette.md` §3** sur la base de dev — reseed conseillé
+  (`migrate:fresh --seed --seeder=DemoSeeder`) avant de dérouler, l'UI a changé de fond en comble
+  depuis la dernière recette (sidebar + bottom nav, agenda FullCalendar, dashboard bento, factures
+  en DataTable, profil en onglets). Les cases `- [ ]` de §3 ont été volontairement remises à zéro
+  pour les items dont le comportement UI a changé.
+- [ ] 🟡 **Décision back optionnelle** : `GET /api/user` n'expose pas l'entité de rattachement du
+  membre → le bloc profil de la sidebar affiche l'email à la place du nom d'entreprise (« Atelier
+  Lumière »). Point ouvert depuis U2 (C14.2), toujours non résolu en U5 — à trancher : exposer
+  l'entité sur `/api/user` (léger changement back, hors périmètre front de ce lot) ou laisser
+  l'email (statu quo).
+- [x] ✅ **Lighthouse a11y automatisé** dans le conteneur Sail (procédure documentée dans
+  `docs/recette.md` §3.12) : 100/100 sur login, accueil, factures, profil, annuaire, clair et
+  sombre. Pas d'action manuelle nécessaire — la procédure est rejouable telle quelle avant chaque
+  release si tu veux revérifier après un changement UI.
+- [ ] 🟡 **Signal Lighthouse non corrigé (poids 0, hors score)** : la bottom nav affiche un texte
+  abrégé (« Résas », « Actus ») mais annonce le libellé complet aux lecteurs d'écran (« Réservations »,
+  « Actualités ») — l'axe `label-content-name-mismatch` (WCAG 2.5.3, règle **expérimentale**, donc
+  hors du périmètre `wcag2a/2aa/21a/21aa` strict de notre suite e2e) le signale sur toutes les pages
+  authentifiées. Existant depuis U2 (C14.2), pas introduit en U5. Deux corrections possibles, à
+  trancher : (a) ne plus abréger visuellement (« Réservations » en toutes lettres, tient à 5
+  entrées sur 390 px ?), ou (b) garder l'abréviation visuelle mais inclure le texte visible dans
+  l'`aria-label` (ex. « Résas — Réservations »). Non corrigé en U5 (changement de contenu/UX, pas
+  une finition mécanique).
+- [ ] 🟡 **Test `PhotoSection.test.tsx`** échoue sous Node 24 (conteneur Sail, `./sail pnpm vitest`)
+  mais passe sous Node 22 (hôte, `./node_modules/.bin/vitest`) — piste : assertion `FormData`/`File`
+  d'undici en jsdom sous Node 24. Pas un problème introduit en U5 (déjà signalé au lot précédent),
+  à traiter hors C14. Utiliser `./node_modules/.bin/vitest` depuis l'hôte pour valider ce test en
+  attendant.
+- [ ] 🟡 **PRD §3.3.2 (validation des documents depuis `/documents`)** : le comportement est déjà
+  en place depuis U4a (bloc dashboard = tuile KPI, plus de boutons Télécharger/Valider sur
+  l'accueil) et le PRD a été ré-acté en conséquence dans ce lot — à confirmer que ça correspond
+  bien à l'intention initiale (aucun souci fonctionnel détecté, juste une validation de principe).
+- [ ] 🟡 **Test NVDA rapide + Pa11y avant release** (CLAUDE.md §3.5) : non fait dans ce lot (poste
+  Windows requis pour NVDA, hors capacité de l'agent). À faire manuellement avant toute mise en
+  production de C14, sur au moins : login, accueil, réservations (agenda + alternative liste),
+  profil (4 onglets), plan des étages.
+
 ## Plus tard / hors MVP (pour mémoire)
 
 - [ ] 🟡 (V1.5) Provisioning **Clever Cloud** : app, Postgres 18, Cellar, FS Bucket, DNS, env vars prod (cf. BRIEF §11, SUIVI D1-D2)

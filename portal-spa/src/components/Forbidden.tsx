@@ -19,7 +19,7 @@ export function Forbidden() {
         contactez Ecoworking.
       </p>
       <p>
-        <Link to="/" className="text-brand-700 dark:text-brand-300 underline">
+        <Link to="/" className="text-link underline">
           Retour à l’accueil
         </Link>
       </p>

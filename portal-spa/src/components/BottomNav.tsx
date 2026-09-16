@@ -75,12 +75,7 @@ export function BottomNav() {
                 // Libellé abrégé à l'écran, nom accessible complet.
                 aria-label={entry.shortLabel === undefined ? undefined : entry.label}
                 className={({ isActive }) =>
-                  cn(
-                    TAB_CLASS,
-                    isActive
-                      ? 'font-semibold text-brand-700 dark:text-brand-300'
-                      : 'text-muted-foreground',
-                  )
+                  cn(TAB_CLASS, isActive ? 'font-semibold text-link' : 'text-muted-foreground')
                 }
               >
                 <entry.icon className="size-[22px]" aria-hidden="true" />
@@ -121,7 +116,7 @@ export function BottomNav() {
                     className={({ isActive }) =>
                       cn(
                         'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium',
-                        isActive ? 'text-brand-700 dark:text-brand-300' : 'text-foreground',
+                        isActive ? 'text-link' : 'text-foreground',
                       )
                     }
                   >
@@ -137,7 +132,7 @@ export function BottomNav() {
                   className={({ isActive }) =>
                     cn(
                       'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium',
-                      isActive ? 'text-brand-700 dark:text-brand-300' : 'text-foreground',
+                      isActive ? 'text-link' : 'text-foreground',
                     )
                   }
                 >

@@ -302,7 +302,7 @@ function PresenceContent() {
                 {data.absences.map((absence) => (
                   <li
                     key={absence.id}
-                    className="flex flex-wrap items-center justify-between gap-4 border-t px-4 py-3 first:border-t-0"
+                    className="flex flex-wrap items-center justify-between gap-4 border-t px-4 py-3 first:border-t-0 last:pb-0"
                   >
                     <span className="text-sm">
                       <span className="block font-medium first-letter:uppercase">

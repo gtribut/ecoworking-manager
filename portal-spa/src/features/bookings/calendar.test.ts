@@ -2,16 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   addDays,
   atHour,
-  describeSlot,
   findNearestFreeSlot,
   formatOccupant,
   formatPeriodLabel,
-  hourRange,
   slotCovering,
-  slotsOfDay,
   startOfWeek,
   toIsoDate,
-  weekDays,
 } from './calendar'
 import type { CalendarSlot } from './types'
 
@@ -36,18 +32,8 @@ describe('calendar', () => {
     expect(toIsoDate(startOfWeek(new Date('2026-09-14T00:30:00')))).toBe('2026-09-14')
   })
 
-  it('énumère les 7 jours de la semaine et décale les dates', () => {
-    const days = weekDays(startOfWeek(new Date('2026-09-16T09:00:00')))
-    expect(days).toHaveLength(7)
-    expect(toIsoDate(days[0] as Date)).toBe('2026-09-14')
-    expect(toIsoDate(days[6] as Date)).toBe('2026-09-20')
+  it('décale une date de N jours', () => {
     expect(toIsoDate(addDays(new Date('2026-09-30T09:00:00'), 1))).toBe('2026-10-01')
-  })
-
-  it('produit les heures affichées selon les bornes', () => {
-    expect(hourRange({ start: 8, end: 20 })).toHaveLength(12)
-    expect(hourRange({ start: 9, end: 18 })[0]).toBe(9)
-    expect(hourRange({ start: 0, end: 24 })).toHaveLength(24)
   })
 
   it('détecte le créneau occupé couvrant une heure (bornes semi-ouvertes)', () => {
@@ -59,19 +45,6 @@ describe('calendar', () => {
     // 12:00 est la borne de fin : le créneau suivant est libre.
     expect(slotCovering(busy, atHour(day, 12), atHour(day, 13))).toBeNull()
     expect(slotCovering(busy, atHour(day, 9), atHour(day, 10))).toBeNull()
-  })
-
-  it('filtre et ordonne les créneaux d’une journée', () => {
-    const busy = [
-      slot('2026-09-17T09:00:00+02:00', '2026-09-17T10:00:00+02:00'),
-      slot('2026-09-16T15:00:00+02:00', '2026-09-16T16:00:00+02:00'),
-      slot('2026-09-16T09:00:00+02:00', '2026-09-16T10:00:00+02:00'),
-    ]
-
-    const day = slotsOfDay(busy, new Date('2026-09-16T12:00:00'))
-
-    expect(day).toHaveLength(2)
-    expect(day[0]?.starts_at).toBe('2026-09-16T09:00:00+02:00')
   })
 
   it('propose le créneau libre le plus proche après un conflit', () => {
@@ -123,7 +96,7 @@ describe('calendar', () => {
     expect(suggestion).toBeNull()
   })
 
-  it('décrit un créneau avec occupant, entité et libellé (Q4)', () => {
+  it('décrit un occupant avec entité (Q4)', () => {
     const busy = slot('2026-09-16T10:00:00+02:00', '2026-09-16T11:00:00+02:00', {
       label: 'Comité produit',
       occupant: {
@@ -135,17 +108,12 @@ describe('calendar', () => {
     })
 
     expect(formatOccupant(busy)).toBe('Hugo Discret (Atelier Numérique)')
-    expect(describeSlot(busy)).toContain('Occupé par Hugo Discret (Atelier Numérique)')
-    expect(describeSlot(busy)).toContain('Comité produit')
-    expect(describeSlot({ ...busy, is_mine: true })).toContain('Ma réservation')
   })
 
   it('n’affiche aucun occupant quand le serveur n’en communique pas (external)', () => {
     const busy = slot('2026-09-16T10:00:00+02:00', '2026-09-16T11:00:00+02:00')
 
     expect(formatOccupant(busy)).toBeNull()
-    expect(describeSlot(busy)).toContain('Occupé')
-    expect(describeSlot(busy)).not.toContain('Occupé par')
   })
 
   // Décision 14/09 : l'opt-out annuaire ne masque plus le nom sur le calendrier

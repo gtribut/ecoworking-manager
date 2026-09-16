@@ -174,9 +174,27 @@ describe('BookingsPage — agenda des salles', () => {
       'false',
     )
 
-    // Panneau droit : mini-mois, renvoi vers la liste, abonnement iCal.
-    expect(screen.getByRole('link', { name: /Voir toutes mes réservations/ })).toBeVisible()
+    // Panneau droit : mini-mois, abonnement iCal (retour de recette 16/09 :
+    // plus de carte de renvoi, la liste des réservations est remontée dans
+    // la colonne de l'agenda — cf. assertion de placement ci-dessous).
     expect(screen.getByRole('heading', { name: 'Abonnement agenda' })).toBeVisible()
+    expect(
+      screen.queryByRole('link', { name: /Voir toutes mes réservations/ }),
+    ).not.toBeInTheDocument()
+
+    // « Mes prochaines réservations » vit dans la colonne de l'agenda, pas
+    // dans le panneau droit (« Abonnement agenda ») — et la précède dans le
+    // DOM (retour de recette 16/09 : plus tout en bas de page).
+    const asideColumn = screen.getByRole('heading', { name: 'Abonnement agenda' }).closest('aside')
+    const bookingsHeading = await screen.findByRole('heading', {
+      name: 'Mes prochaines réservations',
+    })
+    expect(asideColumn).not.toBeNull()
+    expect(asideColumn).not.toContainElement(bookingsHeading)
+    expect(
+      bookingsHeading.compareDocumentPosition(asideColumn as HTMLElement) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
   it('francise les libellés de navigation du mini-mois', async () => {

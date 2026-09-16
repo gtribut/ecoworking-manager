@@ -144,26 +144,35 @@ export function BookingsPage() {
       )}
 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-        <Card className="min-w-0 flex-1 px-4">
-          <RoomsCalendar
-            isExternal={isExternal}
-            date={date}
-            onDateChange={setDate}
-            onPickRange={onPickRange}
-            onNewBooking={onNewBooking}
-            onEditBooking={onEditFromCalendar}
-            onCancelBooking={onCancelFromCalendar}
-            onPickEventRoom={() =>
-              setNotice({
-                message: 'Pour réserver cette salle, contactez-nous.',
-                mailto: EVENT_ROOM_MAILTO,
-              })
-            }
-          />
-        </Card>
+        {/* Colonne agenda (retour de recette 16/09) : « Mes prochaines
+            réservations » remonte directement sous la carte de l'agenda,
+            dans la même colonne — la carte de renvoi du rail (« Voir toutes
+            mes réservations ») devient inutile (la liste n'est plus tout en
+            bas de page, ni dans l'aside) et a été retirée avec son ancre. */}
+        <div className="flex min-w-0 flex-1 flex-col gap-5">
+          <Card className="px-4">
+            <RoomsCalendar
+              isExternal={isExternal}
+              date={date}
+              onDateChange={setDate}
+              onPickRange={onPickRange}
+              onNewBooking={onNewBooking}
+              onEditBooking={onEditFromCalendar}
+              onCancelBooking={onCancelFromCalendar}
+              onPickEventRoom={() =>
+                setNotice({
+                  message: 'Pour réserver cette salle, contactez-nous.',
+                  mailto: EVENT_ROOM_MAILTO,
+                })
+              }
+            />
+          </Card>
 
-        {/* Panneau droit (maquette C14) : navigation par mini-mois, rappel de
-            l'alternative accessible, abonnement iCal. */}
+          <MyBookingsList isExternal={isExternal} onEdit={onEditFromList} />
+        </div>
+
+        {/* Panneau droit (maquette C14) : navigation par mini-mois et
+            abonnement iCal. */}
         <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[300px]">
           <Card className="px-2">
             <CardContent className="px-0">
@@ -181,25 +190,6 @@ export function BookingsPage() {
           </Card>
 
           <Card className="px-4">
-            <CardContent className="space-y-2 px-0 text-sm">
-              <p className="font-medium">Mes réservations</p>
-              <p className="text-muted-foreground">
-                La liste complète (à venir et historique) permet de consulter, modifier ou annuler
-                vos réservations sans passer par l’agenda.
-              </p>
-              <a
-                href="#my-bookings-heading"
-                // `text-primary` (brand-600) ne tient pas le contraste AA sur
-                // la carte sombre (3,78:1) : ton foncé en clair, clair en
-                // sombre, comme les autres liens colorés du portail.
-                className="inline-block font-medium text-link underline underline-offset-2 hover:no-underline"
-              >
-                Voir toutes mes réservations (liste)
-              </a>
-            </CardContent>
-          </Card>
-
-          <Card className="px-4">
             <CardContent className="px-0">
               <CalendarSubscription />
             </CardContent>
@@ -213,8 +203,6 @@ export function BookingsPage() {
         onClose={() => setTarget(null)}
         onSuccess={(message) => toast.success(message)}
       />
-
-      <MyBookingsList isExternal={isExternal} onEdit={onEditFromList} />
     </PageContainer>
   )
 }

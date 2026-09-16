@@ -48,11 +48,12 @@ export function MyBookingsList({ isExternal, onEdit }: MyBookingsListProps) {
 
   return (
     <section aria-labelledby="my-bookings-heading" className="space-y-4">
-      {/* `tabIndex={-1}` (review U5) : cible d'un lien d'ancre (`#my-bookings-heading`,
-          BookingsPage) — sans ça la navigation par ancre scrolle mais ne
-          déplace jamais le focus clavier/lecteur d'écran sur un titre non
-          interactif. */}
-      <h2 id="my-bookings-heading" tabIndex={-1} className="text-lg font-medium">
+      {/* `id` conservé pour `aria-labelledby` ci-dessus (nom accessible de la
+          section). Le `tabIndex={-1}` posé pour la cible d'un lien d'ancre
+          (`#my-bookings-heading`) a été retiré avec la carte de renvoi du
+          rail : la liste suit désormais directement l'agenda dans la même
+          colonne (retour de recette 16/09), plus besoin d'y sauter. */}
+      <h2 id="my-bookings-heading" className="text-lg font-medium">
         {scope === 'upcoming' ? 'Mes prochaines réservations' : 'Historique de mes réservations'}
       </h2>
 

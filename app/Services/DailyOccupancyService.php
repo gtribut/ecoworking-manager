@@ -39,9 +39,13 @@ final class DailyOccupancyService
     ) {}
 
     /**
-     * Statut d'un bureau attitré : `present` / `absent` (dérivé des absences,
-     * PRD §3.4.6) ou `unknown` quand aucun résident n'est rattaché au bureau
-     * (« pas d'info », PRD §4.8.4).
+     * Statut d'un bureau attitré : `present` / `absent` (dérivé des SEULES
+     * absences déclarées, PRD §3.4.6 — un week-end ou un férié sans absence
+     * reste « présent », ré-acté 2026-09-17) ou `unknown` quand aucun résident
+     * n'est rattaché au bureau (« pas d'info », PRD §4.8.4).
+     *
+     * `is_working_day` n'entre plus dans ce statut : il ne sert qu'à signaler
+     * que les bureaux nomades ne sont pas réservables ce jour-là.
      *
      * @return array{
      *     date: CarbonImmutable,

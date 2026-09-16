@@ -272,15 +272,36 @@ it('signale SON bureau au membre (is_own) pour le raccourci « gérer mes absenc
     expect($desk['is_own'])->toBeTrue();
 });
 
-it('marque tous les bureaux attitrés absents un jour non ouvré', function () {
-    residentWithDesk();
+// Ré-acté 2026-09-17 : `is_working_day` reste exposé (bureaux nomades non
+// réservables) mais ne rend plus les bureaux attitrés absents.
+it('garde les bureaux attitrés présents un jour non ouvré, tout en le signalant', function () {
+    $profile = residentWithDesk();
 
     $response = $this->actingAs(User::factory()->resident()->create())
         ->getJson('/api/directory/floor-plan?date=2026-07-05') // dimanche
         ->assertOk()
         ->assertJsonPath('is_working_day', false);
 
-    expect(collect($response->json('desks'))->pluck('status')->unique()->all())->toBe(['absent']);
+    $desk = collect($response->json('desks'))->firstWhere('resource_id', $profile->desk_id);
+
+    expect($desk['status'])->toBe('present');
+});
+
+it('marque le bureau attitré absent un jour non ouvré couvert par une absence', function () {
+    $profile = residentWithDesk();
+    DeskAbsence::factory()->for($profile->user)->create([
+        'desk_id' => $profile->desk_id,
+        'date_start' => '2026-07-05', // dimanche
+        'period' => Period::FullDay->value,
+    ]);
+
+    $response = $this->actingAs(User::factory()->resident()->create())
+        ->getJson('/api/directory/floor-plan?date=2026-07-05')
+        ->assertOk();
+
+    $desk = collect($response->json('desks'))->firstWhere('resource_id', $profile->desk_id);
+
+    expect($desk['status'])->toBe('absent');
 });
 
 it('rejette une date invalide (422)', function () {

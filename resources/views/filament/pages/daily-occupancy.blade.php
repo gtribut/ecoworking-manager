@@ -16,8 +16,9 @@
     @unless ($occupancy['is_working_day'])
         <x-filament::section>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-                Jour non ouvré (week-end ou férié) : les résidents ne sont pas attendus et les
-                bureaux nomades ne sont pas réservables.
+                Jour non ouvré (week-end ou férié) : les bureaux nomades ne sont pas réservables.
+                Les résidents restent présents par défaut sur leur bureau attitré, sauf absence
+                déclarée.
             </p>
         </x-filament::section>
     @endunless

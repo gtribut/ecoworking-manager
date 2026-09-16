@@ -1,7 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023"],
+    // `DOM` (review U5) : les callbacks `page.evaluate()`/`locator.evaluate()`
+    // s'exécutent dans le navigateur, pas dans le process Node de test — sans
+    // ce lib, `document`/`window`/`getComputedStyle` ne type-checkent pas
+    // (jusqu'ici les specs évitaient ces globals dans `evaluate`, cf. e2e/bookings.spec.ts
+    // qui ne s'appuie que sur `Date`, disponible sans DOM).
+    "lib": ["ES2023", "DOM"],
     "module": "ESNext",
     "skipLibCheck": true,
 

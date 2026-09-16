@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PageContainer } from '@/components/PageContainer'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
@@ -7,7 +7,7 @@ import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { cn } from '@/lib/utils'
 import { DeskDetailPanel } from './DeskDetailPanel'
@@ -51,6 +51,9 @@ export function FloorPlanPage() {
   const [date, setDate] = useState(() => toIsoDate(new Date()))
   const [floor, setFloor] = useState(1)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  // Bloc bureau ayant ouvert le Sheet (clic ou clavier) : à qui rendre le
+  // focus à la fermeture (cf. `DeskDetailPanel`, pas de `SheetTrigger` ici).
+  const openerRef = useRef<HTMLElement | null>(null)
   const { data, isLoading, isError, error, refetch } = useFloorPlan(date)
 
   const selectedDesk = data?.desks.find((desk) => desk.resource_id === selectedId) ?? null
@@ -98,7 +101,12 @@ export function FloorPlanPage() {
         </Button>
       </div>
 
-      {isLoading && <Spinner label="Chargement du plan…" />}
+      {isLoading && (
+        <div role="status">
+          <span className="sr-only">Chargement du plan…</span>
+          <Skeleton className="h-[420px] w-full" />
+        </div>
+      )}
       {isError && (
         <QueryError
           error={error}
@@ -146,17 +154,23 @@ export function FloorPlanPage() {
             Aller à l’équivalent texte du plan
           </a>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <FloorPlanSvg
-              desks={data.desks}
-              floor={floor}
-              selectedId={selectedId}
-              onSelect={(desk) => setSelectedId(desk.resource_id)}
-            />
-            {selectedDesk && (
-              <DeskDetailPanel desk={selectedDesk} onClose={() => setSelectedId(null)} />
-            )}
-          </div>
+          {/* Plan pleine largeur (lot U4b) : le détail d'un bureau s'ouvre
+              désormais dans un panneau latéral (`Sheet`), plus besoin de lui
+              réserver une colonne dans la mise en page. */}
+          <FloorPlanSvg
+            desks={data.desks}
+            floor={floor}
+            selectedId={selectedId}
+            onSelect={(desk) => {
+              openerRef.current = document.activeElement as HTMLElement | null
+              setSelectedId(desk.resource_id)
+            }}
+          />
+          <DeskDetailPanel
+            desk={selectedDesk}
+            onClose={() => setSelectedId(null)}
+            returnFocusTo={openerRef.current}
+          />
 
           <FloorPlanTextList desks={data.desks} />
         </>

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Card } from '@/components/ui/card'
 import planSvgRaw from './assets/etages.svg?raw'
 import { deskLabel } from './plan-utils'
 import type { PlanDesk } from './types'
@@ -157,9 +158,9 @@ export function FloorPlanSvg({ desks, floor, selectedId, onSelect }: FloorPlanSv
   }, [])
 
   return (
-    <div
+    <Card
       ref={containerRef}
-      className="plan-svg rounded-lg border border-neutral-200 bg-white p-2 dark:border-neutral-800"
+      className="plan-svg p-2"
       // biome-ignore lint/security/noDangerouslySetInnerHtml: SVG statique versionné dans le repo (aucun contenu utilisateur) — injection brute requise pour cibler #desk-N/data-desk.
       dangerouslySetInnerHTML={{ __html: planSvgRaw }}
     />

@@ -1,149 +1,149 @@
-import { X } from 'lucide-react'
-import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
 import { Avatar } from '@/components/Avatar'
 import { MarkdownContent } from '@/components/MarkdownContent'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { occupantDisplayName, statusLabel } from './plan-utils'
 import type { PlanDesk } from './types'
 
 interface DeskDetailPanelProps {
-  desk: PlanDesk
+  /** `null` = fermé : le `Sheet` reste monté pour son animation de sortie. */
+  desk: PlanDesk | null
   onClose: () => void
+  /**
+   * Bloc `[data-desk]` du SVG qui a ouvert le panneau : le `Sheet` n'a pas de
+   * `SheetTrigger` (ouverture programmatique depuis la délégation clic/clavier
+   * du plan), Radix n'a donc aucun déclencheur à qui rendre le focus tout
+   * seul — on le lui fournit explicitement via `onCloseAutoFocus`.
+   */
+  returnFocusTo: HTMLElement | null
 }
 
 /**
  * Panneau de détail d'un bureau (PRD §3.7.4) : fiche coworker si opt-in,
  * mention anonyme sinon, message « bureau libre », et raccourci « Gérer mes
- * absences » sur SON propre bureau. Focus déplacé sur le titre à l'ouverture,
- * fermeture au clavier (Échap ou bouton).
+ * absences » sur SON propre bureau.
+ *
+ * `Sheet` shadcn (side droit desktop / bas mobile, cf. `useIsMobile`) plutôt
+ * qu'un panneau inline (lot U4b) : piège de focus et fermeture Échap sont
+ * gérés par Radix, le retour de focus est explicite (cf. `returnFocusTo`).
  */
-export function DeskDetailPanel({ desk, onClose }: DeskDetailPanelProps) {
-  const headingRef = useRef<HTMLHeadingElement>(null)
-
-  useEffect(() => {
-    headingRef.current?.focus()
-  }, [])
-
-  const occupant = desk.occupant
-  const name = occupantDisplayName(desk)
+export function DeskDetailPanel({ desk, onClose, returnFocusTo }: DeskDetailPanelProps) {
+  const isMobile = useIsMobile()
+  const occupant = desk?.occupant ?? null
+  const name = desk ? occupantDisplayName(desk) : null
 
   return (
-    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: le panneau porte volontairement l'écoute Échap (ferme depuis n'importe quel élément focusé à l'intérieur, en plus du bouton « Fermer » dédié) ; pas d'élément interactif natif équivalent pour un panneau de détail entier.
-    <section
-      aria-labelledby="desk-detail-title"
-      className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') onClose()
-      }}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <h2
-          id="desk-detail-title"
-          ref={headingRef}
-          tabIndex={-1}
-          className="text-lg font-medium focus:outline-none"
-        >
-          {desk.name}
-          {desk.is_own && ' (votre bureau)'}
-        </h2>
-        <button
-          type="button"
-          aria-label="Fermer le détail du bureau"
-          className="rounded-md p-1 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-          onClick={onClose}
-        >
-          <X className="size-5" aria-hidden="true" />
-        </button>
-      </div>
+    <Sheet open={desk !== null} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent
+        side={isMobile ? 'bottom' : 'right'}
+        aria-describedby={undefined}
+        className="overflow-y-auto"
+        onCloseAutoFocus={(event) => {
+          if (!returnFocusTo) return
+          event.preventDefault()
+          returnFocusTo.focus()
+        }}
+      >
+        {desk && (
+          <>
+            <SheetHeader>
+              <SheetTitle>
+                {desk.name}
+                {desk.is_own && ' (votre bureau)'}
+              </SheetTitle>
+            </SheetHeader>
 
-      <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-        Statut : {statusLabel(desk)}
-      </p>
+            <div className="space-y-4 px-4 pb-4 text-sm">
+              <p className="text-muted-foreground">Statut : {statusLabel(desk)}</p>
 
-      {occupant?.visible && (
-        <div className="mt-4 flex gap-4 text-sm">
-          <Avatar
-            firstName={occupant.first_name}
-            lastName={occupant.last_name}
-            photo={occupant.photo}
-            size="md"
-            // Résident absent ce jour-là : photo grisée (PRD §3.7.3).
-            muted={desk.status === 'absent'}
-          />
-          <div className="min-w-0 space-y-2">
-            <p className="text-base font-medium">
-              {occupant.first_name} {occupant.last_name}
-            </p>
-            {occupant.company && <p>{occupant.company}</p>}
-            {occupant.job_title && (
-              <p className="text-neutral-600 dark:text-neutral-300">{occupant.job_title}</p>
-            )}
-            {occupant.bio && (
-              <MarkdownContent
-                markdown={occupant.bio}
-                className="text-neutral-600 dark:text-neutral-300"
-              />
-            )}
-            {occupant.interests && (
-              <p className="text-neutral-600 dark:text-neutral-300">
-                Centres d’intérêt : {occupant.interests}
-              </p>
-            )}
-            <ul className="flex flex-wrap gap-3">
-              {occupant.linkedin_url && (
-                <li>
-                  <a
-                    href={occupant.linkedin_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-brand-700 dark:text-brand-300 underline"
-                  >
-                    LinkedIn
-                    <span className="sr-only"> de {occupant.first_name} (nouvelle fenêtre)</span>
-                  </a>
-                </li>
+              {occupant?.visible && (
+                <div className="flex gap-4">
+                  <Avatar
+                    firstName={occupant.first_name}
+                    lastName={occupant.last_name}
+                    photo={occupant.photo}
+                    size="md"
+                    // Résident absent ce jour-là : photo grisée (PRD §3.7.3).
+                    muted={desk.status === 'absent'}
+                  />
+                  <div className="min-w-0 space-y-2">
+                    <p className="text-base font-medium">
+                      {occupant.first_name} {occupant.last_name}
+                    </p>
+                    {occupant.company && <p>{occupant.company}</p>}
+                    {occupant.job_title && (
+                      <p className="text-muted-foreground">{occupant.job_title}</p>
+                    )}
+                    {occupant.bio && (
+                      <MarkdownContent markdown={occupant.bio} className="text-muted-foreground" />
+                    )}
+                    {occupant.interests && (
+                      <p className="text-muted-foreground">
+                        Centres d’intérêt : {occupant.interests}
+                      </p>
+                    )}
+                    <ul className="flex flex-wrap gap-3">
+                      {occupant.linkedin_url && (
+                        <li>
+                          <a
+                            href={occupant.linkedin_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary underline"
+                          >
+                            LinkedIn
+                            <span className="sr-only">
+                              {' '}
+                              de {occupant.first_name} (nouvelle fenêtre)
+                            </span>
+                          </a>
+                        </li>
+                      )}
+                      {occupant.website_url && (
+                        <li>
+                          <a
+                            href={occupant.website_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary underline"
+                          >
+                            Site web
+                            <span className="sr-only">
+                              {' '}
+                              de {occupant.first_name} (nouvelle fenêtre)
+                            </span>
+                          </a>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
               )}
-              {occupant.website_url && (
-                <li>
-                  <a
-                    href={occupant.website_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-brand-700 dark:text-brand-300 underline"
-                  >
-                    Site web
-                    <span className="sr-only"> de {occupant.first_name} (nouvelle fenêtre)</span>
-                  </a>
-                </li>
+
+              {occupant && !occupant.visible && <p className="text-muted-foreground">{name}</p>}
+
+              {!occupant && desk.status === 'free' && (
+                <p className="text-muted-foreground">
+                  Bureau libre — pour réserver ce type de bureau à la demi-journée, contactez-nous.
+                </p>
               )}
-            </ul>
-          </div>
-        </div>
-      )}
 
-      {occupant && !occupant.visible && (
-        <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-300">{name}</p>
-      )}
+              {desk.status === 'out_of_service' && (
+                <p className="text-muted-foreground">Bureau temporairement hors service.</p>
+              )}
 
-      {!occupant && desk.status === 'free' && (
-        <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-300">
-          Bureau libre — pour réserver ce type de bureau à la demi-journée, contactez-nous.
-        </p>
-      )}
-
-      {desk.status === 'out_of_service' && (
-        <p className="mt-4 text-sm text-neutral-600 dark:text-neutral-300">
-          Bureau temporairement hors service.
-        </p>
-      )}
-
-      {desk.is_own && (
-        <p className="mt-4">
-          <Link to="/presence" className="text-sm text-brand-700 dark:text-brand-300 underline">
-            Gérer mes absences
-          </Link>
-        </p>
-      )}
-    </section>
+              {desk.is_own && (
+                <p>
+                  <Link to="/presence" className="text-primary underline">
+                    Gérer mes absences
+                  </Link>
+                </p>
+              )}
+            </div>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
   )
 }

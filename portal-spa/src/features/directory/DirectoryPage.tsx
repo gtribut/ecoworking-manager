@@ -7,9 +7,10 @@ import { PageContainer } from '@/components/PageContainer'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { DirectoryTabs } from './DirectoryTabs'
 import type { DirectoryEntry } from './types'
@@ -64,7 +65,13 @@ export function DirectoryPage() {
         </form>
       </search>
 
-      {isLoading && <Spinner label="Chargement de l’annuaire…" />}
+      {isLoading && (
+        <div role="status" className="grid gap-4 sm:grid-cols-2">
+          <span className="sr-only">Chargement de l’annuaire…</span>
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-28 w-full" />
+        </div>
+      )}
       {isError && (
         <QueryError
           error={error}
@@ -90,71 +97,70 @@ export function DirectoryPage() {
             {data.meta.total} coworker{data.meta.total > 1 ? 's' : ''} dans l’annuaire
           </p>
 
-          <ul className="grid gap-4 sm:grid-cols-2">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.data.map((entry) => (
-              <li
-                key={entry.id}
-                className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
-              >
-                <article aria-labelledby={`coworker-${entry.id}-name`} className="flex gap-3">
-                  <Avatar
-                    firstName={entry.first_name}
-                    lastName={entry.last_name}
-                    photo={entry.photo}
-                  />
-                  <div className="min-w-0 space-y-1">
-                    <h2 id={`coworker-${entry.id}-name`} className="text-base font-medium">
-                      {entry.first_name} {entry.last_name}
-                    </h2>
-                    {entry.company && <p className="text-sm">{entry.company}</p>}
-                    {entry.job_title && (
-                      <p className="text-sm text-neutral-600 dark:text-neutral-300">
-                        {entry.job_title}
-                      </p>
-                    )}
-                    {entry.bio && (
-                      <MarkdownContent
-                        markdown={entry.bio}
-                        className="text-sm text-neutral-600 dark:text-neutral-300"
+              <li key={entry.id}>
+                <Card className="h-full">
+                  <CardContent>
+                    <article aria-labelledby={`coworker-${entry.id}-name`} className="flex gap-3">
+                      <Avatar
+                        firstName={entry.first_name}
+                        lastName={entry.last_name}
+                        photo={entry.photo}
                       />
-                    )}
-                    <ul className="flex flex-wrap gap-3 pt-1">
-                      {entry.linkedin_url && (
-                        <li>
-                          <a
-                            href={entry.linkedin_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-sm text-brand-700 dark:text-brand-300 underline"
-                          >
-                            <Linkedin className="size-4" aria-hidden="true" />
-                            LinkedIn
-                            <span className="sr-only">
-                              {' '}
-                              de {entry.first_name} {entry.last_name} (nouvelle fenêtre)
-                            </span>
-                          </a>
-                        </li>
-                      )}
-                      {entry.website_url && (
-                        <li>
-                          <a
-                            href={entry.website_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-sm text-brand-700 dark:text-brand-300 underline"
-                          >
-                            Site web
-                            <span className="sr-only">
-                              {' '}
-                              de {entry.first_name} {entry.last_name} (nouvelle fenêtre)
-                            </span>
-                          </a>
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                </article>
+                      <div className="min-w-0 space-y-1">
+                        <h2 id={`coworker-${entry.id}-name`} className="text-base font-medium">
+                          {entry.first_name} {entry.last_name}
+                        </h2>
+                        {entry.company && <p className="text-sm">{entry.company}</p>}
+                        {entry.job_title && (
+                          <p className="text-sm text-muted-foreground">{entry.job_title}</p>
+                        )}
+                        {entry.bio && (
+                          <MarkdownContent
+                            markdown={entry.bio}
+                            className="text-sm text-muted-foreground"
+                          />
+                        )}
+                        <ul className="flex flex-wrap gap-3 pt-1">
+                          {entry.linkedin_url && (
+                            <li>
+                              <a
+                                href={entry.linkedin_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-sm text-primary underline"
+                              >
+                                <Linkedin className="size-4" aria-hidden="true" />
+                                LinkedIn
+                                <span className="sr-only">
+                                  {' '}
+                                  de {entry.first_name} {entry.last_name} (nouvelle fenêtre)
+                                </span>
+                              </a>
+                            </li>
+                          )}
+                          {entry.website_url && (
+                            <li>
+                              <a
+                                href={entry.website_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-sm text-primary underline"
+                              >
+                                Site web
+                                <span className="sr-only">
+                                  {' '}
+                                  de {entry.first_name} {entry.last_name} (nouvelle fenêtre)
+                                </span>
+                              </a>
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    </article>
+                  </CardContent>
+                </Card>
               </li>
             ))}
           </ul>

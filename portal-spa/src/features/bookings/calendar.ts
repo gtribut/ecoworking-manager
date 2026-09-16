@@ -15,18 +15,11 @@ export const FULL_DAY_HOURS = { start: 0, end: 24 } as const
 export const MORNING = { start: 9, end: 13 } as const
 export const AFTERNOON = { start: 14, end: 18 } as const
 
-export type CalendarView = 'week' | 'day'
-
 /** Date du jour au format YYYY-MM-DD (fuseau local, pas d'UTC). */
 export function toIsoDate(date: Date): string {
   const offset = date.getTimezoneOffset()
   const iso = new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 10)
   return iso
-}
-
-/** Minuit local du jour `YYYY-MM-DD`. */
-export function parseIsoDate(value: string): Date {
-  return new Date(`${value}T00:00:00`)
 }
 
 export function addDays(date: Date, days: number): Date {
@@ -41,16 +34,6 @@ export function startOfWeek(date: Date): Date {
   monday.setHours(0, 0, 0, 0)
   const shift = (monday.getDay() + 6) % 7
   return addDays(monday, -shift)
-}
-
-/** Les 7 jours de la semaine commençant au lundi donné. */
-export function weekDays(monday: Date): Date[] {
-  return Array.from({ length: 7 }, (_, index) => addDays(monday, index))
-}
-
-/** Heures affichées (bornes incluses côté début, exclues côté fin). */
-export function hourRange(bounds: { start: number; end: number }): number[] {
-  return Array.from({ length: bounds.end - bounds.start }, (_, index) => bounds.start + index)
 }
 
 /** Instant local d'une heure pleine d'un jour donné. */
@@ -71,19 +54,6 @@ export function slotCovering<T extends TimeRange>(slots: T[], start: Date, end: 
       return slotStart < to && slotEnd > from
     }) ?? null
   )
-}
-
-/** Les créneaux occupés d'un jour donné, ordonnés chronologiquement. */
-export function slotsOfDay(slots: CalendarSlot[], day: Date): CalendarSlot[] {
-  const dayStart = atHour(day, 0).getTime()
-  const dayEnd = addDays(atHour(day, 0), 1).getTime()
-  return slots
-    .filter((slot) => {
-      const slotStart = new Date(slot.starts_at).getTime()
-      const slotEnd = new Date(slot.ends_at).getTime()
-      return slotStart < dayEnd && slotEnd > dayStart
-    })
-    .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
 }
 
 /**
@@ -128,11 +98,6 @@ export function findNearestFreeSlot(
 /** « lundi 14 septembre » (sans l'année, utilisé en en-tête de colonne). */
 export function formatDayLabel(day: Date): string {
   return day.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-}
-
-/** « 14 sept. » — version courte pour les en-têtes de la grille semaine. */
-export function formatShortDay(day: Date): string {
-  return day.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 /**
@@ -203,16 +168,4 @@ export function formatOccupant(slot: CalendarSlot): string | null {
   }
   // Sans nom : résa posée au nom d'une entité (kind === 'entity').
   return occupant.company_name ?? 'Réservation Ecoworking'
-}
-
-/** Description complète d'un créneau occupé (aria-label + panneau de détail). */
-export function describeSlot(slot: CalendarSlot): string {
-  const occupant = formatOccupant(slot)
-  const who = slot.is_mine
-    ? 'Ma réservation'
-    : occupant === null
-      ? 'Occupé'
-      : `Occupé par ${occupant}`
-  const label = slot.label ? ` — ${slot.label}` : ''
-  return `${formatTime(slot.starts_at)} – ${formatTime(slot.ends_at)} · ${who}${label}`
 }

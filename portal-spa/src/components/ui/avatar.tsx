@@ -2,6 +2,15 @@ import { Avatar as AvatarPrimitive } from 'radix-ui'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
+/*
+ * Coexiste volontairement avec `components/Avatar.tsx` (review U5, CLAUDE.md
+ * §3.5) : cette primitive shadcn/ui sert les avatars simples sans photo
+ * (menu profil : `AvatarFallback` avec initiales seules). `components/Avatar`
+ * porte la logique propre au portail (photo à 3 tailles serveur, état
+ * `muted`, repli sur erreur de chargement) utilisée par l'annuaire, le plan
+ * des étages et l'aperçu de profil — pas dupliquée ici.
+ */
+
 function Avatar({
   className,
   size = 'default',

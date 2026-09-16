@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useState } from 'react'
+import type { FieldErrors } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -50,6 +51,28 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
+/**
+ * Onglet portant chaque champ du formulaire (PRD §3.4, review U4a B-3) : sert
+ * à basculer sur le bon onglet quand une erreur de validation touche un champ
+ * démonté (formulaire unique réparti sur les onglets Profil/Préférences —
+ * Radix Tabs démonte le contenu inactif, `handleSubmit` valide pourtant tous
+ * les champs enregistrés). Sans ça, soumettre depuis Préférences avec une
+ * erreur sur un champ de Profil échoue silencieusement (WCAG 3.3.1).
+ */
+const FIELD_TAB: Record<keyof FormValues, ProfileTab> = {
+  theme: 'preferences',
+  job_title: 'profil',
+  bio: 'profil',
+  interests: 'profil',
+  linkedin_url: 'profil',
+  website_url: 'profil',
+  birth_date: 'profil',
+  show_in_directory: 'preferences',
+  newsletter_opt_in: 'preferences',
+  notify_email: 'preferences',
+  notify_in_app: 'preferences',
+}
+
 function nullable(value: string | undefined): string | null {
   return value && value.length > 0 ? value : null
 }
@@ -71,6 +94,10 @@ export function ProfilePage() {
   const updateProfile = useUpdateProfile()
   const [bioPreview, setBioPreview] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
+  // Champ à focaliser une fois l'onglet cible monté (cf. l'effet plus bas) —
+  // ne peut pas être fait à l'intérieur de `onInvalid` : le changement
+  // d'onglet n'a pas encore été rendu, le champ n'existe pas encore dans le DOM.
+  const [pendingFocusField, setPendingFocusField] = useState<keyof FormValues | null>(null)
 
   const rawTab = searchParams.get('tab')
   const activeTab: ProfileTab = isProfileTab(rawTab) ? rawTab : DEFAULT_PROFILE_TAB
@@ -129,6 +156,35 @@ export function ProfilePage() {
     })
   }, [data, reset, isDirty])
 
+  // Focalise le champ en erreur une fois l'onglet cible réellement monté (cf.
+  // `onInvalid` plus bas). Ni `setActiveTab` (URL via react-router) ni le
+  // montage du contenu de l'onglet (`Presence` interne de Radix Tabs, qui
+  // résout sa propre présence sur un rendu supplémentaire) ne sont garantis
+  // synchrones avec `setPendingFocusField` : au moment où cet effet tourne,
+  // même avec `activeTab` déjà à jour, le champ peut ne pas encore exister
+  // dans le DOM. On retente au prochain giration (`requestAnimationFrame`)
+  // tant qu'il n'y est pas — nettoyé si le composant/l'effet se redéclenche.
+  useEffect(() => {
+    if (!pendingFocusField) return
+    if (activeTab !== FIELD_TAB[pendingFocusField]) return
+
+    let frame: number
+    const tryFocus = () => {
+      const field = document.getElementById(pendingFocusField)
+      if (field instanceof HTMLElement) {
+        field.focus()
+        setPendingFocusField(null)
+        return
+      }
+      // Pas encore monté (Presence de Radix Tabs pas encore réconciliée) :
+      // réessaie à la frame suivante plutôt que d'abandonner.
+      frame = requestAnimationFrame(tryFocus)
+    }
+    tryFocus()
+
+    return () => cancelAnimationFrame(frame)
+  }, [pendingFocusField, activeTab])
+
   if (isLoading) {
     return <Spinner label="Chargement du profil…" />
   }
@@ -140,6 +196,23 @@ export function ProfilePage() {
 
   const hasProfile = data.profile !== null
   const bioValue = form.watch('bio') ?? ''
+
+  /**
+   * Formulaire unique réparti sur Profil + Préférences (B-3, review U4a) :
+   * soumettre depuis un onglet ne rend visible que ses propres erreurs.
+   * Bascule sur l'onglet du premier champ en erreur, annonce l'échec (les
+   * erreurs de champ ne sont pas forcément visibles tant que l'onglet n'a
+   * pas basculé — WCAG 3.3.1) puis y ramène le focus.
+   */
+  function onInvalid(errors: FieldErrors<FormValues>) {
+    const firstField = Object.keys(errors)[0] as keyof FormValues | undefined
+    if (firstField) {
+      const tab = FIELD_TAB[firstField]
+      if (tab !== activeTab) setActiveTab(tab)
+      setPendingFocusField(firstField)
+    }
+    toast.error('Certains champs sont invalides.')
+  }
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
@@ -164,7 +237,7 @@ export function ProfilePage() {
     } catch (error) {
       toast.error(getApiErrorMessage(error))
     }
-  })
+  }, onInvalid)
 
   return (
     <PageContainer width="narrow" className="space-y-6">

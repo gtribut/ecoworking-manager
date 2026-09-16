@@ -40,15 +40,22 @@ function internalDocument(
   }
 }
 
-describe('DashboardDocumentsToValidate', () => {
-  it('liste uniquement les documents non validés, avec le lien vers la page Documents', async () => {
+/**
+ * KPI « Documents à valider » du dashboard bento (maquette C14) : ces tests
+ * remplacent l'ancien bloc pleine liste (téléchargement + validation
+ * directe, désormais sur `/documents`, cf. `InternalDocumentItem` et
+ * `DocumentsPage.test.tsx`, hors périmètre U4a) par une tuile compacte.
+ */
+describe('DashboardDocumentsToValidate (KPI dashboard, PRD §3.3.2)', () => {
+  it('affiche le libellé en heading, le premier titre à valider, le compteur des autres et un lien vers /documents', async () => {
     server.use(
       http.get('/api/user', () => HttpResponse.json(member())),
       http.get('/api/documents/internal', () =>
         HttpResponse.json({
           data: [
             internalDocument(1, 'Charte interne'),
-            internalDocument(2, 'CGU', {
+            internalDocument(2, 'CGU'),
+            internalDocument(3, 'Droit à l’image', {
               is_validated: true,
               validated_at: '2026-06-15T10:00:00+02:00',
             }),
@@ -59,16 +66,18 @@ describe('DashboardDocumentsToValidate', () => {
 
     renderWithProviders(<DashboardDocumentsToValidate />, { withAuth: true })
 
+    // Le libellé (heading) est déjà présent pendant le chargement (skeleton) :
+    // on attend la valeur (dépendante de la donnée) avant les checks
+    // synchrones, sans quoi ceux-ci peuvent s'exécuter trop tôt.
     expect(await screen.findByText('Charte interne')).toBeInTheDocument()
-    expect(screen.queryByText('CGU')).not.toBeInTheDocument() // déjà validé → masqué
-    expect(screen.getByRole('button', { name: 'Valider' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voir tous mes documents →' })).toHaveAttribute(
-      'href',
-      '/documents',
-    )
+    // Libellé au pluriel, quel que soit le nombre réel (e2e/auth.spec.ts,
+    // cohérent avec le titre de la même section sur /documents).
+    expect(screen.getByRole('heading', { name: 'Documents à valider' })).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: /\+1 autre\(s\) · Lire et valider/ })
+    expect(link).toHaveAttribute('href', '/documents')
   })
 
-  it('masque entièrement le bloc quand rien n’est à valider (R-06, non bloquant PRD §5.3)', async () => {
+  it('masque la tuile quand rien n’est à valider (recette R-06)', async () => {
     server.use(
       http.get('/api/user', () => HttpResponse.json(member())),
       http.get('/api/documents/internal', () => HttpResponse.json({ data: [] })),
@@ -76,12 +85,26 @@ describe('DashboardDocumentsToValidate', () => {
 
     renderWithProviders(<DashboardDocumentsToValidate />, { withAuth: true })
 
-    // Le titre est présent pendant le chargement puis disparaît avec la réponse vide.
+    // Tant que la donnée n'est pas résolue, la tuile peut rester affichée
+    // (skeleton) — c'est une fois vide confirmée qu'elle doit disparaître.
     await waitFor(() =>
       expect(
         screen.queryByRole('heading', { name: 'Documents à valider' }),
       ).not.toBeInTheDocument(),
     )
-    expect(screen.queryByText('Tous vos documents sont à jour.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /documents/i })).not.toBeInTheDocument()
+  })
+
+  it('affiche un état indisponible sans planter si la requête échoue', async () => {
+    server.use(
+      http.get('/api/user', () => HttpResponse.json(member())),
+      http.get('/api/documents/internal', () =>
+        HttpResponse.json({ message: 'Erreur' }, { status: 500 }),
+      ),
+    )
+
+    renderWithProviders(<DashboardDocumentsToValidate />, { withAuth: true })
+
+    expect(await screen.findByText('Indisponible')).toBeInTheDocument()
   })
 })

@@ -1,11 +1,22 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { toast } from 'sonner'
+import { afterEach, describe, expect, it } from 'vitest'
 import { server } from '@/test/server'
 import { MEMBER_PERMISSIONS, makeAuthUser, renderWithProviders } from '@/test/utils'
 import { ProfilePage } from './ProfilePage'
 import type { ProfilePayload } from './types'
+
+// Le store de `sonner` est un singleton hors React : un toast déclenché par
+// un test (ex. `onInvalid`) survit à son démontage et peut être « dédupliqué »
+// (message identique) au lieu d'apparaître à nouveau dans le test suivant.
+// Sans ce nettoyage, « bloque la soumission sur une URL invalide » (qui
+// déclenche désormais le même toast d'erreur générique) fait échouer le test
+// B-3 juste après, de façon non déterministe selon l'ordre d'exécution.
+afterEach(() => {
+  toast.dismiss()
+})
 
 const payload: ProfilePayload = {
   user: {
@@ -61,7 +72,7 @@ function withUser() {
 }
 
 describe('ProfilePage', () => {
-  it('affiche les infos perso et l’entité (lecture seule)', async () => {
+  it('affiche les infos perso (onglet Profil, actif par défaut)', async () => {
     server.use(http.get('/api/profile', () => HttpResponse.json(payload)))
 
     withUser()
@@ -69,7 +80,35 @@ describe('ProfilePage', () => {
 
     expect(await screen.findByDisplayValue('Designer')).toBeInTheDocument()
     expect(screen.getByDisplayValue('alex@ex.fr')).toBeDisabled()
-    expect(screen.getByText('Acme SCOP')).toBeInTheDocument()
+  })
+
+  it('affiche l’entité dans l’onglet Entreprise après clic (masquée par défaut)', async () => {
+    const user = userEvent.setup()
+    server.use(http.get('/api/profile', () => HttpResponse.json(payload)))
+
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true, route: '/profile' })
+
+    await screen.findByDisplayValue('Designer')
+    expect(screen.queryByText('Acme SCOP')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Entreprise' }))
+
+    expect(await screen.findByText('Acme SCOP')).toBeInTheDocument()
+  })
+
+  it('ouvre directement l’onglet demandé par ?tab= (lien depuis ailleurs)', async () => {
+    server.use(http.get('/api/profile', () => HttpResponse.json(payload)))
+
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true, route: '/profile?tab=compte' })
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Mot de passe' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Compte', selected: true })).toBeInTheDocument()
+    // Le contenu de l'onglet Profil (démonté) n'est plus dans le DOM.
+    expect(screen.queryByLabelText('Présentation')).not.toBeInTheDocument()
   })
 
   it('propose la section photo de profil avec l’avatar initiales (PRD §3.4.2)', async () => {
@@ -86,6 +125,7 @@ describe('ProfilePage', () => {
   })
 
   it('affiche l’entité complète sans les coordonnées bancaires (PRD §3.4.3)', async () => {
+    const user = userEvent.setup()
     server.use(
       http.get('/api/profile', () =>
         HttpResponse.json({
@@ -103,6 +143,9 @@ describe('ProfilePage', () => {
     withUser()
     renderWithProviders(<ProfilePage />, { withAuth: true })
 
+    await screen.findByDisplayValue('Designer')
+    await user.click(screen.getByRole('tab', { name: 'Entreprise' }))
+
     expect(
       await screen.findByRole('heading', { level: 2, name: 'Mon entreprise' }),
     ).toBeInTheDocument()
@@ -114,10 +157,14 @@ describe('ProfilePage', () => {
   })
 
   it('explique l’absence d’entité juridique rattachée', async () => {
+    const user = userEvent.setup()
     server.use(http.get('/api/profile', () => HttpResponse.json({ ...payload, company: null })))
 
     withUser()
     renderWithProviders(<ProfilePage />, { withAuth: true })
+
+    await screen.findByDisplayValue('Designer')
+    await user.click(screen.getByRole('tab', { name: 'Entreprise' }))
 
     expect(await screen.findByText(/Aucune entité juridique/)).toBeInTheDocument()
     expect(
@@ -161,5 +208,39 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('button', { name: /enregistrer/i }))
 
     expect(await screen.findByText('URL invalide.')).toBeInTheDocument()
+  })
+
+  it('bascule sur l’onglet Profil et alerte quand une erreur y survient en soumettant depuis Préférences (B-3)', async () => {
+    const user = userEvent.setup()
+    server.use(http.get('/api/profile', () => HttpResponse.json(payload)))
+
+    withUser()
+    renderWithProviders(<ProfilePage />, { withAuth: true })
+
+    // Erreur saisie dans l'onglet Profil (actif par défaut)…
+    const linkedin = await screen.findByLabelText('LinkedIn')
+    await user.type(linkedin, 'pas-une-url')
+
+    // …puis on bascule sur Préférences (Radix démonte l'onglet Profil : le
+    // champ en erreur n'est plus dans le DOM) et on soumet depuis là.
+    await user.click(screen.getByRole('tab', { name: 'Préférences' }))
+    await waitFor(() => expect(screen.queryByLabelText('LinkedIn')).not.toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: /enregistrer/i }))
+
+    // L'échec ne doit pas être silencieux (WCAG 3.3.1) : message visible…
+    expect(await screen.findByText('Certains champs sont invalides.')).toBeInTheDocument()
+    // …et retour automatique sur l'onglet qui porte le champ en erreur —
+    // `setActiveTab` passe par `setSearchParams` (react-router), pas garanti
+    // synchrone avec le rendu du toast : `waitFor` plutôt qu'une assertion
+    // immédiate.
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Profil', selected: true })).toBeInTheDocument(),
+    )
+    expect(await screen.findByText('URL invalide.')).toBeInTheDocument()
+    // Le focus atterrit via une petite boucle de nouvelles tentatives
+    // (`requestAnimationFrame`) tant que Radix Tabs n'a pas fini de monter
+    // le contenu de l'onglet — d'où le `waitFor` plutôt qu'une assertion
+    // synchrone.
+    await waitFor(() => expect(screen.getByLabelText('LinkedIn')).toHaveFocus())
   })
 })

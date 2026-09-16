@@ -46,7 +46,7 @@ describe('DashboardAnnouncements', () => {
     expect(await screen.findByText('Actualité 1')).toBeInTheDocument()
     expect(screen.getByText('Actualité 3')).toBeInTheDocument()
     expect(screen.queryByText('Actualité 4')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voir toutes les actualités →' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Toutes les actualités' })).toHaveAttribute(
       'href',
       '/announcements',
     )

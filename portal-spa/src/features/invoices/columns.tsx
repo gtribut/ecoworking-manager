@@ -21,11 +21,19 @@ declare module '@tanstack/react-table' {
    * tri — recréer les colonnes à chaque changement de filtre remplacerait la
    * fonction `header` (nouvelle identité) et ferait perdre le focus clavier
    * sur le bouton de tri actif.
+   *
+   * Namespacé sous `invoiceSort` et **optionnel** (review U4a I-1) :
+   * `TableMeta` est une interface globale (`declare module`) — la rendre
+   * obligatoire aurait forcé tout `useReactTable` futur ailleurs dans le
+   * portail à fournir `sort`/`direction`/`onToggleSort`, même sans rapport
+   * avec les factures.
    */
   interface TableMeta<TData> {
-    sort: InvoiceSort
-    direction: SortDirection
-    onToggleSort: (column: InvoiceSort) => void
+    invoiceSort?: {
+      sort: InvoiceSort
+      direction: SortDirection
+      onToggle: (column: InvoiceSort) => void
+    }
   }
 }
 
@@ -40,17 +48,19 @@ const columnHelper = createColumnHelper<Invoice>()
  */
 function sortableHeader(column: InvoiceSort, label: string) {
   return (context: HeaderContext<Invoice, unknown>) => {
-    const meta = context.table.options.meta
-    if (!meta) {
-      throw new Error('invoiceColumns: `meta` manquant — useReactTable({ meta }) est requis.')
+    const invoiceSort = context.table.options.meta?.invoiceSort
+    if (!invoiceSort) {
+      throw new Error(
+        'invoiceColumns: `meta.invoiceSort` manquant — useReactTable({ meta: { invoiceSort } }) est requis.',
+      )
     }
     return (
       <SortButton
         column={column}
         label={label}
-        sort={meta.sort}
-        direction={meta.direction}
-        onToggle={meta.onToggleSort}
+        sort={invoiceSort.sort}
+        direction={invoiceSort.direction}
+        onToggle={invoiceSort.onToggle}
       />
     )
   }

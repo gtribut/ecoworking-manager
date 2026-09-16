@@ -71,7 +71,9 @@ export function InvoicesPage() {
     data: data?.data ?? [],
     columns,
     getCoreRowModel: getCoreRowModel(),
-    meta: { sort: filters.sort, direction: filters.direction, onToggleSort: toggleSort },
+    meta: {
+      invoiceSort: { sort: filters.sort, direction: filters.direction, onToggle: toggleSort },
+    },
   })
 
   return (
@@ -120,13 +122,17 @@ export function InvoicesPage() {
 
       {data && data.data.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-lg border border-border">
+          {/* `overflow-hidden` (pas `overflow-x-auto`, déjà porté par le
+              conteneur interne de la primitive `Table`) : clippe le fond du
+              `thead` aux coins arrondis de la carte, sans conteneur de scroll
+              en double. */}
+          <div className="overflow-hidden rounded-lg border border-border">
             <Table>
               <TableCaption className="sr-only">
                 Liste de mes factures, triable par numéro, date et statut
               </TableCaption>
-              {/* Bandeau gris + texte neutral-600/300 (pas `text-muted-foreground`,
-                  qui tombe sous 4.5:1 sur ce fond) — comme l'ancien `<thead>`. */}
+              {/* Bandeau neutral-50/900 avec texte neutral-600/300 : reprend
+                  la teinte et le contraste de l'ancien `<thead>`. */}
               <TableHeader className="bg-neutral-50 text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>

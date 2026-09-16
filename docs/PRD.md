@@ -599,7 +599,7 @@ Trois types de ressources, chacun avec des règles d'utilisation et d'affichage 
 > `/themes/classic`) — pas de `@fullcalendar/core` séparé comme en v6. Peers requis :
 > `temporal-polyfill` + `@full-ui/headless-calendar`. Détail complet dans
 > [ADR-0013](./adr/0013-shadcn-fullcalendar-a11y-agenda.md#mise-en-œuvre-u1--u5). Vues `timeGridWeek` /
-> `timeGridDay` / `dayGridMonth`, `locale: 'fr'`, `firstDay: 1`. Plage horaire : 08 h–20 h par
+> `timeGridDay`, `locale: 'fr'`, `firstDay: 1`. Plage horaire : 08 h–20 h par
 > défaut avec toggle « voir 24 h » pour resident/additional (`slotMinTime`/`slotMaxTime`) ;
 > pour external, 09 h–18 h avec `selectConstraint` limité aux demi-journées des jours ouvrés
 > (cf. §3.5.3). Codes couleur par salle repris de la maquette (sky / amber / violet, event en
@@ -610,6 +610,13 @@ Trois types de ressources, chacun avec des règles d'utilisation et d'affichage 
 > « Nouvelle réservation » ouvrant une saisie manuelle (date, heure, salle). Le mini-mois en
 > panneau droit (shadcn `Calendar`) remplace le date picker de navigation. Détail complet dans
 > [ADR-0013](./adr/0013-shadcn-fullcalendar-a11y-agenda.md).
+
+> ✅ **Recette 2026-09-16 : vue Mois retirée, hauteur des heures +50 %** — la vue `dayGridMonth`
+> est retirée du sélecteur (« Jour » / « Semaine » seulement) : sur cette grille à une seule
+> colonne temporelle par jour, un mois de blocs de salles empilés était illisible et n'apportait
+> rien de plus que la vue Semaine pour se projeter. La hauteur d'une ligne horaire est augmentée
+> de 50 % (FullCalendar v7 n'exposant aucune variable CSS pour ça, réglé via la prop `height` +
+> `expandRows` de `<FullCalendar>`, cf. `RoomsCalendar.tsx` et ADR-0013 §D3).
 
 #### 3.5.3 Réserver une salle de réunion — flow par rôle
 

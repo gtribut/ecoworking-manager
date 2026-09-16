@@ -93,6 +93,19 @@ daygrid/interaction est stable d'une version majeure à l'autre, le coût de rep
 > structurant** (packaging et système de thème différents, migration non triviale) mais s'est avéré
 > **non nécessaire** : stabilité constatée avec React 19.2 / Vite 8 sur tout C14 (U3 → U5).
 
+> ✅ **Recette 2026-09-16** — deux retours corrigés sur l'agenda :
+> - **Vue Mois retirée** (`dayGridMonth`) : sur cette grille (une seule colonne temporelle par
+>   jour, blocs de salles côte à côte), un mois de lignes compactées était illisible et
+>   n'apportait rien de plus que la vue Semaine pour se projeter. `AgendaView` ne porte plus que
+>   `timeGridDay | timeGridWeek`, le plugin `@fullcalendar/react/daygrid` n'est plus importé.
+> - **Hauteur des lignes horaires +50 %** : FullCalendar v7 / thème classic n'expose aucune
+>   variable CSS ni règle `.fc-timegrid-slot` pour ça (classes hachées, vérifié dans les sources
+>   du paquet et la doc officielle) — une surcharge CSS directe désynchronise en plus la position
+>   des événements de la grille (testé). Le seul levier qui repositionne aussi les événements est
+>   la combinaison documentée `height` (px) + `expandRows` : `RoomsCalendar.tsx` calcule
+>   désormais une hauteur totale (`AGENDA_HEADER_HEIGHT_PX` + une ligne de `AGENDA_ROW_HEIGHT_PX`
+>   par heure affichée, 24,98 px mesurés → 37,5 px) au lieu de `height="auto"`.
+
 ### D4 — A11y de l'agenda relâchée, alternative accessible obligatoire
 
 La grille FullCalendar (sélecteur `.fc`) est **exclue de l'audit `axe-core`** dans les tests
@@ -103,8 +116,10 @@ temporelle interactive (drag, resize, chevauchements) ; corriger cela en profond
 le coût acceptable pour ~50 membres.
 
 En contrepartie, sur la **même page** « Réservations de salles » :
-- une liste complète « Mes réservations » (panneau droit sur la maquette desktop), intégralement
-  accessible (HTML sémantique, navigation clavier, lue par un lecteur d'écran) ;
+- une liste complète « Mes réservations », intégralement accessible (HTML sémantique, navigation
+  clavier, lue par un lecteur d'écran) — sous la grille dans la colonne de l'agenda (retour de
+  recette 2026-09-16 : la maquette la plaçait dans le panneau droit, en réalité relégué tout en
+  bas de page une fois la liste sortie de ce panneau) ;
 - un bouton « Nouvelle réservation » ouvrant `BookingDialog`, formulaire de saisie manuelle
   (date, heure de début/fin, salle) entièrement accessible, sans dépendre de la grille.
 

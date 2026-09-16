@@ -164,9 +164,12 @@ Compte : **Inès**, puis **Camille** (staff), puis **Julien** (ne doit pas voir 
 Compte : **Claire** (resident).
 
 - [ ] Grille FullCalendar : les 3 salles + la salle événementielle affichées simultanément, une
-      **chip de filtre par salle** (masquer/afficher), vue semaine par défaut, jour < 768 px,
-      navigation « Période précédente/suivante/Aujourd'hui », **mini-mois** (panneau droit) pour
-      sauter à une date arbitraire
+      **chip de filtre par salle** (masquer/afficher), sélecteur **Jour / Semaine** uniquement
+      (vue Mois retirée en recette 16/09 — illisible sur cette grille), vue semaine par défaut,
+      jour < 768 px, navigation « Période précédente/suivante/Aujourd'hui », **mini-mois**
+      (panneau droit) pour sauter à une date arbitraire
+- [ ] Lignes horaires nettement plus hautes qu'avant (recette 16/09, +50 %) : le contenu d'un
+      créneau d'1 h (titre, horaire · salle, occupant) tient confortablement sans être tassé
 - [ ] Toggle « Voir 24 h » (resident/additional) bascule la plage horaire 8 h–20 h ↔ 0 h–24 h
 - [ ] **Glisser-déposer** sur un créneau libre de la grille ouvre la modale de résa, salle
       pré-remplie avec la **première salle réservable affichée** (pas nécessairement celle du
@@ -174,8 +177,9 @@ Compte : **Claire** (resident).
 - [ ] Bouton **« Nouvelle réservation »** (toujours visible, hors grille) ouvre la même modale en
       saisie 100 % manuelle (date, heure début/fin, salle) — c'est l'**alternative accessible**
       complète à la grille (D4), à tester spécifiquement au clavier/lecteur d'écran
-- [ ] Liste **« Mes prochaines réservations »** (panneau droit) : entièrement accessible,
-      synchronisée avec la grille, actions Modifier/Annuler
+- [ ] Liste **« Mes prochaines réservations »** (sous la grille, dans la colonne de l'agenda —
+      recette 16/09 : plus dans le panneau droit ni tout en bas de page) : entièrement
+      accessible, synchronisée avec la grille, actions Modifier/Annuler
 - [ ] Résas des autres visibles dans la grille ; clic → **popover** → prénom + nom + entité +
       libellé (transparence Q4) ; aucune action Modifier/Annuler (résa d'un tiers)
 - [ ] Clic sur **sa propre résa** dans la grille → popover avec boutons **Modifier** / **Annuler**

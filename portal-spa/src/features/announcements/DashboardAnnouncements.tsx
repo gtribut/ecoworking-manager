@@ -3,7 +3,7 @@ import { QueryError } from '@/components/QueryError'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AnnouncementBadge } from './AnnouncementBadge'
-import { excerpt, formatAnnouncementDate } from './AnnouncementsPage'
+import { excerpt, formatAnnouncementDate } from './format'
 import { useAnnouncements } from './useAnnouncements'
 
 /**
@@ -27,7 +27,7 @@ export function DashboardAnnouncements() {
             </h2>
             <Link
               to="/announcements"
-              className="text-sm font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
+              className="text-sm font-medium text-link underline underline-offset-2"
             >
               Toutes les actualités
             </Link>
@@ -67,7 +67,7 @@ export function DashboardAnnouncements() {
                   <p className="mt-1">
                     <Link
                       to={`/announcements/${announcement.id}`}
-                      className="text-sm font-medium text-brand-700 underline underline-offset-2 dark:text-brand-300"
+                      className="text-sm font-medium text-link underline underline-offset-2"
                     >
                       Voir<span className="sr-only"> l’actualité {announcement.title}</span> →
                     </Link>

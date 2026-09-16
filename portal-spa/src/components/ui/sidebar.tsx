@@ -34,6 +34,17 @@ import { cn } from '@/lib/utils'
  *    amont de shadcn, absent du préréglage nova) : `SidebarMenuButton` rend un
  *    `Tooltip` dès qu'on lui passe la prop `tooltip`, ce qui lève sinon
  *    « Tooltip must be used within TooltipProvider ».
+ *
+ * Point non corrigé, documenté (review U5) : le raccourci Ctrl/Cmd+B
+ * (`SIDEBAR_KEYBOARD_SHORTCUT`) reste actif sous `md`, où il ouvre la feuille
+ * latérale (`openMobile`) alors qu'aucun `SidebarTrigger` n'y est affiché
+ * (`TopBar` le masque en mobile, cf. `hidden md:inline-flex`) — un clavier
+ * externe sur tablette peut donc ouvrir un panneau sans affordance visible.
+ * Laissé tel quel : la navigation mobile normale passe par la bottom nav, ce
+ * raccourci n'est qu'un bonus desktop, et le désactiver conditionnellement à
+ * `isMobile` casserait le cas (rare mais réel) d'un clavier Bluetooth branché
+ * sur téléphone/tablette où le Sheet reste un moyen valide d'atteindre les
+ * mêmes liens que la bottom nav + le Sheet « Plus ».
  */
 const SIDEBAR_STORAGE_KEY = 'ecoworking.sidebar.open'
 const SIDEBAR_WIDTH = '16rem'

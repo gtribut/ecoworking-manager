@@ -48,7 +48,11 @@ export function MyBookingsList({ isExternal, onEdit }: MyBookingsListProps) {
 
   return (
     <section aria-labelledby="my-bookings-heading" className="space-y-4">
-      <h2 id="my-bookings-heading" className="text-lg font-medium">
+      {/* `tabIndex={-1}` (review U5) : cible d'un lien d'ancre (`#my-bookings-heading`,
+          BookingsPage) — sans ça la navigation par ancre scrolle mais ne
+          déplace jamais le focus clavier/lecteur d'écran sur un titre non
+          interactif. */}
+      <h2 id="my-bookings-heading" tabIndex={-1} className="text-lg font-medium">
         {scope === 'upcoming' ? 'Mes prochaines réservations' : 'Historique de mes réservations'}
       </h2>
 

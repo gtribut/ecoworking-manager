@@ -366,7 +366,10 @@ export function RoomsCalendar({
 
   return (
     <section aria-labelledby="rooms-calendar-heading" className="flex min-w-0 flex-col gap-3">
-      <h2 id="rooms-calendar-heading" className="sr-only">
+      {/* `tabIndex={-1}` (review U5) : cible de l'ancre `#rooms-calendar-heading`
+          (CTA de l'état vide de `MyBookingsList`) — rend le titre atteignable
+          par le focus après la navigation d'ancre. */}
+      <h2 id="rooms-calendar-heading" tabIndex={-1} className="sr-only">
         Calendrier des salles
       </h2>
 

@@ -13,8 +13,12 @@ test.describe('Documents internes (C12.4)', () => {
       page.getByText(`${seed.internalDocument.title} (version ${seed.internalDocument.version})`),
     ).toBeVisible()
 
-    // Validation avec confirmation accessible en deux temps.
-    await page.getByRole('button', { name: 'Valider', exact: true }).click()
+    // Validation avec confirmation accessible en deux temps. Le titre du
+    // document est en sr-only dans le nom accessible (review U5 : distingue
+    // les boutons homonymes « Valider » sur la même page).
+    await page
+      .getByRole('button', { name: `Valider le document ${seed.internalDocument.title}` })
+      .click()
     await expect(
       page.getByText(`Valider « ${seed.internalDocument.title} » ?`, { exact: false }),
     ).toBeVisible()

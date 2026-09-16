@@ -1,150 +1,90 @@
-import { Menu, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Outlet, useLocation } from 'react-router'
 import { Toaster } from 'sonner'
-import { usePermissions } from '@/features/auth/usePermissions'
-import { NotificationBell } from '@/features/notifications/NotificationBell'
+import { AppSidebar } from '@/components/AppSidebar'
+import { BottomNav } from '@/components/BottomNav'
+import { PageHeaderSlotContext } from '@/components/PageHeader'
+import { TopBar } from '@/components/TopBar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { TOAST_CLASS_NAMES, TOAST_CONTAINER_ARIA_LABEL } from '@/lib/toastTheme'
 import { useIsDarkMode } from '@/lib/useIsDarkMode'
-import { cn } from '@/lib/utils'
 import { Footer } from './Footer'
 import { OfflineBanner } from './OfflineBanner'
-import { ProfileMenu } from './ProfileMenu'
 
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    'rounded-md px-3 py-2 text-sm font-medium',
-    isActive
-      ? 'bg-brand-50 text-brand-700 dark:bg-neutral-800 dark:text-brand-50'
-      : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800',
-  )
-
-interface NavEntry {
-  to: string
-  label: string
-  end?: boolean
-}
-
+/**
+ * Shell du portail membre (PRD §3.9, ré-actage C14 / ADR-0013) : sidebar
+ * rétractable en desktop, top bar de 60 px portant le titre de la page
+ * (`PageHeader`) et les actions globales, bottom nav de 5 onglets sous `md`.
+ *
+ * Structure : la top bar et le contenu vivent dans le `<main>` — le titre de
+ * page reste ainsi l'unique `<h1>` du contenu principal (RGAA 9.1) — tandis
+ * que le pied de page reste à l'extérieur pour conserver son rôle
+ * `contentinfo`. Le lien d'évitement et le focus au changement de route visent
+ * le conteneur du contenu, sous la top bar.
+ */
 export function Layout() {
-  const { isResident, isExternal, canViewDirectory, canViewBilling, canViewBookings } =
-    usePermissions()
   const isDark = useIsDarkMode()
   const location = useLocation()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const mainRef = useRef<HTMLElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const previousPathname = useRef<string | null>(null)
+
+  // Emplacement du titre de page dans la top bar, alimenté par `PageHeader`.
+  const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null)
+  const slot = useMemo(() => ({ element: titleSlot }), [titleSlot])
 
   // Gestion du focus au changement de route (RGAA 12.x) : replace le focus sur
   // le contenu principal pour que les lecteurs d'écran annoncent la nouvelle page.
   useEffect(() => {
     if (previousPathname.current !== null && previousPathname.current !== location.pathname) {
-      mainRef.current?.focus()
+      contentRef.current?.focus()
     }
     previousPathname.current = location.pathname
   }, [location.pathname])
 
-  // Navigation filtrée par rôle (PRD §2.5) : un module inaccessible n'est jamais
-  // proposé — les routes correspondantes sont gardées par <RequireAccess>.
-  const entries: NavEntry[] = [
-    { to: '/', label: 'Accueil', end: true },
-    // Calendrier des salles : jamais pour un contact facturation pur.
-    ...(canViewBookings ? [{ to: '/bookings', label: 'Réservations' }] : []),
-    // Actualités : lisibles par tous les rôles, y compris un contact facturation
-    // pur (il fait partie des audiences) — seule l'INSCRIPTION à un événement
-    // demande `register-event`, côté RsvpButton.
-    { to: '/announcements', label: 'Actualités' },
-    ...(isExternal ? [{ to: '/tickets', label: 'Tickets' }] : []),
-    // Présence/absences : seulement avec un bureau attitré (pas les `additional`).
-    ...(isResident ? [{ to: '/presence', label: 'Présence' }] : []),
-    // C12.5 — Annuaire (masqué aux external : pas de view-annuaire)
-    ...(canViewDirectory ? [{ to: '/directory', label: 'Annuaire' }] : []),
-    { to: '/documents', label: 'Documents' },
-    { to: '/profile', label: 'Profil' },
-    // Module administratif (PRD §3.6.1) : rôle billing_contact uniquement.
-    ...(canViewBilling ? [{ to: '/invoices', label: 'Factures' }] : []),
-  ]
-
-  const links = (onNavigate?: () => void) =>
-    entries.map((entry) => (
-      <NavLink
-        key={entry.to}
-        to={entry.to}
-        end={entry.end}
-        className={navLinkClass}
-        onClick={onNavigate}
-      >
-        {entry.label}
-      </NavLink>
-    ))
-
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-50 dark:bg-neutral-950">
-      <a href="#main-content" className="skip-link">
-        Aller au contenu principal
-      </a>
+    <PageHeaderSlotContext.Provider value={slot}>
+      <SidebarProvider>
+        <a href="#main-content" className="skip-link">
+          Aller au contenu principal
+        </a>
 
-      {/* Toasts (PRD §3.1/§3.8.4) : feedback d'action éphémère, thème suivi,
-          animations coupées si prefers-reduced-motion (géré par Sonner). */}
-      <Toaster
-        closeButton
-        position="top-right"
-        theme={isDark ? 'dark' : 'light'}
-        containerAriaLabel={TOAST_CONTAINER_ARIA_LABEL}
-        toastOptions={{ classNames: TOAST_CLASS_NAMES }}
-      />
-      <OfflineBanner />
+        {/* Toasts (PRD §3.1/§3.8.4) : feedback d'action éphémère, thème suivi,
+            animations coupées si prefers-reduced-motion (géré par Sonner). */}
+        <Toaster
+          closeButton
+          position="top-right"
+          theme={isDark ? 'dark' : 'light'}
+          containerAriaLabel={TOAST_CONTAINER_ARIA_LABEL}
+          toastOptions={{ classNames: TOAST_CLASS_NAMES }}
+        />
 
-      <header className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <span className="text-lg font-semibold">Ecoworking</span>
+        <AppSidebar />
 
-          <nav aria-label="Navigation principale" className="hidden items-center gap-1 md:flex">
-            {links()}
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <NotificationBell />
-            <ProfileMenu />
-            <button
-              type="button"
-              aria-expanded={menuOpen}
-              aria-controls="mobile-nav"
-              aria-label={
-                menuOpen ? 'Fermer le menu de navigation' : 'Ouvrir le menu de navigation'
-              }
-              className="rounded-md p-2 text-neutral-600 hover:bg-neutral-100 md:hidden dark:text-neutral-300 dark:hover:bg-neutral-800"
-              onClick={() => setMenuOpen((value) => !value)}
-            >
-              {menuOpen ? (
-                <X className="size-5" aria-hidden="true" />
-              ) : (
-                <Menu className="size-5" aria-hidden="true" />
-              )}
-            </button>
+        <SidebarInset asChild className="bg-neutral-50 dark:bg-neutral-950">
+          <div>
+            <OfflineBanner />
+            <main className="flex flex-1 flex-col">
+              <TopBar slotRef={setTitleSlot} />
+              {/* Cible du lien d'évitement et du focus au changement de route :
+                  le contenu de la page, APRÈS la top bar — sinon l'utilisateur
+                  clavier doit refranchir le repli, le contact, le thème et la
+                  cloche avant d'atteindre la page (RGAA 12.7). */}
+              <div
+                id="main-content"
+                ref={contentRef}
+                tabIndex={-1}
+                className="flex flex-1 flex-col focus:outline-none"
+              >
+                <Outlet />
+              </div>
+            </main>
+            {/* Marge basse en mobile : la bottom nav flotte au-dessus. */}
+            <Footer className="pb-20 md:pb-0" />
           </div>
-        </div>
+        </SidebarInset>
 
-        {menuOpen && (
-          <nav
-            id="mobile-nav"
-            aria-label="Navigation principale"
-            className="border-t border-neutral-200 px-4 py-3 md:hidden dark:border-neutral-800"
-          >
-            <div className="flex flex-col gap-1">{links(() => setMenuOpen(false))}</div>
-          </nav>
-        )}
-      </header>
-
-      <main
-        id="main-content"
-        ref={mainRef}
-        tabIndex={-1}
-        className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 focus:outline-none"
-      >
-        <Outlet />
-      </main>
-
-      <Footer />
-    </div>
+        <BottomNav />
+      </SidebarProvider>
+    </PageHeaderSlotContext.Provider>
   )
 }

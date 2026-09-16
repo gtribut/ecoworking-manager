@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { Avatar, initialsOf } from '@/components/Avatar'
 import { EmptyState } from '@/components/EmptyState'
 import { MarkdownContent } from '@/components/MarkdownContent'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,8 +34,8 @@ export function DirectoryPage() {
   const { data, isLoading, isError, error, refetch } = useDirectory(page, q)
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold">Annuaire des coworkers</h1>
+    <PageContainer width="full" className="space-y-6">
+      <PageHeader title="Annuaire des coworkers" />
       <DirectoryTabs />
 
       <search aria-label="Recherche dans l’annuaire">
@@ -185,6 +187,6 @@ export function DirectoryPage() {
           )}
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }

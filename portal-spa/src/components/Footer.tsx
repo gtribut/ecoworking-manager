@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
-
-const CONTACT_MAILTO = 'mailto:contact@ecoworking.fr?subject=[backend ecowo] Demande d’informations'
+import { CONTACT_MAILTO } from '@/lib/contact'
+import { cn } from '@/lib/utils'
 
 /**
  * Pied de page minimaliste (PRD §3.1/§3.9, lot G) : mentions légales, CGU,
@@ -8,10 +8,10 @@ const CONTACT_MAILTO = 'mailto:contact@ecoworking.fr?subject=[backend ecowo] Dem
  * authentifié et le layout public — les trois pages liées sont accessibles
  * avec ou sans session (routes hors `<RequireAuth>`, cf. App.tsx).
  */
-export function Footer() {
+export function Footer({ className }: { className?: string }) {
   return (
-    <footer className="border-t border-neutral-200 dark:border-neutral-800">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-6 text-sm text-neutral-500 dark:text-neutral-400">
+    <footer className={cn('border-t border-border', className)}>
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-6 text-sm text-muted-foreground">
         <Link to="/mentions-legales" className="hover:underline">
           Mentions légales
         </Link>

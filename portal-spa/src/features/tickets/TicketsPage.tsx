@@ -1,6 +1,8 @@
 import { Armchair, Ticket as TicketIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -67,8 +69,8 @@ export function TicketsPage() {
   const { data, isLoading, isError, refetch } = useTickets()
 
   return (
-    <div className="mx-auto max-w-4xl space-y-10">
-      <h1 className="text-2xl font-semibold">Tickets & bureaux nomades</h1>
+    <PageContainer width="wide" className="space-y-10">
+      <PageHeader title="Tickets & bureaux nomades" />
 
       {isLoading && <Spinner label="Chargement de vos tickets…" />}
       {isError && (
@@ -127,7 +129,7 @@ export function TicketsPage() {
           )}
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }
 

@@ -58,3 +58,37 @@
 - Confirmation d'action destructrice : `ConfirmButton` (wrapper sur
   `AlertDialog`). Attention en test : la boîte est rendue dans un **portail**,
   donc hors du DOM du composant appelant.
+
+## Shell du portail (C14 — U2)
+
+- `Layout` assemble : `SidebarProvider` → `AppSidebar` (256 px, repli en mode
+  icône persisté) + `SidebarInset asChild` (top bar 60 px, `<main>`, `Footer`)
+  + `BottomNav` (5 onglets sous `md`). La top bar vit **dans** le `<main>` :
+  le titre de page y est rendu par portail et reste l'unique `<h1>` du contenu.
+- **Chaque page authentifiée** se compose ainsi :
+  ```tsx
+  <PageContainer width="wide">          {/* full | wide | narrow */}
+    <PageHeader title="…" description="…" actions={…} />
+    …contenu…
+  </PageContainer>
+  ```
+  `PageHeader` rend le `<h1>` (dans la top bar en desktop, au-dessus du contenu
+  en mobile) : **jamais de `<h1>` en dur dans une page**. `usePageTitle` reste
+  responsable du `document.title`. Largeurs déjà arbitrées : `full` pour
+  réservations / annuaire / plan / factures, `narrow` pour profil et détail
+  d'actualité, `wide` pour le reste.
+  **Exception** : `AnnouncementDetailPage` n'utilise pas `PageHeader` — son
+  `<h1>` vient des données et reste dans l'`<article>` (`aria-labelledby`), la
+  zone titre de la top bar y est donc vide.
+- Le lien d'évitement et le focus au changement de route visent `#main-content`,
+  qui commence **sous** la top bar : les actions globales ne sont pas à
+  refranchir. `SidebarProvider` fournit aussi un raccourci **Ctrl/Cmd + B** qui
+  replie la sidebar (et ouvre la feuille latérale en mobile, où aucun
+  déclencheur n'est affiché).
+- La navigation (entrées, icônes, filtrage par rôle) vit dans
+  `useNavEntries()` — un seul endroit pour la sidebar, la bottom nav et le
+  Sheet « Plus ». « Mon profil » n'est pas une entrée de nav : il est dans le
+  bloc profil (`ProfileMenu`) et dans le Sheet « Plus ».
+- `ProfileMenu` (bloc profil de la sidebar, avatar de la barre mobile) et
+  `ThemeToggle` (top bar) partagent `useThemeSelection()` ; les deux sont des
+  `DropdownMenu` Radix — panneau en **portail**, nommé par son déclencheur.

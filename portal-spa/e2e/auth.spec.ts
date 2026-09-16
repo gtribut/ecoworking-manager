@@ -63,8 +63,21 @@ test.describe('Session membre', () => {
     // La session meurt côté serveur : la prochaine requête API répond 401 →
     // l'intercepteur purge l'état auth → RequireAuth redirige vers /login.
     await expireSessionServerSide(page)
-    await page.getByRole('link', { name: 'Factures', exact: true }).click()
 
-    await expect(page).toHaveURL(/\/login/)
+    // Course inévitable : après l'expiration, la première requête API qui part
+    // — celle d'une requête de fond TanStack Query aussi bien que celle
+    // provoquée par le clic — reçoit 401, l'intercepteur purge l'état auth et
+    // <RequireAuth> redirige. Le lien « Factures » est alors détaché du DOM
+    // pendant que Playwright l'attend, et `click()` expire au bout de 30 s
+    // (échec observé sur `main`). On attend donc la redirection et le clic en
+    // parallèle : quelle que soit la requête qui déclenche le 401, la
+    // vérification reste la même — session morte = retour au login.
+    const invoicesLink = page.getByRole('link', { name: 'Factures', exact: true })
+    await Promise.all([
+      expect(page).toHaveURL(/\/login/, { timeout: 15_000 }),
+      invoicesLink.click({ noWaitAfter: true, timeout: 15_000 }).catch(() => undefined),
+    ])
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Portail Ecoworking' })).toBeVisible()
   })
 })

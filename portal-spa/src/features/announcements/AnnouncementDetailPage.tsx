@@ -1,5 +1,6 @@
 import { ArrowLeft, CalendarDays, MapPin, Users } from 'lucide-react'
 import { Link, useParams } from 'react-router'
+import { PageContainer } from '@/components/PageContainer'
 import { QueryError } from '@/components/QueryError'
 import { Spinner } from '@/components/ui/spinner'
 import { usePageTitle } from '@/lib/usePageTitle'
@@ -18,7 +19,7 @@ export function AnnouncementDetailPage() {
   )
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <PageContainer width="narrow" className="space-y-6">
       <p>
         <Link
           to="/announcements"
@@ -94,6 +95,6 @@ export function AnnouncementDetailPage() {
           <RsvpButton announcement={announcement} />
         </article>
       )}
-    </div>
+    </PageContainer>
   )
 }

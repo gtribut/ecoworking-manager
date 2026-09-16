@@ -26,7 +26,11 @@ import { cn } from '@/lib/utils'
  *    (lint/suspicious/noDocumentCookie). La lecture se fait à l'initialisation
  *    paresseuse de l'état ; en amont c'est Next.js qui relisait le cookie côté
  *    serveur pour alimenter `defaultOpen`.
- * 2. `SidebarProvider` remonte un `TooltipProvider` (présent dans le sidebar
+ * 2. `SidebarInset` accepte `asChild` : le shell y place un `<div>` qui
+ *    contient la top bar, le `<main>` et le pied de page, pour garder le
+ *    `<footer>` hors du `<main>` (sans quoi il perd son rôle `contentinfo`)
+ *    tout en laissant le `<h1>` de la top bar à l'intérieur du `<main>`.
+ * 3. `SidebarProvider` remonte un `TooltipProvider` (présent dans le sidebar
  *    amont de shadcn, absent du préréglage nova) : `SidebarMenuButton` rend un
  *    `Tooltip` dès qu'on lui passe la prop `tooltip`, ce qui lève sinon
  *    « Tooltip must be used within TooltipProvider ».
@@ -318,9 +322,15 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
   )
 }
 
-function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
+function SidebarInset({
+  className,
+  asChild = false,
+  ...props
+}: React.ComponentProps<'main'> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : 'main'
+
   return (
-    <main
+    <Comp
       data-slot="sidebar-inset"
       className={cn(
         'relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2',

@@ -1,4 +1,6 @@
 import { Link } from 'react-router'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { usePageTitle } from '@/lib/usePageTitle'
 
 /**
@@ -10,8 +12,8 @@ export function Forbidden() {
   usePageTitle('Accès refusé — Portail Ecoworking')
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 text-center">
-      <h1 className="text-2xl font-semibold">Accès refusé</h1>
+    <PageContainer width="narrow" className="space-y-4 text-center">
+      <PageHeader title="Accès refusé" />
       <p className="text-neutral-600 dark:text-neutral-300">
         Cette page n’est pas accessible avec votre profil. Si vous pensez qu’il s’agit d’une erreur,
         contactez Ecoworking.
@@ -21,6 +23,6 @@ export function Forbidden() {
           Retour à l’accueil
         </Link>
       </p>
-    </div>
+    </PageContainer>
   )
 }

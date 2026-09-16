@@ -1,5 +1,7 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, Receipt } from 'lucide-react'
 import { EmptyState } from '@/components/EmptyState'
+import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -83,8 +85,8 @@ export function InvoicesPage() {
   const entities = useBillingEntities()
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="text-2xl font-semibold">Mes factures</h1>
+    <PageContainer width="full" className="space-y-6">
+      <PageHeader title="Mes factures" />
 
       <InvoiceFiltersBar
         filters={filters}
@@ -232,6 +234,6 @@ export function InvoicesPage() {
       {/* Module administratif (§3.6.4) : c'est ici que le PRD prévoit le mode
           de paiement et l'IBAN-4, pas dans le profil. */}
       {entities.data && <EntityBlocks entities={entities.data} showBillingDetails />}
-    </div>
+    </PageContainer>
   )
 }

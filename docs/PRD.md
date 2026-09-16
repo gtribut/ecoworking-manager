@@ -291,7 +291,11 @@ Cf. §1.4. Points spécifiques au portail :
 
 > ✅ **Acté 2026-09-13** : la navigation principale est finalement une nav horizontale dans le header + un menu hamburger en mobile, à la place de la sidebar desktop + bottom nav mobile décrites ci-dessus (cf. aussi §3.9).
 
+> ✅ **Ré-acté 2026-09-16 (C14, ADR-0013)** : retour à la sidebar desktop (256 px, rétractable) + bottom nav mobile (5 entrées : Accueil, Réservations, Présence, Actualités, Plus) avec le reste en Sheet « Plus » ; l'écart du 13/09 est annulé.
+
 > ✅ **Acté 2026-09-13** : les états de chargement utilisent un composant `Spinner` par bloc, à la place des Skeletons shadcn/ui décrites ci-dessus — toujours pas de spinner plein écran.
+
+> ✅ **Ré-acté 2026-09-16 (C14, ADR-0013)** : les Skeletons shadcn/ui reviennent avec la migration réelle vers shadcn (D1) pour les états de chargement de bloc ; le `Spinner` est conservé en complément pour les actions ponctuelles (upload, soumission de formulaire).
 
 #### Accessibilité — exigence RGAA (importante)
 
@@ -541,7 +545,7 @@ Trois types de ressources, chacun avec des règles d'utilisation et d'affichage 
 - Filtre par ressource (sélecteur multi-choix : choisir 1, 2, 3 ou toutes les salles)
 - Semaine en cours par défaut, mode hebdomadaire
 - Mode jour disponible (et par défaut sur mobile)
-- 🟡 Codes couleur par ressource pour distinguer visuellement
+- 🟡 Codes couleur par ressource pour distinguer visuellement — ✅ acté 2026-09-16, cf. encadré ADR-0013 en fin de section
 - Mes propres résa mises en avant (contour ou couleur primaire renforcée)
 - Résa des autres : visibles mais non cliquables pour modification. Hover/clic affiche le **nom du réserveur** (prénom + nom + entité juridique) + libellé si renseigné (Q4 tranchée : transparence par défaut)
 
@@ -550,7 +554,7 @@ Trois types de ressources, chacun avec des règles d'utilisation et d'affichage 
 **Heures affichées**
 - 24h/24 pour resident/additional (réservation libre 24/24 7/7)
 - 9h-18h pour external (puisque seuls les créneaux demi-journée 9h-13h et 14h-18h jours ouvrés lui sont autorisés)
-- 🟡 Affichage adaptatif : par défaut 8h-20h pour ne pas surcharger, mais possibilité de "voir 24h" pour resident/additional via toggle
+- 🟡 Affichage adaptatif : par défaut 8h-20h pour ne pas surcharger, mais possibilité de "voir 24h" pour resident/additional via toggle — ✅ acté 2026-09-16, cf. encadré ADR-0013 en fin de section
 
 **Navigation**
 - Boutons "Semaine précédente" / "Semaine suivante" / "Aujourd'hui"
@@ -558,6 +562,20 @@ Trois types de ressources, chacun avec des règles d'utilisation et d'affichage 
 - **Pas de limite d'horizon** : réservation possible aussi loin dans le futur que souhaité (✅ décidé : aucune restriction).
 
 > ✅ **Tranché (Q4)** — privacy résa : nom du réserveur **visible** aux autres membres (tooltip ou clic sur la résa affiche "prénom + nom + entité juridique" et le libellé si renseigné).
+
+> ✅ **Acté 2026-09-16 (C14, ADR-0013)** : le calendrier est rendu par **FullCalendar v7**
+> (`@fullcalendar/react` + core/timegrid/daygrid/interaction, MIT) — vues `timeGridWeek` /
+> `timeGridDay` / `dayGridMonth`, `locale: 'fr'`, `firstDay: 1`. Plage horaire : 08 h–20 h par
+> défaut avec toggle « voir 24 h » pour resident/additional (`slotMinTime`/`slotMaxTime`) ;
+> pour external, 09 h–18 h avec `selectConstraint` limité aux demi-journées des jours ouvrés
+> (cf. §3.5.3). Codes couleur par salle repris de la maquette (sky / amber / violet, event en
+> hachuré) via `eventContent`/classNames, appliqués aussi en thème sombre (fonds foncés, texte
+> clair, contraste AA vérifié). La grille FullCalendar n'est **pas auditée par axe** (exclusion
+> documentée dans `portal-spa/e2e/support/fixtures.ts`) ; en contrepartie, la même page expose
+> une alternative accessible complète : liste « Mes réservations » et bouton
+> « Nouvelle réservation » ouvrant une saisie manuelle (date, heure, salle). Le mini-mois en
+> panneau droit (shadcn `Calendar`) remplace le date picker de navigation. Détail complet dans
+> [ADR-0013](./adr/0013-shadcn-fullcalendar-a11y-agenda.md).
 
 #### 3.5.3 Réserver une salle de réunion — flow par rôle
 
@@ -898,9 +916,20 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
 └──────────────────────────┘
 ```
 
-> 🟡 **Ajout à valider** : icônes exactes, ordre, comportement actif
+> 🟡 **Ajout à valider** : icônes exactes, ordre, comportement actif — résolu par le ré-actage du
+> 2026-09-16 ci-dessous : ordre de la bottom nav = Accueil, Réservations, Présence, Actualités,
+> Plus (icônes lucide-react, onglet actif en couleur primaire).
 
 > ✅ **Acté 2026-09-13** : les schémas desktop (§3.9.1) et mobile (§3.9.2) ci-dessus sont obsolètes sur la navigation — l'implémentation retient une nav horizontale dans le header (desktop) + un menu hamburger (mobile), à la place de la sidebar desktop et de la bottom nav mobile décrites.
+
+> ✅ **Ré-acté 2026-09-16 (C14, ADR-0013)** : les schémas 3.9.1 (sidebar desktop) et 3.9.2 (bottom
+> nav mobile) ci-dessus redeviennent la cible — l'écart du 13/09 est annulé. Précisions : top bar
+> 60 px (titre de la page courante, cloche de notifications, bouton de thème, menu profil) ;
+> bloc profil (nom + entité + menu) en bas de la sidebar, pas dans le header ; largeur de contenu
+> max **par page** (`full` / `wide` / `narrow` selon l'écran) ; pas d'entrée « Mon entreprise »
+> dans la sidebar (D8) — le bloc entité reste dans Factures et l'onglet Entreprise du profil.
+> Ordre de la bottom nav : Accueil, Réservations, Présence, Actualités, Plus (Sheet regroupant
+> Annuaire & plan, Documents, Factures, Mon compte).
 
 ---
 

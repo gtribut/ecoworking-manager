@@ -12,6 +12,15 @@ import {
 import { BookingDialog } from './BookingDialog'
 import { BookingsPage } from './BookingsPage'
 
+/**
+ * L'agenda est rendu par FullCalendar (ADR-0013 D3). Ce qui est testé ici :
+ * la barre d'outils, les chips de filtre, le popover, la modale de réservation
+ * et la liste — c'est-à-dire tout ce que le membre peut atteindre au clavier.
+ * Le **glisser** sur un créneau libre n'est pas simulable en jsdom (drag
+ * pointer dans la grille) : la logique qu'il déclenche est couverte par
+ * `calendarEvents.test.ts` (`rangeFromSelection`, contraintes external).
+ */
+
 const MEETING_ROOM = {
   id: 7,
   type: 'meeting_room',
@@ -22,6 +31,13 @@ const MEETING_ROOM = {
   floor: 1,
   external_half_day_price_ht: null,
   is_bookable: true,
+}
+
+const SECOND_ROOM = {
+  ...MEETING_ROOM,
+  id: 8,
+  name: 'Salle Saône',
+  capacity: 4,
 }
 
 const EVENT_ROOM = {
@@ -52,6 +68,7 @@ function availability(slots: unknown[] = [], eventSlots: unknown[] = []) {
     to: '2026-06-14',
     rooms: [
       { ...MEETING_ROOM, slots },
+      { ...SECOND_ROOM, slots: [] },
       { ...EVENT_ROOM, slots: eventSlots },
     ],
   })
@@ -83,7 +100,9 @@ function setup({
         tickets: [],
       }),
     ),
-    http.get('/api/rooms', () => HttpResponse.json({ data: [MEETING_ROOM, EVENT_ROOM] })),
+    http.get('/api/rooms', () =>
+      HttpResponse.json({ data: [MEETING_ROOM, SECOND_ROOM, EVENT_ROOM] }),
+    ),
     http.get('/api/rooms/availability', () => availability(slots)),
     http.get('/api/bookings', ({ request }) =>
       bookingsPage(new URL(request.url).searchParams.has('past') ? pastBookings : bookings),
@@ -91,7 +110,34 @@ function setup({
   )
 }
 
-describe('BookingsPage — calendrier des salles', () => {
+/** Créneau d'un autre membre, avec occupant et libellé (Q4). */
+const OTHER_SLOT = {
+  booking_id: null,
+  is_mine: false,
+  cancellable: false,
+  starts_at: '2026-06-11T10:00:00+02:00',
+  ends_at: '2026-06-11T11:00:00+02:00',
+  label: 'Comité produit',
+  occupant: {
+    kind: 'member',
+    first_name: 'Hugo',
+    last_name: 'Discret',
+    company_name: 'Atelier Numérique',
+  },
+}
+
+/** Sa propre réservation, encore annulable. */
+const MY_SLOT = {
+  booking_id: 42,
+  is_mine: true,
+  cancellable: true,
+  starts_at: '2026-06-12T14:00:00+02:00',
+  ends_at: '2026-06-12T15:00:00+02:00',
+  label: 'Point équipe',
+  occupant: null,
+}
+
+describe('BookingsPage — agenda des salles', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.setSystemTime(TODAY)
@@ -102,24 +148,47 @@ describe('BookingsPage — calendrier des salles', () => {
     vi.restoreAllMocks()
   })
 
-  it('affiche la grille semaine avec toutes les salles et la navigation', async () => {
+  it('affiche la barre d’outils, les chips de salles et le panneau droit', async () => {
     setup()
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    expect(await screen.findByRole('heading', { name: 'Calendrier des salles' })).toBeVisible()
+    expect(await screen.findByRole('button', { name: 'Nouvelle réservation' })).toBeVisible()
     // Semaine du lundi 8 juin 2026 (la date de référence est un mercredi).
-    expect(screen.getByText(/Semaine du lundi 8 juin/, { selector: 'p' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Semaine précédente' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Semaine suivante' })).toBeInTheDocument()
+    expect(screen.getByText('8 – 14 juin 2026')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Aujourd’hui' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Aller à la semaine du')).toBeInTheDocument()
-    // Filtre multi-salles : une case par salle, salle event incluse.
-    expect(screen.getByRole('checkbox', { name: /Salle Rhône/ })).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: /Salle événementielle/ })).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: 'Voir 24 h' })).not.toBeChecked()
+    expect(screen.getByRole('button', { name: 'Période précédente' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Période suivante' })).toBeInTheDocument()
+
+    // Sélecteur de vue : semaine active par défaut en desktop.
+    const views = screen.getByRole('radiogroup', { name: 'Affichage du calendrier' })
+    expect(within(views).getByRole('radio', { name: 'Semaine' })).toBeChecked()
+
+    // Une chip par salle (salle event incluse), toutes affichées au départ.
+    expect(screen.getByRole('button', { name: /Salle Rhône/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByRole('button', { name: /Salle événementielle — affichée/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Voir 24 h' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+
+    // Panneau droit : mini-mois, renvoi vers la liste, abonnement iCal.
+    expect(screen.getByRole('link', { name: /Voir toutes mes réservations/ })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Abonnement agenda' })).toBeVisible()
   })
 
-  it('navigue vers la semaine suivante et redemande la plage correspondante', async () => {
+  it('annonce l’alternative accessible avant la grille (ADR-0013 D4)', async () => {
+    setup()
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    expect(
+      await screen.findByText(/n’est pas navigable au clavier/, { selector: 'p' }),
+    ).toBeInTheDocument()
+  })
+
+  it('navigue vers la période suivante et redemande la plage correspondante', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const ranges: string[] = []
     setup()
@@ -132,13 +201,13 @@ describe('BookingsPage — calendrier des salles', () => {
     )
 
     renderWithProviders(<BookingsPage />, { withAuth: true })
-    await screen.findByRole('heading', { name: 'Calendrier des salles' })
+    await screen.findByRole('button', { name: 'Nouvelle réservation' })
     await waitFor(() => expect(ranges).toContain('2026-06-08→2026-06-14'))
 
-    await user.click(screen.getByRole('button', { name: 'Semaine suivante' }))
+    await user.click(screen.getByRole('button', { name: 'Période suivante' }))
 
     await waitFor(() => expect(ranges).toContain('2026-06-15→2026-06-21'))
-    expect(screen.getByText(/Semaine du lundi 15 juin/, { selector: 'p' })).toBeInTheDocument()
+    expect(screen.getByText('15 – 21 juin 2026')).toBeInTheDocument()
   })
 
   it('ouvre la vue jour par défaut sur mobile (matchMedia)', async () => {
@@ -153,166 +222,133 @@ describe('BookingsPage — calendrier des salles', () => {
     setup()
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    expect(await screen.findByRole('heading', { name: 'Calendrier des salles' })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Jour précédent' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Salle Rhône' })).toBeInTheDocument()
+    const views = await screen.findByRole('radiogroup', { name: 'Affichage du calendrier' })
+    expect(within(views).getByRole('radio', { name: 'Jour' })).toBeChecked()
+    expect(screen.getByText('mercredi 10 juin 2026')).toBeInTheDocument()
   })
 
-  it('étend la grille à 24 h via le toggle', async () => {
+  it('bascule sur la vue mois via le sélecteur de vue', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     setup()
     renderWithProviders(<BookingsPage />, { withAuth: true })
-    await screen.findByRole('heading', { name: 'Calendrier des salles' })
+    await screen.findByRole('button', { name: 'Nouvelle réservation' })
 
-    // 8 h-20 h par défaut : ni 06:00 ni 22:00 dans les en-têtes de ligne.
-    expect(screen.queryByRole('rowheader', { name: '06:00' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: 'Mois' }))
 
-    await user.click(screen.getByRole('checkbox', { name: 'Voir 24 h' }))
-
-    expect(screen.getByRole('rowheader', { name: '00:00' })).toBeInTheDocument()
-    expect(screen.getByRole('rowheader', { name: '23:00' })).toBeInTheDocument()
+    // Le libellé de période, pas la légende du mini-mois du panneau droit.
+    expect(await screen.findByText('juin 2026', { selector: 'p' })).toBeInTheDocument()
   })
 
-  it('liste les 7 jours de la semaine dans l’alternative accessible', async () => {
-    setup({
-      slots: [
-        {
-          booking_id: null,
-          is_mine: false,
-          cancellable: false,
-          starts_at: '2026-06-12T10:00:00+02:00',
-          ends_at: '2026-06-12T11:00:00+02:00',
-          label: 'Atelier',
-          occupant: { kind: 'entity', first_name: null, last_name: null, company_name: 'Cabinet' },
-        },
-      ],
-    })
-    renderWithProviders(<BookingsPage />, { withAuth: true })
-
-    expect(await screen.findByRole('heading', { name: 'Vue liste' })).toBeVisible()
-    // Lundi 8 → dimanche 14 juin : un sous-titre par jour affiché.
-    expect(screen.getByRole('heading', { name: 'lundi 8 juin' })).toBeVisible()
-    expect(screen.getByRole('heading', { name: 'dimanche 14 juin' })).toBeVisible()
-    // Et le créneau du vendredi 12 y figure en texte, avec son occupant.
-    expect(screen.getByText(/Occupé par Cabinet — Atelier/)).toBeVisible()
-  })
-
-  it('n’offre aucune action sur une résa déjà commencée et ouvre la modale en lecture seule', async () => {
-    setup({
-      bookings: [
-        {
-          id: 77,
-          resource_id: 7,
-          resource_name: 'Salle Rhône',
-          title: 'Déjà commencée',
-          starts_at: '2026-06-10T08:00:00+02:00',
-          ends_at: '2026-06-10T12:00:00+02:00',
-          status: 'confirmed',
-          is_paid: false,
-          ticket: null,
-          // Encore « à venir » (non terminée) mais le créneau a commencé.
-          cancellable: false,
-        },
-      ],
-    })
-    renderWithProviders(<BookingsPage />, { withAuth: true })
-    await screen.findByText('Déjà commencée')
-
-    expect(screen.queryByRole('button', { name: /Modifier/ })).not.toBeInTheDocument()
-  })
-
-  it('affiche la modale en lecture seule si l’état de la liste est périmé', () => {
-    renderWithProviders(
-      <BookingDialog
-        target={{
-          mode: 'edit',
-          bookingId: 77,
-          roomId: 7,
-          roomName: 'Salle Rhône',
-          startsAt: '2026-06-10T08:00:00+02:00',
-          endsAt: '2026-06-10T12:00:00+02:00',
-          title: 'Déjà commencée',
-          cancellable: false,
-        }}
-        isExternal={false}
-        onClose={() => undefined}
-        onSuccess={() => undefined}
-      />,
-    )
-
-    expect(screen.getByRole('dialog', { name: 'Ma réservation — Salle Rhône' })).toBeVisible()
-    expect(screen.getByText(/n’est plus modifiable ni annulable depuis le portail/)).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Supprimer' })).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Enregistrer les modifications' }),
-    ).not.toBeInTheDocument()
-    expect(screen.getByText('Déjà commencée')).toBeVisible()
-  })
-
-  it('bascule en vue jour (une colonne par salle)', async () => {
+  it('étend la plage horaire à 24 h via le toggle', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     setup()
-    renderWithProviders(<BookingsPage />, { withAuth: true })
-    await screen.findByRole('heading', { name: 'Calendrier des salles' })
+    const { container } = renderWithProviders(<BookingsPage />, { withAuth: true })
+    await screen.findByRole('button', { name: 'Nouvelle réservation' })
 
-    await user.click(screen.getByRole('button', { name: 'Jour' }))
+    // 8 h-20 h par défaut : pas de créneau de minuit dans la grille.
+    expect(container.querySelector('[data-time="00:00:00"]')).toBeNull()
+    expect(container.querySelector('[data-time="08:00:00"]')).not.toBeNull()
 
-    expect(screen.getByRole('button', { name: 'Jour précédent' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Salle Rhône' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Salle événementielle' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Voir 24 h' }))
+
+    await waitFor(() => expect(container.querySelector('[data-time="00:00:00"]')).not.toBeNull())
+    expect(container.querySelector('[data-time="23:00:00"]')).not.toBeNull()
   })
 
-  it('montre l’occupant, l’entité et le libellé d’une résa d’un autre membre, non modifiable', async () => {
-    setup({
-      slots: [
-        {
-          booking_id: null,
-          is_mine: false,
-          cancellable: false,
-          starts_at: '2026-06-11T10:00:00+02:00',
-          ends_at: '2026-06-11T11:00:00+02:00',
-          label: 'Comité produit',
-          occupant: {
-            kind: 'member',
-            first_name: 'Hugo',
-            last_name: 'Discret',
-            company_name: 'Atelier Numérique',
-          },
-        },
-      ],
-    })
+  it('masque une salle via sa chip et ne la demande plus au serveur', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    renderWithProviders(<BookingsPage />, { withAuth: true })
-
-    const busy = await screen.findByRole('button', {
-      name: /Occupé par Hugo Discret \(Atelier Numérique\) — Comité produit/,
-    })
-    // Consultable au clavier mais jamais modifiable (PRD §3.5.2).
-    expect(busy).toHaveAttribute('aria-disabled', 'true')
-
-    // Le panneau de détail s'alimente au focus clavier comme au survol.
-    busy.focus()
-    expect(
-      await screen.findByText(/Occupé par Hugo Discret \(Atelier Numérique\) — Comité produit/, {
-        selector: 'p',
+    const requested: (string | null)[] = []
+    setup()
+    server.use(
+      http.get('/api/rooms/availability', ({ request }) => {
+        requested.push(new URL(request.url).searchParams.getAll('rooms[]').join(','))
+        return availability()
       }),
-    ).toBeVisible()
+    )
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+    await screen.findByRole('button', { name: 'Nouvelle réservation' })
+    await waitFor(() => expect(requested).toContain('7,8,9'))
 
-    await user.hover(busy)
-    expect(
-      screen.getByText(/Occupé par Hugo Discret \(Atelier Numérique\)/, { selector: 'p' }),
-    ).toBeVisible()
+    await user.click(screen.getByRole('button', { name: /Salle Saône/ }))
+
+    await waitFor(() => expect(requested).toContain('7,9'))
+    expect(screen.getByRole('button', { name: /Salle Saône/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
   })
 
-  it('propose de nous contacter au clic sur la salle événementielle', async () => {
+  it('montre l’occupant, l’entité et le libellé d’une résa d’un autre membre, sans action', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    setup({ slots: [OTHER_SLOT] })
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    await user.click(await screen.findByText('Comité produit'))
+
+    // Popover de détail : occupant + entité (Q4, transparence entre membres).
+    expect(await screen.findByText('Hugo Discret (Atelier Numérique)')).toBeVisible()
+    expect(screen.getByText(/Salle Rhône · 6 places/)).toBeVisible()
+    // Résa d'un autre membre : jamais modifiable ni annulable.
+    expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Annuler' })).not.toBeInTheDocument()
+  })
+
+  it('ouvre « Modifier » depuis le popover de sa propre réservation', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const patched = vi.fn()
+    setup({ slots: [MY_SLOT] })
+    server.use(
+      http.patch('/api/bookings/42', async ({ request }) => {
+        patched(await request.json())
+        return HttpResponse.json({ data: { id: 42 } })
+      }),
+    )
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    await user.click(await screen.findByText('Point équipe'))
+    await user.click(await screen.findByRole('button', { name: 'Modifier' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Ma réservation — Salle Rhône' })
+    expect(within(dialog).getByLabelText('Salle')).toHaveValue('7')
+    expect(within(dialog).getByLabelText('Libellé (optionnel)')).toHaveValue('Point équipe')
+    await user.clear(within(dialog).getByLabelText('Heure de fin'))
+    await user.type(within(dialog).getByLabelText('Heure de fin'), '16:00')
+    await user.click(within(dialog).getByRole('button', { name: 'Enregistrer les modifications' }))
+
+    await waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
+    const payload = patched.mock.calls[0]?.[0] as { ends_at: string }
+    expect(new Date(payload.ends_at).getHours()).toBe(16)
+    expect(await screen.findByText('Réservation modifiée.')).toBeVisible()
+  })
+
+  it('annule sa réservation depuis le popover, après confirmation', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const deleted = vi.fn()
+    setup({ slots: [MY_SLOT] })
+    server.use(
+      http.delete('/api/bookings/42', () => {
+        deleted()
+        return HttpResponse.json({ message: 'Réservation annulée.' })
+      }),
+    )
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    await user.click(await screen.findByText('Point équipe'))
+    await user.click(await screen.findByRole('button', { name: 'Annuler' }))
+    // La confirmation est un AlertDialog Radix rendu dans un portail, hors du
+    // DOM du popover.
+    await user.click(await screen.findByRole('button', { name: 'Oui, annuler' }))
+
+    await waitFor(() => expect(deleted).toHaveBeenCalledTimes(1))
+    expect(await screen.findByText('Réservation annulée.')).toBeVisible()
+  })
+
+  it('propose de nous contacter pour la salle événementielle', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     setup()
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    const cells = await screen.findAllByRole('button', {
-      name: /Salle événementielle.*réservation sur demande/,
-    })
-    await user.click(cells[0] as HTMLElement)
+    await user.click(await screen.findByRole('button', { name: 'Réserver Salle événementielle' }))
 
     expect(await screen.findByText('Pour réserver cette salle, contactez-nous.')).toBeVisible()
     expect(screen.getByRole('link', { name: 'Nous contacter' })).toHaveAttribute(
@@ -323,7 +359,47 @@ describe('BookingsPage — calendrier des salles', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('réserve un créneau libre depuis la modale (créneau pré-rempli)', async () => {
+  it('renvoie le même message au clic sur un créneau de la salle événementielle', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    setup()
+    server.use(
+      http.get('/api/rooms/availability', () =>
+        availability(
+          [],
+          [
+            {
+              booking_id: null,
+              is_mine: false,
+              cancellable: false,
+              starts_at: '2026-06-11T18:00:00+02:00',
+              ends_at: '2026-06-11T20:00:00+02:00',
+              label: 'Afterwork',
+              occupant: null,
+            },
+          ],
+        ),
+      ),
+    )
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    await user.click(await screen.findByText('Afterwork'))
+
+    expect(await screen.findByText('Pour réserver cette salle, contactez-nous.')).toBeVisible()
+  })
+})
+
+describe('BookingsPage — modale de réservation', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(TODAY)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('réserve depuis « Nouvelle réservation » : salle, date et heures saisies', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const created = vi.fn()
     setup()
@@ -335,22 +411,43 @@ describe('BookingsPage — calendrier des salles', () => {
     )
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    const free = await screen.findByRole('button', {
-      name: /Réserver Salle Rhône, jeudi 11 juin 10:00/,
-    })
-    await user.click(free)
+    await user.click(await screen.findByRole('button', { name: 'Nouvelle réservation' }))
 
-    const dialog = await screen.findByRole('dialog', { name: 'Réserver Salle Rhône' })
-    expect(within(dialog).getByLabelText('Date')).toHaveValue('2026-06-11')
+    const dialog = await screen.findByRole('dialog', { name: 'Nouvelle réservation' })
+    // Créneau par défaut : aujourd'hui, prochaine heure pleine.
+    expect(within(dialog).getByLabelText('Date')).toHaveValue('2026-06-10')
     expect(within(dialog).getByLabelText('Heure de début')).toHaveValue('10:00')
-    expect(within(dialog).getByLabelText('Créneau personnalisé')).toBeChecked()
+    // Salle à choisir : la salle événementielle n'est pas proposée (§3.5.4).
+    const roomSelect = within(dialog).getByLabelText('Salle')
+    expect(within(roomSelect).queryByRole('option', { name: /Salle événementielle/ })).toBeNull()
 
+    await user.selectOptions(roomSelect, '8')
     await user.type(within(dialog).getByLabelText('Libellé (optionnel)'), 'Point équipe')
     await user.click(within(dialog).getByRole('button', { name: 'Réserver' }))
 
     await waitFor(() => expect(created).toHaveBeenCalledTimes(1))
-    expect(created.mock.calls[0]?.[0]).toMatchObject({ resource_id: 7, title: 'Point équipe' })
+    expect(created.mock.calls[0]?.[0]).toMatchObject({ resource_id: 8, title: 'Point équipe' })
     expect(await screen.findByText('Réservation confirmée.')).toBeVisible()
+  })
+
+  it('refuse la soumission sans salle choisie', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const created = vi.fn()
+    setup()
+    server.use(
+      http.post('/api/bookings', async ({ request }) => {
+        created(await request.json())
+        return HttpResponse.json({ data: { id: 1 } }, { status: 201 })
+      }),
+    )
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    await user.click(await screen.findByRole('button', { name: 'Nouvelle réservation' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Nouvelle réservation' })
+    await user.click(within(dialog).getByRole('button', { name: 'Réserver' }))
+
+    expect(await within(dialog).findByText('La salle est requise.')).toBeVisible()
+    expect(created).not.toHaveBeenCalled()
   })
 
   it('réserve une demi-journée via le toggle « Matin »', async () => {
@@ -365,10 +462,9 @@ describe('BookingsPage — calendrier des salles', () => {
     )
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    await user.click(
-      await screen.findByRole('button', { name: /Réserver Salle Rhône, jeudi 11 juin 10:00/ }),
-    )
+    await user.click(await screen.findByRole('button', { name: 'Nouvelle réservation' }))
     const dialog = await screen.findByRole('dialog')
+    await user.selectOptions(within(dialog).getByLabelText('Salle'), '7')
     await user.click(within(dialog).getByLabelText('Matin (9 h – 13 h)'))
     await user.click(within(dialog).getByRole('button', { name: 'Réserver' }))
 
@@ -380,19 +476,7 @@ describe('BookingsPage — calendrier des salles', () => {
 
   it('affiche le conflit 409 et propose le créneau libre le plus proche', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    setup({
-      slots: [
-        {
-          booking_id: null,
-          is_mine: false,
-          cancellable: false,
-          starts_at: '2026-06-11T10:00:00+02:00',
-          ends_at: '2026-06-11T11:00:00+02:00',
-          label: null,
-          occupant: null,
-        },
-      ],
-    })
+    setup()
     server.use(
       http.post('/api/bookings', () =>
         HttpResponse.json(
@@ -400,14 +484,14 @@ describe('BookingsPage — calendrier des salles', () => {
           { status: 409 },
         ),
       ),
-      // La suggestion se calcule sur une dispo FRAÎCHE : 09:00–10:00 vient
-      // d'être pris par un tiers, 10:00–11:00 l'était déjà.
+      // La suggestion se calcule sur une dispo FRAÎCHE : 10:00–11:00 vient
+      // d'être pris par un tiers, 11:00–12:00 l'était déjà.
       http.get('/api/rooms/:id/availability', () =>
         HttpResponse.json({
-          date: '2026-06-11',
+          date: '2026-06-10',
           busy: [
-            { starts_at: '2026-06-11T09:00:00+02:00', ends_at: '2026-06-11T10:00:00+02:00' },
-            { starts_at: '2026-06-11T10:00:00+02:00', ends_at: '2026-06-11T11:00:00+02:00' },
+            { starts_at: '2026-06-10T10:00:00+02:00', ends_at: '2026-06-10T11:00:00+02:00' },
+            { starts_at: '2026-06-10T11:00:00+02:00', ends_at: '2026-06-10T12:00:00+02:00' },
           ],
           external_slots: [],
           is_external: false,
@@ -416,19 +500,16 @@ describe('BookingsPage — calendrier des salles', () => {
     )
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    await user.click(
-      await screen.findByRole('button', { name: /Réserver Salle Rhône, jeudi 11 juin 09:00/ }),
-    )
+    await user.click(await screen.findByRole('button', { name: 'Nouvelle réservation' }))
     const dialog = await screen.findByRole('dialog')
+    await user.selectOptions(within(dialog).getByLabelText('Salle'), '7')
     await user.click(within(dialog).getByRole('button', { name: 'Réserver' }))
 
     expect(
       await within(dialog).findByText('Ce créneau est déjà réservé pour cette salle.'),
     ).toBeVisible()
     expect(await within(dialog).findByText(/Créneau libre le plus proche/)).toBeVisible()
-    // 08:00–09:00 : créneau libre le plus proche du 09:00 demandé, d'après la
-    // dispo rafraîchie (09:00 et 10:00 sont pris).
-    expect(within(dialog).getByRole('button', { name: '08:00 – 09:00' })).toBeVisible()
+    expect(within(dialog).getByRole('button', { name: '12:00 – 13:00' })).toBeVisible()
   })
 
   it('affiche les erreurs 422 sous les champs concernés', async () => {
@@ -447,10 +528,9 @@ describe('BookingsPage — calendrier des salles', () => {
     )
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    await user.click(
-      await screen.findByRole('button', { name: /Réserver Salle Rhône, jeudi 11 juin 10:00/ }),
-    )
+    await user.click(await screen.findByRole('button', { name: 'Nouvelle réservation' }))
     const dialog = await screen.findByRole('dialog')
+    await user.selectOptions(within(dialog).getByLabelText('Salle'), '7')
     await user.click(within(dialog).getByRole('button', { name: 'Réserver' }))
 
     const field = await within(dialog).findByLabelText('Heure de début')
@@ -464,9 +544,7 @@ describe('BookingsPage — calendrier des salles', () => {
     setup()
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    await user.click(
-      await screen.findByRole('button', { name: /Réserver Salle Rhône, jeudi 11 juin 10:00/ }),
-    )
+    await user.click(await screen.findByRole('button', { name: 'Nouvelle réservation' }))
     expect(await screen.findByRole('dialog')).toBeVisible()
 
     await user.keyboard('{Escape}')
@@ -474,86 +552,34 @@ describe('BookingsPage — calendrier des salles', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
-  it('ouvre « Modifier / Supprimer » sur sa propre réservation du calendrier', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    const patched = vi.fn()
-    setup({
-      slots: [
-        {
-          booking_id: 42,
-          is_mine: true,
-          cancellable: true,
-          starts_at: '2026-06-11T10:00:00+02:00',
-          ends_at: '2026-06-11T11:00:00+02:00',
-          label: 'Point équipe',
-          occupant: {
-            kind: 'member',
-            first_name: 'Alex',
-            last_name: 'Martin',
-            company_name: 'Ecoworking',
-          },
-        },
-      ],
-    })
-    server.use(
-      http.patch('/api/bookings/42', async ({ request }) => {
-        patched(await request.json())
-        return HttpResponse.json({ data: { id: 42 } })
-      }),
-    )
-    renderWithProviders(<BookingsPage />, { withAuth: true })
-
-    await user.click(
-      await screen.findByRole('button', { name: /Ma réservation.*modifier ou supprimer/ }),
+  it('affiche la modale en lecture seule si l’état de la liste est périmé', async () => {
+    setup()
+    renderWithProviders(
+      <BookingDialog
+        target={{
+          mode: 'edit',
+          bookingId: 77,
+          roomId: 7,
+          startsAt: '2026-06-10T08:00:00+02:00',
+          endsAt: '2026-06-10T12:00:00+02:00',
+          title: 'Déjà commencée',
+          cancellable: false,
+        }}
+        isExternal={false}
+        onClose={() => undefined}
+        onSuccess={() => undefined}
+      />,
     )
 
-    const dialog = await screen.findByRole('dialog', { name: 'Ma réservation — Salle Rhône' })
-    expect(within(dialog).getByLabelText('Libellé (optionnel)')).toHaveValue('Point équipe')
-    await user.clear(within(dialog).getByLabelText('Heure de fin'))
-    await user.type(within(dialog).getByLabelText('Heure de fin'), '12:00')
-    await user.click(within(dialog).getByRole('button', { name: 'Enregistrer les modifications' }))
-
-    await waitFor(() => expect(patched).toHaveBeenCalledTimes(1))
-    const payload = patched.mock.calls[0]?.[0] as { ends_at: string }
-    expect(new Date(payload.ends_at).getHours()).toBe(12)
-    expect(await screen.findByText('Réservation modifiée.')).toBeVisible()
-  })
-
-  it('supprime une réservation après confirmation', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    const deleted = vi.fn()
-    setup({
-      slots: [
-        {
-          booking_id: 42,
-          is_mine: true,
-          cancellable: true,
-          starts_at: '2026-06-11T10:00:00+02:00',
-          ends_at: '2026-06-11T11:00:00+02:00',
-          label: null,
-          occupant: null,
-        },
-      ],
-    })
-    server.use(
-      http.delete('/api/bookings/42', () => {
-        deleted()
-        return HttpResponse.json({ message: 'Réservation annulée.' })
-      }),
-    )
-    renderWithProviders(<BookingsPage />, { withAuth: true })
-
-    await user.click(
-      await screen.findByRole('button', { name: /Ma réservation.*modifier ou supprimer/ }),
-    )
-    const dialog = await screen.findByRole('dialog')
-    await user.click(within(dialog).getByRole('button', { name: 'Supprimer' }))
-    // La confirmation est un AlertDialog Radix : il est rendu dans un portail
-    // à la racine du document, pas dans le DOM de la modale de réservation.
-    await user.click(await screen.findByRole('button', { name: 'Oui, supprimer' }))
-
-    await waitFor(() => expect(deleted).toHaveBeenCalledTimes(1))
-    expect(await screen.findByText('Réservation annulée.')).toBeVisible()
+    expect(
+      await screen.findByRole('dialog', { name: 'Ma réservation — Salle Rhône' }),
+    ).toBeVisible()
+    expect(screen.getByText(/n’est plus modifiable ni annulable depuis le portail/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Supprimer' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Enregistrer les modifications' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Déjà commencée')).toBeVisible()
   })
 })
 
@@ -567,34 +593,30 @@ describe('BookingsPage — mes réservations', () => {
     vi.useRealTimers()
   })
 
+  const UPCOMING = {
+    id: 100,
+    resource_id: 7,
+    resource_name: 'Salle Rhône',
+    title: 'Réunion équipe',
+    starts_at: '2026-06-12T10:00:00+02:00',
+    ends_at: '2026-06-12T11:00:00+02:00',
+    status: 'confirmed',
+    is_paid: false,
+    ticket: null,
+    cancellable: true,
+  }
+
   it('liste les prochaines réservations par défaut et bascule sur l’historique', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     setup({
-      bookings: [
-        {
-          id: 100,
-          resource_id: 7,
-          resource_name: 'Salle Rhône',
-          title: 'Réunion équipe',
-          starts_at: '2026-06-12T10:00:00+02:00',
-          ends_at: '2026-06-12T11:00:00+02:00',
-          status: 'confirmed',
-          is_paid: false,
-          ticket: null,
-          cancellable: true,
-        },
-      ],
+      bookings: [UPCOMING],
       pastBookings: [
         {
+          ...UPCOMING,
           id: 90,
-          resource_id: 7,
-          resource_name: 'Salle Rhône',
           title: 'Rétro',
           starts_at: '2026-05-12T10:00:00+02:00',
           ends_at: '2026-05-12T11:00:00+02:00',
-          status: 'confirmed',
-          is_paid: false,
-          ticket: null,
           cancellable: false,
         },
       ],
@@ -614,6 +636,43 @@ describe('BookingsPage — mes réservations', () => {
     expect(await screen.findByText('Rétro')).toBeInTheDocument()
     // Une résa passée n'est plus modifiable.
     expect(screen.queryByRole('button', { name: /Modifier/ })).not.toBeInTheDocument()
+  })
+
+  it('n’offre aucune action sur une résa déjà commencée', async () => {
+    setup({ bookings: [{ ...UPCOMING, title: 'Déjà commencée', cancellable: false }] })
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+    await screen.findByText('Déjà commencée')
+
+    expect(screen.queryByRole('button', { name: /Modifier/ })).not.toBeInTheDocument()
+  })
+
+  it('modifie puis supprime une réservation depuis la liste', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const deleted = vi.fn()
+    setup({ bookings: [UPCOMING] })
+    server.use(
+      http.patch('/api/bookings/100', () => HttpResponse.json({ data: { id: 100 } })),
+      http.delete('/api/bookings/100', () => {
+        deleted()
+        return HttpResponse.json({ message: 'Réservation annulée.' })
+      }),
+    )
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    await user.click(await screen.findByRole('button', { name: /Modifier/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Ma réservation — Salle Rhône' })
+    await user.click(within(dialog).getByRole('button', { name: 'Enregistrer les modifications' }))
+    // Sonner rend le toast deux fois (région live + visuel) : on ne cible pas
+    // un nœud unique.
+    expect((await screen.findAllByText('Réservation modifiée.')).length).toBeGreaterThan(0)
+
+    await user.click(await screen.findByRole('button', { name: /Modifier/ }))
+    const again = await screen.findByRole('dialog', { name: 'Ma réservation — Salle Rhône' })
+    await user.click(within(again).getByRole('button', { name: 'Supprimer' }))
+    await user.click(await screen.findByRole('button', { name: 'Oui, supprimer' }))
+
+    await waitFor(() => expect(deleted).toHaveBeenCalledTimes(1))
+    expect((await screen.findAllByText('Réservation annulée.')).length).toBeGreaterThan(0)
   })
 })
 
@@ -639,24 +698,23 @@ describe('BookingsPage — external', () => {
     )
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    await screen.findByRole('heading', { name: 'Calendrier des salles' })
-    expect(screen.queryByRole('checkbox', { name: 'Voir 24 h' })).not.toBeInTheDocument()
+    await screen.findByRole('button', { name: 'Nouvelle réservation' })
+    expect(screen.queryByRole('button', { name: 'Voir 24 h' })).not.toBeInTheDocument()
     expect(screen.getByText(/Tickets salle de réunion disponibles/)).toBeInTheDocument()
 
-    await user.click(
-      await screen.findByRole('button', { name: /Réserver Salle Rhône, jeudi 11 juin 10:00/ }),
-    )
+    await user.click(screen.getByRole('button', { name: 'Nouvelle réservation' }))
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).queryByLabelText('Créneau personnalisé')).not.toBeInTheDocument()
     expect(within(dialog).queryByLabelText('Heure de début')).not.toBeInTheDocument()
 
+    await user.selectOptions(within(dialog).getByLabelText('Salle'), '7')
     await user.click(within(dialog).getByLabelText('Après-midi (14 h – 18 h)'))
     await user.click(within(dialog).getByRole('button', { name: 'Réserver' }))
 
     await waitFor(() => expect(created).toHaveBeenCalledTimes(1))
     expect(created.mock.calls[0]?.[0]).toMatchObject({
       resource_id: 7,
-      date: '2026-06-11',
+      date: '2026-06-10',
       period: 'afternoon',
     })
   })
@@ -666,9 +724,7 @@ describe('BookingsPage — external', () => {
     setup({ permissions: EXTERNAL_PERMISSIONS, meetingTickets: 0 })
     renderWithProviders(<BookingsPage />, { withAuth: true })
 
-    await user.click(
-      await screen.findByRole('button', { name: /Réserver Salle Rhône, jeudi 11 juin 10:00/ }),
-    )
+    await user.click(await screen.findByRole('button', { name: 'Nouvelle réservation' }))
 
     expect(
       await screen.findByText(

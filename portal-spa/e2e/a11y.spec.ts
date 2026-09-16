@@ -1,5 +1,5 @@
 import { loginViaApi } from './support/auth'
-import { expect, test } from './support/fixtures'
+import { expect, FULLCALENDAR_AXE_EXCLUDE, test } from './support/fixtures'
 import { seed } from './support/seed'
 
 /**
@@ -99,11 +99,13 @@ test.describe('Audit a11y — thème sombre', () => {
       page.getByRole('heading', { level: 1, name: 'Réservations de salles' }),
     ).toBeVisible()
 
-    // Grille du calendrier affichée : c'est la partie dense/riche de l'écran.
-    await expect(page.getByRole('heading', { name: 'Calendrier des salles' })).toBeVisible()
-    await expect(page.getByRole('table').first()).toBeVisible()
-    await expect(page.getByRole('heading', { name: /Vue liste/ })).toBeVisible()
+    // Agenda FullCalendar affiché : c'est la partie dense/riche de l'écran.
+    await expect(page.getByRole('button', { name: 'Nouvelle réservation' })).toBeVisible()
+    await expect(page.locator('.fc')).toBeVisible()
+    // …et son alternative accessible, elle, est bien auditée.
+    await expect(page.getByRole('heading', { name: 'Mes prochaines réservations' })).toBeVisible()
     await expect(page.locator('html.dark')).toBeAttached()
-    await checkA11y('bookings-dark')
+    // Seule zone exclue du portail : la grille de l'agenda (ADR-0013 D4).
+    await checkA11y('bookings-dark', { exclude: FULLCALENDAR_AXE_EXCLUDE })
   })
 })

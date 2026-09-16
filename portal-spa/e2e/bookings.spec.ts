@@ -1,7 +1,16 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { apiHeaders, loginViaApi, xsrfToken } from './support/auth'
-import { expect, test } from './support/fixtures'
+import { expect, FULLCALENDAR_AXE_EXCLUDE, test } from './support/fixtures'
 import { seed } from './support/seed'
+
+/**
+ * Depuis C14 (ADR-0013 D3) la grille est rendue par FullCalendar : elle n'est
+ * ni navigable au clavier ni auditée par axe. Les parcours e2e passent donc par
+ * l'**alternative accessible** de la même page — bouton « Nouvelle
+ * réservation » (saisie manuelle salle / date / heures) et liste
+ * « Mes prochaines réservations » — qui est aussi le chemin que doit pouvoir
+ * emprunter un membre au lecteur d'écran.
+ */
 
 /** Prochain jour ouvré à `offsetDays` d'aujourd'hui au moins (format YYYY-MM-DD). */
 function nextWeekday(offsetDays: number): string {
@@ -19,25 +28,37 @@ function nextWeekday(offsetDays: number): string {
 }
 
 /**
- * Libellé de jour tel que la SPA le compose (`formatDayLabel`), calculé DANS le
- * navigateur pour partager exactement la même locale et le même fuseau.
+ * Choisit une salle dans le `<select>` de la modale. L'option porte le nom de
+ * la salle suivi de sa capacité : on lit sa `value` (l'id de la ressource)
+ * plutôt que de coder le libellé complet dans le test.
  */
-async function dayLabel(page: Page, date: string): Promise<string> {
-  return page.evaluate(
-    (day) =>
-      new Date(`${day}T00:00:00`).toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-      }),
-    date,
-  )
+async function selectRoom(dialog: Locator, roomName: string): Promise<void> {
+  const option = dialog.getByRole('option', { name: new RegExp(`^${roomName}`) })
+  const value = await option.getAttribute('value')
+  if (value === null) {
+    throw new Error(`Salle « ${roomName} » absente du sélecteur de la modale`)
+  }
+  await dialog.getByLabel('Salle', { exact: true }).selectOption(value)
 }
 
-/** Va à la semaine contenant `date` puis renvoie le libellé du jour. */
-async function goToWeekOf(page: Page, date: string): Promise<string> {
-  await page.getByLabel('Aller à la semaine du').fill(date)
-  return dayLabel(page, date)
+/** Remplit la modale de création : salle, date, créneau personnalisé, libellé. */
+async function fillBooking(
+  page: Page,
+  options: { room: string; date: string; start: string; end: string; title?: string },
+): Promise<Locator> {
+  await page.getByRole('button', { name: 'Nouvelle réservation' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Nouvelle réservation' })
+  await expect(dialog).toBeVisible()
+
+  await selectRoom(dialog, options.room)
+  await dialog.getByLabel('Date').fill(options.date)
+  await dialog.getByLabel('Créneau personnalisé').check()
+  await dialog.getByLabel('Heure de début').fill(options.start)
+  await dialog.getByLabel('Heure de fin').fill(options.end)
+  if (options.title !== undefined) {
+    await dialog.getByLabel('Libellé (optionnel)').fill(options.title)
+  }
+  return dialog
 }
 
 test.describe('Réservation de salle', () => {
@@ -47,22 +68,24 @@ test.describe('Réservation de salle', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: 'Réservations de salles' }),
     ).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Calendrier des salles' })).toBeVisible()
+    // Barre d'outils de l'agenda (FullCalendar) : période affichée + action.
+    await expect(page.getByRole('button', { name: 'Nouvelle réservation' })).toBeVisible()
+    await expect(page.getByRole('radio', { name: 'Semaine' })).toBeVisible()
   })
 
-  test('réserver un créneau libre → confirmation + liste', async ({ page, checkA11y }) => {
+  test('réserver un créneau → confirmation + liste', async ({ page, checkA11y }) => {
     const date = nextWeekday(7)
-    const label = await goToWeekOf(page, date)
 
-    await page.getByRole('button', { name: `Réserver ${seed.rooms.small}, ${label} 09:00` }).click()
-
-    const dialog = page.getByRole('dialog', { name: `Réserver ${seed.rooms.small}` })
-    await expect(dialog).toBeVisible()
-    await expect(dialog.getByLabel('Date')).toHaveValue(date)
-    await dialog.getByLabel('Libellé (optionnel)').fill('Point équipe e2e')
+    const dialog = await fillBooking(page, {
+      room: seed.rooms.small,
+      date,
+      start: '09:00',
+      end: '10:00',
+      title: 'Point équipe e2e',
+    })
     await dialog.getByRole('button', { name: 'Réserver', exact: true }).click()
 
-    await expect(page.getByText('Réservation confirmée.')).toBeVisible()
+    await expect(page.getByText('Réservation confirmée.').first()).toBeVisible()
 
     // La réservation apparaît dans « Mes prochaines réservations », confirmée.
     await expect(page.getByRole('heading', { name: 'Mes prochaines réservations' })).toBeVisible()
@@ -70,7 +93,8 @@ test.describe('Réservation de salle', () => {
     await expect(myBookings.getByText('Confirmée').first()).toBeVisible()
     await expect(myBookings.getByText('Point équipe e2e')).toBeVisible()
 
-    await checkA11y('bookings')
+    // La grille FullCalendar est la seule zone exclue de l'audit (ADR-0013 D4).
+    await checkA11y('bookings', { exclude: FULLCALENDAR_AXE_EXCLUDE })
   })
 
   test('créneau pris entre-temps → erreur de conflit propre', async ({
@@ -79,13 +103,8 @@ test.describe('Réservation de salle', () => {
     baseURL,
   }) => {
     const date = nextWeekday(14)
-    const label = await goToWeekOf(page, date)
-    await expect(
-      page.getByRole('button', { name: `Réserver ${seed.rooms.small}, ${label} 10:00` }),
-    ).toBeVisible()
 
-    // Le créneau 10:00–11:00 est réservé PAR UN AUTRE membre pendant que la
-    // page affiche encore les disponibilités (état périmé) — même calcul de
+    // Le créneau 10:00–11:00 est réservé PAR UN AUTRE membre — même calcul de
     // dates que la SPA, exécuté dans le navigateur (fuseau Europe/Paris).
     const [startsAt, endsAt] = await page.evaluate(
       (day) =>
@@ -115,26 +134,38 @@ test.describe('Réservation de salle', () => {
     expect(conflicting.ok(), `résa concurrente → ${conflicting.status()}`).toBeTruthy()
     await otherContext.close()
 
-    // Le clic sur le créneau périmé doit produire une erreur propre (409).
-    await page.getByRole('button', { name: `Réserver ${seed.rooms.small}, ${label} 10:00` }).click()
-    const dialog = page.getByRole('dialog')
+    // La demande du même créneau doit produire une erreur propre (409).
+    const dialog = await fillBooking(page, {
+      room: seed.rooms.small,
+      date,
+      start: '10:00',
+      end: '11:00',
+    })
     await dialog.getByRole('button', { name: 'Réserver', exact: true }).click()
+
     await expect(dialog.getByText('Ce créneau est déjà réservé pour cette salle.')).toBeVisible()
   })
 
-  test('modifier puis supprimer sa réservation depuis le calendrier', async ({ page }) => {
+  test('modifier puis supprimer sa réservation depuis la liste', async ({ page }) => {
     const date = nextWeekday(21)
-    const label = await goToWeekOf(page, date)
 
-    await page.getByRole('button', { name: `Réserver ${seed.rooms.small}, ${label} 14:00` }).click()
-    const createDialog = page.getByRole('dialog', { name: `Réserver ${seed.rooms.small}` })
-    await createDialog.getByLabel('Libellé (optionnel)').fill('Atelier e2e')
+    const createDialog = await fillBooking(page, {
+      room: seed.rooms.small,
+      date,
+      start: '14:00',
+      end: '15:00',
+      title: 'Atelier e2e',
+    })
     await createDialog.getByRole('button', { name: 'Réserver', exact: true }).click()
-    await expect(page.getByText('Réservation confirmée.')).toBeVisible()
+    await expect(page.getByText('Réservation confirmée.').first()).toBeVisible()
 
-    // Sa propre résa est mise en avant et ouvre la modale « Modifier / Supprimer ».
+    const myBookings = page.getByRole('table', { name: 'Mes réservations de salle à venir' })
+    await expect(myBookings.getByText('Atelier e2e')).toBeVisible()
+
+    // « Modifier » depuis la liste : c'est l'alternative accessible au popover
+    // de la grille (ADR-0013 D4).
     await page
-      .getByRole('button', { name: /Ma réservation.*modifier ou supprimer/ })
+      .getByRole('button', { name: /Modifier/ })
       .first()
       .click()
     const editDialog = page.getByRole('dialog', { name: `Ma réservation — ${seed.rooms.small}` })
@@ -143,15 +174,11 @@ test.describe('Réservation de salle', () => {
     await editDialog
       .getByRole('button', { name: 'Enregistrer les modifications', exact: true })
       .click()
-    await expect(page.getByText('Réservation modifiée.')).toBeVisible()
-    await expect(
-      page
-        .getByRole('table', { name: 'Mes réservations de salle à venir' })
-        .getByText('Atelier e2e modifié'),
-    ).toBeVisible()
+    await expect(page.getByText('Réservation modifiée.').first()).toBeVisible()
+    await expect(myBookings.getByText('Atelier e2e modifié')).toBeVisible()
 
     await page
-      .getByRole('button', { name: /Ma réservation.*modifier ou supprimer/ })
+      .getByRole('button', { name: /Modifier/ })
       .first()
       .click()
     const deleteDialog = page.getByRole('dialog', { name: `Ma réservation — ${seed.rooms.small}` })
@@ -162,18 +189,13 @@ test.describe('Réservation de salle', () => {
       .getByRole('alertdialog')
       .getByRole('button', { name: 'Oui, supprimer', exact: true })
       .click()
-    await expect(page.getByText('Réservation annulée.')).toBeVisible()
+    await expect(page.getByText('Réservation annulée.').first()).toBeVisible()
   })
 
   test('salle événementielle : lecture seule + invitation à nous contacter', async ({ page }) => {
-    const date = nextWeekday(7)
-    const label = await goToWeekOf(page, date)
-
-    await page
-      .getByRole('button', {
-        name: `${seed.rooms.event}, ${label} 09:00 : réservation sur demande`,
-      })
-      .click()
+    // Plus de créneau cliquable par salle depuis C14 (grille unique) : le
+    // renvoi vers Ecoworking est un bouton explicite à côté des chips.
+    await page.getByRole('button', { name: `Réserver ${seed.rooms.event}` }).click()
 
     // Le lien est cherché DANS le bandeau : la top bar du shell (C14) porte
     // désormais son propre « Nous contacter », visible en desktop.

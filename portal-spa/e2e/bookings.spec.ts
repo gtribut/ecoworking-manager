@@ -83,6 +83,20 @@ async function dayOfNextWeek(page: Page, weekdayOffset: number): Promise<string>
 }
 
 /**
+ * Passe à la période suivante ET attend que ses réservations soient arrivées :
+ * sans ça, la grille se re-rend au milieu du glisser et FullCalendar perd la
+ * sélection en cours.
+ */
+async function gotoNextPeriod(page: Page): Promise<void> {
+  await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().includes('/api/rooms/availability') && response.ok(),
+    ),
+    page.getByRole('button', { name: 'Période suivante' }).click(),
+  ])
+}
+
+/**
  * Glisse sur la colonne d'un jour de la grille FullCalendar.
  *
  * La v7 hache ses classes : les seuls accroches stables sont les attributs
@@ -268,18 +282,23 @@ test.describe('Réservation de salle', () => {
     // Mercredi de la semaine suivante : toujours dans le futur, donc jamais
     // refusé par `selectAllow`.
     const date = await dayOfNextWeek(page, 2)
-    await page.getByRole('button', { name: 'Période suivante' }).click()
+    await gotoNextPeriod(page)
 
-    // Bornes par défaut d'un membre résident : 08 h – 20 h.
-    await dragOnDay(page, { date, fromHour: 10.1, toHour: 11.6, dayStart: 8, dayEnd: 20 })
+    // Bornes par défaut d'un membre résident : 08 h – 20 h. Le glisser vise
+    // l'APRÈS-MIDI : un `mousedown` qui tombe sur un bloc existant démarre une
+    // interaction d'événement, pas une sélection de créneau. Or le premier test
+    // de ce fichier réserve `nextWeekday(7)` de 09 h à 10 h, et ce jour-là peut
+    // tomber dans la semaine visée ici (jamais `nextWeekday(14)`/`(21)`, qui
+    // sont au-delà). 15 h – 17 h est donc libre par construction.
+    await dragOnDay(page, { date, fromHour: 15.1, toHour: 16.6, dayStart: 8, dayEnd: 20 })
 
     const dialog = page.getByRole('dialog', { name: 'Nouvelle réservation' })
     await expect(dialog).toBeVisible()
     await expect(dialog.getByLabel('Date')).toHaveValue(date)
-    // Le pas de sélection est de 30 min : 10,1 h → borne basse 10:00,
-    // 11,6 h → borne haute 12:00.
-    await expect(dialog.getByLabel('Heure de début')).toHaveValue('10:00')
-    await expect(dialog.getByLabel('Heure de fin')).toHaveValue('12:00')
+    // Le pas de sélection est de 30 min : 15,1 h → borne basse 15:00,
+    // 16,6 h → borne haute 17:00.
+    await expect(dialog.getByLabel('Heure de début')).toHaveValue('15:00')
+    await expect(dialog.getByLabel('Heure de fin')).toHaveValue('17:00')
     // Salle pré-remplie sur la première salle réservable affichée, modifiable.
     await expect(dialog.getByLabel('Salle', { exact: true })).not.toHaveValue('')
   })
@@ -307,23 +326,25 @@ test.describe('Réservation de salle — external', () => {
     page,
   }) => {
     const date = await dayOfNextWeek(page, 2)
-    await page.getByRole('button', { name: 'Période suivante' }).click()
+    await gotoNextPeriod(page)
 
     // Grille 09 h – 18 h pour un external. La pause déjeuner 13 h – 14 h
     // n'appartient à aucune demi-journée (PRD §3.5.3) : `selectAllow` la refuse.
+    // (Comme au-dessus, on reste l'après-midi : le matin de ce jour peut porter
+    // la réservation 09 h – 10 h créée par le premier test du fichier.)
     await dragOnDay(page, { date, fromHour: 13.1, toHour: 13.8, dayStart: 9, dayEnd: 18 })
     // Assertion négative : on laisse à la modale le temps de s'ouvrir avant de
     // constater qu'elle ne s'ouvre pas.
     await page.waitForTimeout(300)
     await expect(page.getByRole('dialog')).toHaveCount(0)
 
-    // Le matin, lui, reste sélectionnable.
-    await dragOnDay(page, { date, fromHour: 9.1, toHour: 10.6, dayStart: 9, dayEnd: 18 })
+    // L'après-midi, lui, reste sélectionnable.
+    await dragOnDay(page, { date, fromHour: 14.1, toHour: 15.6, dayStart: 9, dayEnd: 18 })
     const dialog = page.getByRole('dialog', { name: 'Nouvelle réservation' })
     await expect(dialog).toBeVisible()
     await expect(dialog.getByLabel('Date')).toHaveValue(date)
-    // Un external ne réserve qu'en demi-journées : le matin est pré-coché.
-    await expect(dialog.getByLabel('Matin (9 h – 13 h)')).toBeChecked()
+    // Un external ne réserve qu'en demi-journées : l'après-midi est pré-coché.
+    await expect(dialog.getByLabel('Après-midi (14 h – 18 h)')).toBeChecked()
     await expect(dialog.getByLabel('Créneau personnalisé')).toHaveCount(0)
   })
 })

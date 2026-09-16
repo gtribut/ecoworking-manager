@@ -67,6 +67,21 @@ it('réagit au changement de date : le résident devient absent', function () {
         ->assertSee('Absent');
 });
 
+// Ré-acté 2026-09-17 : un jour non ouvré ne concerne plus que les bureaux
+// nomades — l'encart ne doit plus dire que les résidents ne sont pas attendus.
+it('affiche un encart limité aux bureaux nomades un jour non ouvré', function () {
+    $desk = Resource::factory()->assignedResident()->create(['floor' => 1]);
+    $resident = User::factory()->create();
+    MemberProfile::factory()->for($resident)->create(['desk_id' => $desk->id]);
+    $sunday = CarbonImmutable::today()->next('sunday');
+
+    Livewire::test(DailyOccupancy::class)
+        ->set('date', $sunday->toDateString())
+        ->assertOk()
+        ->assertSee('les bureaux nomades ne sont pas réservables')
+        ->assertDontSee('les résidents ne sont pas attendus');
+});
+
 it('retombe sur aujourd\'hui si la date saisie est invalide (pas de 500)', function () {
     Resource::factory()->assignedResident()->create(['floor' => 1]);
 

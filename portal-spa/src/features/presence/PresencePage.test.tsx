@@ -125,6 +125,21 @@ describe('PresencePage', () => {
       expect(await screen.findByText('Absent(e) aujourd’hui')).toBeInTheDocument()
     })
 
+    it('affiche « Absent(e) aujourd’hui » un samedi couvert par une absence déclarée', async () => {
+      vi.setSystemTime(new Date(`${SATURDAY}T09:00:00`))
+      server.use(
+        ...presenceHandlers(
+          [absence({ date_start: SATURDAY, date_end: SATURDAY, period: 'full_day' })],
+          [],
+          [],
+        ),
+      )
+
+      renderWithProviders(<PresencePage />, { withAuth: true })
+
+      expect(await screen.findByText('Absent(e) aujourd’hui')).toBeInTheDocument()
+    })
+
     it('affiche « Présent(e) aujourd’hui » un samedi sans absence déclarée', async () => {
       vi.setSystemTime(new Date(`${SATURDAY}T09:00:00`))
       server.use(...presenceHandlers([], [], [SATURDAY]))

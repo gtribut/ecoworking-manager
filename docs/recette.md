@@ -152,6 +152,7 @@ Compte : **Inès**, puis **Camille** (staff), puis **Julien** (ne doit pas voir 
 - [ ] Déclarer une **plage** → OK ; date de fin < date de début → erreur de validation
 - [ ] Déclarer une **récurrence hebdo** sur une plage → OK ; jour de semaine obligatoire
 - [ ] Supprimer une absence à venir → disparaît ; supprimer une absence passée → avertissement (ou refus) selon PRD
+- [ ] Badge « État du jour » : un **week-end** (ou date système décalée) sans absence → « Présent(e) aujourd'hui » (présence 7 j/7, ré-acté 2026-09-17) ; avec une absence posée ce jour-là → « Absent(e) aujourd'hui » (ou « ce matin » / « cet après-midi » selon la période)
 - [ ] Côté admin : chaque déclaration a généré une **notification in-app admin** (« absence déclarée », Q25) — vérifier sur le dashboard / la cloche admin
 
 ### 3.4 Réservation de salles (PRD §3.5, C5.5)
@@ -291,7 +292,8 @@ Compte : **Claire** (resident), puis **Camille** (staff), puis **Thomas** (exter
 - [ ] Annuaire liste : Claire, Inès, Julien, Sophie, Karim, Camille (« Équipe Ecoworking ») — **Marc absent** (opt-out) ; jamais d'email ni de téléphone affichés
 - [ ] Fiche coworker : photo/avatar, poste, présentation, intérêts, LinkedIn/site (liens externes `rel=noopener`)
 - [ ] Plan : switch étage 1 / étage 2 ; 29 + 20 bureaux ; sélecteur de date (aujourd'hui par défaut)
-- [ ] États visuels aujourd'hui : Bureau 1 Claire présent, Bureau 2 « Coworker (souhaite rester discret) », Bureau 3 Inès présent (sauf vendredi → « absent »), Bureau 29 « staff », Bureau 30 Sophie, Bureau 31 Karim, bureaux libres « disponible », bureau occupé par Thomas (prochain jour ouvré) en « external présent »
+- [ ] États visuels aujourd'hui : Bureau 1 Claire présent, Bureau 2 « Coworker (souhaite rester discret) », Bureau 3 Inès présent (sauf vendredi → « absent »), Bureau 29 « staff », Bureau 30 Sophie, Bureau 31 Karim, bureaux libres « disponible » (recette jouable n'importe quel jour, week-end compris)
+- [ ] Naviguer au **prochain jour ouvré** → le bureau occupé par Thomas passe en « external présent »
 - [ ] Naviguer à **vendredi prochain** → Inès « Bureau de Inès (absent) » ; semaine prochaine → absente tous les jours (congés)
 - [ ] Naviguer à un **week-end** → **aucun bandeau « jour non ouvré »** ; les bureaux attitrés restent **présents** (présence 7 j/7, ré-acté 2026-09-17 — seule une absence déclarée rend absent). Vérifier notamment Bureau 1 (Claire) présent le samedi, et Inès absente si le samedi tombe dans sa semaine de congés
 - [ ] Clic sur **son propre bureau** (Claire → Bureau 1) → panneau enrichi + bouton « Gérer mes absences » → ouvre §3.3

@@ -45,7 +45,7 @@ export function bottomNavTabs(all: NavEntry[]): NavEntry[] {
 }
 
 const TAB_CLASS =
-  'flex h-14 flex-col items-center justify-center gap-1 text-[11px] leading-none font-medium'
+  'flex h-14 flex-col items-center justify-center gap-1 px-1 text-center text-[11px] leading-none font-medium'
 
 /**
  * Navigation mobile (PRD §3.9.2, maquettes C14) : barre basse de 5 onglets
@@ -72,6 +72,8 @@ export function BottomNav() {
               <NavLink
                 to={entry.to}
                 end={entry.end}
+                // Libellé abrégé à l'écran, nom accessible complet.
+                aria-label={entry.shortLabel === undefined ? undefined : entry.label}
                 className={({ isActive }) =>
                   cn(
                     TAB_CLASS,
@@ -82,7 +84,7 @@ export function BottomNav() {
                 }
               >
                 <entry.icon className="size-[22px]" aria-hidden="true" />
-                {entry.label}
+                {entry.shortLabel ?? entry.label}
               </NavLink>
             </li>
           ))}

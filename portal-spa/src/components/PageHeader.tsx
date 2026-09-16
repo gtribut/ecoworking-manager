@@ -61,10 +61,13 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
     </div>
   )
 
-  if (!inTopBar) return content
+  // Hors shell (`slot === null`) ou en mobile : rendu sur place, au-dessus du
+  // contenu. Le test `slot === null` est refait ici pour le typage — `inTopBar`
+  // est un booléen, il ne restreint pas le type de `slot`.
+  if (slot === null || isMobile) return content
 
   // `slot.element` est null le temps du premier rendu du shell : on n'affiche
   // rien plutôt que le titre « en place », qui sauterait dans la top bar à la
   // frame suivante.
-  return slot?.element === null || slot === null ? null : createPortal(content, slot.element)
+  return slot.element === null ? null : createPortal(content, slot.element)
 }

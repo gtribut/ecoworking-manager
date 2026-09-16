@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router'
+import { Link, NavLink, useLocation } from 'react-router'
 import { BrandMark } from '@/components/BrandMark'
 import { ProfileMenu } from '@/components/ProfileMenu'
 import {
@@ -52,15 +52,23 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-sidebar-border">
       <SidebarHeader className="h-14 justify-center px-3">
-        <NavLink
+        {/* `Link` et non `NavLink` : sur l'accueil, `NavLink` poserait un second
+            `aria-current="page"` en plus de l'entrée « Accueil » de la nav.
+            Le libellé est masqué en mode icône, d'où le nom accessible porté
+            par le lien lui-même (axe `link-name`). */}
+        <Link
           to="/"
+          aria-label="Ecoworking — accueil"
           className="flex items-center gap-2.5 rounded-lg group-data-[collapsible=icon]:justify-center"
         >
           <BrandMark />
-          <span className="truncate text-base font-bold tracking-tight group-data-[collapsible=icon]:hidden">
+          <span
+            aria-hidden="true"
+            className="truncate text-base font-bold tracking-tight group-data-[collapsible=icon]:hidden"
+          >
             Ecoworking
           </span>
-        </NavLink>
+        </Link>
       </SidebarHeader>
 
       <SidebarContent>

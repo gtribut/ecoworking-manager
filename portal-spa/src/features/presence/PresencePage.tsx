@@ -118,15 +118,17 @@ function PresenceContent() {
 
   return (
     <PageContainer width="wide" className="space-y-10">
-      <div className="space-y-2">
-        <PageHeader title="Ma présence" />
-        {desk !== null && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
-            Votre bureau attitré : <strong className="font-medium">{desk.name}</strong>
-            {desk.floor !== null && <> — étage {desk.floor}</>}
-          </p>
-        )}
-      </div>
+      <PageHeader
+        title="Ma présence"
+        description={
+          desk === null ? undefined : (
+            <>
+              Votre bureau attitré : <strong className="font-medium">{desk.name}</strong>
+              {desk.floor !== null && <> — étage {desk.floor}</>}
+            </>
+          )
+        }
+      />
 
       <section aria-labelledby="absence-form-heading" className="space-y-4">
         <h2 id="absence-form-heading" className="text-lg font-medium">

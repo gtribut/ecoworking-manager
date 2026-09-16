@@ -77,6 +77,14 @@
   responsable du `document.title`. Largeurs déjà arbitrées : `full` pour
   réservations / annuaire / plan / factures, `narrow` pour profil et détail
   d'actualité, `wide` pour le reste.
+  **Exception** : `AnnouncementDetailPage` n'utilise pas `PageHeader` — son
+  `<h1>` vient des données et reste dans l'`<article>` (`aria-labelledby`), la
+  zone titre de la top bar y est donc vide.
+- Le lien d'évitement et le focus au changement de route visent `#main-content`,
+  qui commence **sous** la top bar : les actions globales ne sont pas à
+  refranchir. `SidebarProvider` fournit aussi un raccourci **Ctrl/Cmd + B** qui
+  replie la sidebar (et ouvre la feuille latérale en mobile, où aucun
+  déclencheur n'est affiché).
 - La navigation (entrées, icônes, filtrage par rôle) vit dans
   `useNavEntries()` — un seul endroit pour la sidebar, la bottom nav et le
   Sheet « Plus ». « Mon profil » n'est pas une entrée de nav : il est dans le

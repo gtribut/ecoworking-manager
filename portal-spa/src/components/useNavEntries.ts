@@ -13,7 +13,14 @@ import { usePermissions } from '@/features/auth/usePermissions'
 
 export interface NavEntry {
   to: string
+  /** Libellé complet : sidebar, Sheet « Plus » et nom accessible partout. */
   label: string
+  /**
+   * Libellé court des onglets de la bottom nav (maquettes C14 : « Résas »,
+   * « Actus »). Le nom accessible reste `label` — les tests et l'e2e ciblent
+   * les entrées par rôle + nom complet.
+   */
+  shortLabel?: string
   icon: LucideIcon
   /** Correspondance exacte de la route (accueil uniquement). */
   end?: boolean
@@ -55,7 +62,9 @@ export function useNavEntries(): NavEntries {
   const main: NavEntry[] = [
     { to: '/', label: 'Accueil', icon: Home, end: true },
     // Calendrier des salles : jamais pour un contact facturation pur.
-    ...(canViewBookings ? [{ to: '/bookings', label: 'Réservations', icon: CalendarDays }] : []),
+    ...(canViewBookings
+      ? [{ to: '/bookings', label: 'Réservations', shortLabel: 'Résas', icon: CalendarDays }]
+      : []),
     ...(isExternal ? [{ to: '/tickets', label: 'Tickets', icon: Ticket }] : []),
     // Présence/absences : seulement avec un bureau attitré (pas les `additional`).
     ...(isResident ? [{ to: '/presence', label: 'Présence', icon: UserCheck }] : []),
@@ -64,7 +73,7 @@ export function useNavEntries(): NavEntries {
     // Actualités : lisibles par tous les rôles, y compris un contact facturation
     // pur (il fait partie des audiences) — seule l'INSCRIPTION à un événement
     // demande `register-event`, côté RsvpButton.
-    { to: '/announcements', label: 'Actualités', icon: Newspaper },
+    { to: '/announcements', label: 'Actualités', shortLabel: 'Actus', icon: Newspaper },
     { to: '/documents', label: 'Documents', icon: FileText },
   ]
 

@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { PageContainer } from '@/components/PageContainer'
+import { PageHeader } from '@/components/PageHeader'
 import { usePageTitle } from '@/lib/usePageTitle'
 
 /**
@@ -12,7 +13,7 @@ export function Forbidden() {
 
   return (
     <PageContainer width="narrow" className="space-y-4 text-center">
-      <h1 className="text-2xl font-semibold">Accès refusé</h1>
+      <PageHeader title="Accès refusé" />
       <p className="text-neutral-600 dark:text-neutral-300">
         Cette page n’est pas accessible avec votre profil. Si vous pensez qu’il s’agit d’une erreur,
         contactez Ecoworking.

@@ -20,14 +20,17 @@ interface Tile {
   description: string
 }
 
+/** Coûteux à construire : une seule instance pour toute la vie du module. */
+const DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+})
+
 /** Date du jour en toutes lettres, sous le titre d'accueil (maquettes C14). */
 function today(): string {
-  const label = new Intl.DateTimeFormat('fr-FR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date())
+  const label = DATE_FORMAT.format(new Date())
   return label.charAt(0).toUpperCase() + label.slice(1)
 }
 

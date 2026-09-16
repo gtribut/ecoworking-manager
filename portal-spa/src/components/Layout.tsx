@@ -19,12 +19,13 @@ import { OfflineBanner } from './OfflineBanner'
  * Structure : la top bar et le contenu vivent dans le `<main>` — le titre de
  * page reste ainsi l'unique `<h1>` du contenu principal (RGAA 9.1) — tandis
  * que le pied de page reste à l'extérieur pour conserver son rôle
- * `contentinfo`.
+ * `contentinfo`. Le lien d'évitement et le focus au changement de route visent
+ * le conteneur du contenu, sous la top bar.
  */
 export function Layout() {
   const isDark = useIsDarkMode()
   const location = useLocation()
-  const mainRef = useRef<HTMLElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const previousPathname = useRef<string | null>(null)
 
   // Emplacement du titre de page dans la top bar, alimenté par `PageHeader`.
@@ -35,7 +36,7 @@ export function Layout() {
   // le contenu principal pour que les lecteurs d'écran annoncent la nouvelle page.
   useEffect(() => {
     if (previousPathname.current !== null && previousPathname.current !== location.pathname) {
-      mainRef.current?.focus()
+      contentRef.current?.focus()
     }
     previousPathname.current = location.pathname
   }, [location.pathname])
@@ -62,14 +63,20 @@ export function Layout() {
         <SidebarInset asChild className="bg-neutral-50 dark:bg-neutral-950">
           <div>
             <OfflineBanner />
-            <main
-              id="main-content"
-              ref={mainRef}
-              tabIndex={-1}
-              className="flex flex-1 flex-col focus:outline-none"
-            >
+            <main className="flex flex-1 flex-col">
               <TopBar slotRef={setTitleSlot} />
-              <Outlet />
+              {/* Cible du lien d'évitement et du focus au changement de route :
+                  le contenu de la page, APRÈS la top bar — sinon l'utilisateur
+                  clavier doit refranchir le repli, le contact, le thème et la
+                  cloche avant d'atteindre la page (RGAA 12.7). */}
+              <div
+                id="main-content"
+                ref={contentRef}
+                tabIndex={-1}
+                className="flex flex-1 flex-col focus:outline-none"
+              >
+                <Outlet />
+              </div>
             </main>
             {/* Marge basse en mobile : la bottom nav flotte au-dessus. */}
             <Footer className="pb-20 md:pb-0" />

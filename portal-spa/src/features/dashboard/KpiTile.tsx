@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useId } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -20,12 +21,13 @@ export interface KpiTileProps {
 }
 
 /**
- * Tuile KPI du dashboard bento (PRD §3.3, maquette C14) : `Card` shadcn +
- * paire libellé/valeur/sous-texte en `<dl>` (sémantique de statistique,
- * RGAA — un `<dt>` par libellé, une `<dd>` par valeur). Partagée entre
- * `DashboardKpiGrid` (résa, bureau/tickets, facture) et
- * `DashboardDocumentsToValidate` (import cross-feature volontaire, comme
- * `EntityBlock`/`AnnouncementBadge` ailleurs dans le portail).
+ * Tuile KPI du dashboard bento (PRD §3.3, maquette C14) : `<article
+ * aria-labelledby>` + `Card` shadcn, libellé en `<h3>` (la grille
+ * `DashboardKpiGrid` est déjà une `<section>` titrée par un `h2` sr-only —
+ * RGAA 9.1, navigation par titres). Partagée entre `DashboardKpiGrid`
+ * (résa, bureau/tickets, facture) et `DashboardDocumentsToValidate` (import
+ * cross-feature volontaire, comme `EntityBlock`/`AnnouncementBadge` ailleurs
+ * dans le portail).
  */
 export function KpiTile({
   label,
@@ -36,33 +38,38 @@ export function KpiTile({
   orderFirst = false,
   className,
 }: KpiTileProps) {
+  const headingId = useId()
+
   return (
-    <Card
-      className={cn(
-        'gap-1',
-        orderFirst && 'order-first md:order-none',
-        tone === 'amber' &&
-          'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40',
-        className,
-      )}
+    <article
+      aria-labelledby={headingId}
+      className={cn('flex', orderFirst && 'order-first md:order-none')}
     >
-      <CardContent>
-        <dl className="space-y-1">
-          <dt
+      <Card
+        className={cn(
+          'flex-1 gap-1',
+          tone === 'amber' &&
+            'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40',
+          className,
+        )}
+      >
+        <CardContent className="space-y-1">
+          <h3
+            id={headingId}
             className={cn(
               'text-sm font-medium text-muted-foreground',
               tone === 'amber' && 'text-amber-900 dark:text-amber-200',
             )}
           >
             {label}
-          </dt>
+          </h3>
           {loading ? (
-            <dd className="space-y-2">
+            <div className="space-y-2">
               <Skeleton className="h-6 w-28" />
               <Skeleton className="h-4 w-20" />
-            </dd>
+            </div>
           ) : (
-            <dd className="space-y-1">
+            <div className="space-y-1">
               <p className="truncate text-xl font-semibold tracking-tight">{value}</p>
               {sub !== undefined && (
                 <p
@@ -76,10 +83,10 @@ export function KpiTile({
                   {sub}
                 </p>
               )}
-            </dd>
+            </div>
           )}
-        </dl>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </article>
   )
 }

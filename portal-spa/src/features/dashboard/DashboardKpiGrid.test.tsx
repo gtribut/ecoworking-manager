@@ -90,11 +90,19 @@ describe('DashboardKpiGrid — mapping rôle → tuiles (PRD §3.3, maquette C14
 
     renderWithProviders(<DashboardKpiGrid />, { withAuth: true })
 
+    // Attend une valeur (chargement asynchrone) avant de vérifier les
+    // headings : ceux-ci sont rendus dès le premier tour (avant la donnée),
+    // les checks synchrones ci-dessous doivent donc venir après.
     expect(await screen.findByText('Salle de réunion 2 · Point client')).toBeInTheDocument()
     expect(await screen.findByText('Bureau 12')).toBeInTheDocument()
+
+    // Libellé de tuile = heading (RGAA 9.1, navigation par titres) : la
+    // grille est déjà une <section> titrée par un h2 sr-only (dashboard-kpis-title).
+    expect(screen.getByRole('heading', { name: 'Prochaine réservation' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Mon bureau' })).toBeInTheDocument()
     expect(screen.getByText(exactText('Étage 2 · Ma présence'))).toBeInTheDocument()
-    expect(screen.queryByText('Tickets restants')).not.toBeInTheDocument()
-    expect(screen.queryByText('Dernière facture')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Tickets restants' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Dernière facture' })).not.toBeInTheDocument()
   })
 
   it('external : KPI tickets restants (soldes), pas de tuile bureau', async () => {
@@ -112,8 +120,9 @@ describe('DashboardKpiGrid — mapping rôle → tuiles (PRD §3.3, maquette C14
     renderWithProviders(<DashboardKpiGrid />, { withAuth: true })
 
     expect(await screen.findByText('3 bureaux')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Tickets restants' })).toBeInTheDocument()
     expect(screen.getByText(exactText('1 salle · Bureaux nomades'))).toBeInTheDocument()
-    expect(screen.queryByText('Mon bureau')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Mon bureau' })).not.toBeInTheDocument()
   })
 
   it('contact facturation : KPI dernière facture, pas de résa ni de bureau', async () => {
@@ -144,9 +153,10 @@ describe('DashboardKpiGrid — mapping rôle → tuiles (PRD §3.3, maquette C14
     renderWithProviders(<DashboardKpiGrid />, { withAuth: true })
 
     expect(await screen.findByText('120,00 € TTC')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Dernière facture' })).toBeInTheDocument()
     expect(screen.getByText(exactText('EW-2026-00042 · Payée'))).toBeInTheDocument()
-    expect(screen.queryByText('Prochaine réservation')).not.toBeInTheDocument()
-    expect(screen.queryByText('Mon bureau')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Prochaine réservation' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Mon bureau' })).not.toBeInTheDocument()
   })
 
   it('aucune permission d’usage : seule la tuile documents reste', async () => {
@@ -155,9 +165,10 @@ describe('DashboardKpiGrid — mapping rôle → tuiles (PRD §3.3, maquette C14
     renderWithProviders(<DashboardKpiGrid />, { withAuth: true })
 
     expect(await screen.findByText('Documents à jour')).toBeInTheDocument()
-    expect(screen.queryByText('Prochaine réservation')).not.toBeInTheDocument()
-    expect(screen.queryByText('Mon bureau')).not.toBeInTheDocument()
-    expect(screen.queryByText('Tickets restants')).not.toBeInTheDocument()
-    expect(screen.queryByText('Dernière facture')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Documents' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Prochaine réservation' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Mon bureau' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Tickets restants' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Dernière facture' })).not.toBeInTheDocument()
   })
 })

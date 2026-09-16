@@ -4,8 +4,11 @@ import { cn } from '@/lib/utils'
 import { useInternalDocuments } from './useDocuments'
 
 /**
- * KPI « Document à valider » du dashboard bento (PRD §3.3.2, maquette C14) :
+ * KPI « Documents à valider » du dashboard bento (PRD §3.3.2, maquette C14) :
  * nombre + premier titre des documents internes non validés, carte ambre.
+ * Libellé au pluriel (« Documents à valider ») dès qu'il y en a au moins un —
+ * cohérent avec le titre de la même section sur `/documents` (`DocumentsPage`)
+ * et repris tel quel par `e2e/auth.spec.ts`, quel que soit le nombre réel.
  * Import cross-feature de `KpiTile` (dashboard) assumé, comme `EntityBlock`
  * (billing) l'est déjà par le profil et les factures.
  *
@@ -41,7 +44,7 @@ export function DashboardDocumentsToValidate() {
 
   return (
     <KpiTile
-      label={hasPending ? 'Document à valider' : 'Documents'}
+      label={hasPending ? 'Documents à valider' : 'Documents'}
       loading={isLoading}
       tone={hasPending ? 'amber' : 'default'}
       orderFirst

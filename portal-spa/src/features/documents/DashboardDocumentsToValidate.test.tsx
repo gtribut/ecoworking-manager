@@ -41,13 +41,13 @@ function internalDocument(
 }
 
 /**
- * KPI « Document à valider » du dashboard bento (maquette C14) : ces tests
+ * KPI « Documents à valider » du dashboard bento (maquette C14) : ces tests
  * remplacent l'ancien bloc pleine liste (téléchargement + validation
  * directe, désormais sur `/documents`, cf. `InternalDocumentItem` et
  * `DocumentsPage.test.tsx`, hors périmètre U4a) par une tuile compacte.
  */
 describe('DashboardDocumentsToValidate (KPI dashboard, PRD §3.3.2)', () => {
-  it('affiche le premier titre à valider, le compteur des autres et un lien vers /documents', async () => {
+  it('affiche le libellé en heading, le premier titre à valider, le compteur des autres et un lien vers /documents', async () => {
     server.use(
       http.get('/api/user', () => HttpResponse.json(member())),
       http.get('/api/documents/internal', () =>
@@ -66,7 +66,9 @@ describe('DashboardDocumentsToValidate (KPI dashboard, PRD §3.3.2)', () => {
 
     renderWithProviders(<DashboardDocumentsToValidate />, { withAuth: true })
 
-    expect(await screen.findByText('Document à valider')).toBeInTheDocument()
+    // Libellé au pluriel, quel que soit le nombre réel (e2e/auth.spec.ts,
+    // cohérent avec le titre de la même section sur /documents).
+    expect(await screen.findByRole('heading', { name: 'Documents à valider' })).toBeInTheDocument()
     expect(screen.getByText('Charte interne')).toBeInTheDocument()
     const link = screen.getByRole('link', { name: /\+1 autre\(s\) · Lire et valider/ })
     expect(link).toHaveAttribute('href', '/documents')
@@ -81,6 +83,7 @@ describe('DashboardDocumentsToValidate (KPI dashboard, PRD §3.3.2)', () => {
     renderWithProviders(<DashboardDocumentsToValidate />, { withAuth: true })
 
     expect(await screen.findByText('Documents à jour')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Documents' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Voir mes documents' })).toHaveAttribute(
       'href',
       '/documents',

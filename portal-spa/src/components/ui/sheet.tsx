@@ -1,11 +1,19 @@
-'use client'
-
 import { XIcon } from 'lucide-react'
 import { Dialog as SheetPrimitive } from 'radix-ui'
 import type * as React from 'react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+
+/*
+ * Primitive shadcn/ui `sheet`, avec deux écarts assumés par rapport au fichier
+ * généré — cf. ADR-0013 D1 :
+ *
+ * 1. Libellé du bouton de fermeture en français (« Fermer cette fenêtre ») ;
+ *    `showCloseButton` reste à `true` par défaut.
+ * 2. La directive `'use client'` du fichier amont est retirée : la SPA est
+ *    bundlée par Vite, elle n'a pas de composants serveur.
+ */
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />

@@ -1,11 +1,26 @@
-'use client'
-
 import { XIcon } from 'lucide-react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 import type * as React from 'react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+
+/*
+ * Primitive shadcn/ui `dialog`, avec deux écarts assumés par rapport au fichier
+ * généré — cf. ADR-0013 D1 :
+ *
+ * 1. Libellés d'interface en français (« Fermer cette fenêtre » sur le bouton
+ *    de fermeture de `DialogContent`, « Fermer » sur celui optionnel de
+ *    `DialogFooter`) : le portail est monolingue FR, il n'y a pas d'i18n.
+ * 2. La directive `'use client'` du fichier amont est retirée : la SPA est
+ *    bundlée par Vite, elle n'a pas de composants serveur.
+ *
+ * Rappel d'usage : `DialogContent` rend un `DialogDescription` facultatif —
+ * sans description, passer `aria-describedby={undefined}` pour éviter
+ * l'avertissement Radix. La fermeture au clic extérieur reste active par
+ * défaut ; un formulaire long doit poser `onInteractOutside` (cf.
+ * `features/bookings/BookingDialog.tsx`).
+ */
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />

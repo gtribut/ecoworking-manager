@@ -154,7 +154,12 @@ test.describe('Réservation de salle', () => {
       .click()
     const deleteDialog = page.getByRole('dialog', { name: `Ma réservation — ${seed.rooms.small}` })
     await deleteDialog.getByRole('button', { name: 'Supprimer', exact: true }).click()
-    await deleteDialog.getByRole('button', { name: 'Oui, supprimer', exact: true }).click()
+    // La confirmation est un AlertDialog Radix rendu dans un portail à la
+    // racine du document, donc hors du DOM de la modale de réservation.
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Oui, supprimer', exact: true })
+      .click()
     await expect(page.getByText('Réservation annulée.')).toBeVisible()
   })
 

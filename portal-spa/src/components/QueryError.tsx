@@ -1,5 +1,5 @@
-import { Alert } from '@/components/ui/Alert'
-import { Button } from '@/components/ui/Button'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import { getApiErrorMessage, getApiStatus } from '@/lib/errors'
 
 interface QueryErrorProps {
@@ -38,7 +38,7 @@ export function QueryError({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span>{text}</span>
         {canRetry && (
-          <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
             Réessayer
           </Button>
         )}

@@ -3,9 +3,9 @@ import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { EmptyState } from '@/components/EmptyState'
 import { QueryError } from '@/components/QueryError'
-import { Button } from '@/components/ui/Button'
-import { ConfirmButton } from '@/components/ui/ConfirmButton'
-import { Spinner } from '@/components/ui/Spinner'
+import { Button } from '@/components/ui/button'
+import { ConfirmButton } from '@/components/ui/confirm-button'
+import { Spinner } from '@/components/ui/spinner'
 import { getApiErrorMessage } from '@/lib/errors'
 import type { DeskOccupation, DeskOccupationStatus, DeskPeriod } from './types'
 import { useCancelDeskOccupation, useDeskOccupations } from './useTickets'
@@ -72,7 +72,7 @@ export function MyDeskOccupationsList() {
 
       <div className="flex flex-wrap gap-2">
         <Button
-          variant={scope === 'upcoming' ? 'primary' : 'secondary'}
+          variant={scope === 'upcoming' ? 'default' : 'outline'}
           size="sm"
           aria-pressed={scope === 'upcoming'}
           onClick={() => switchScope('upcoming')}
@@ -80,7 +80,7 @@ export function MyDeskOccupationsList() {
           À venir
         </Button>
         <Button
-          variant={scope === 'past' ? 'primary' : 'secondary'}
+          variant={scope === 'past' ? 'default' : 'outline'}
           size="sm"
           aria-pressed={scope === 'past'}
           onClick={() => switchScope('past')}
@@ -159,7 +159,7 @@ export function MyDeskOccupationsList() {
                     <td className="px-4 py-3 text-right">
                       {occupation.cancellable ? (
                         <ConfirmButton
-                          variant="danger"
+                          variant="destructive"
                           size="sm"
                           disabled={cancelOccupation.isPending}
                           confirmMessage="Annuler cette réservation ?"
@@ -192,7 +192,7 @@ export function MyDeskOccupationsList() {
               aria-label="Pagination des bureaux réservés"
             >
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 disabled={page <= 1}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
@@ -203,7 +203,7 @@ export function MyDeskOccupationsList() {
                 Page {data.meta.current_page} sur {data.meta.last_page}
               </span>
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 disabled={page >= data.meta.last_page}
                 onClick={() => setPage((current) => current + 1)}

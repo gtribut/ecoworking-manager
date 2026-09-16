@@ -2,12 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Alert } from '@/components/ui/Alert'
-import { Button } from '@/components/ui/Button'
-import { ConfirmButton } from '@/components/ui/ConfirmButton'
-import { Input } from '@/components/ui/Input'
-import { Label } from '@/components/ui/Label'
-import { Modal } from '@/components/ui/Modal'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { ConfirmButton } from '@/components/ui/confirm-button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { getApiErrorMessage, getApiFieldErrors, getApiStatus } from '@/lib/errors'
 import { fetchRoomAvailability } from './api'
 import {
@@ -186,28 +186,43 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
   // serveur refuserait (403). On le dit au lieu de proposer un formulaire mort.
   if (target.mode === 'edit' && !target.cancellable) {
     return (
-      <Modal open title={title} onClose={onClose}>
-        <div className="space-y-4">
-          <Alert variant="info">
-            Cette réservation a déjà commencé : elle n’est plus modifiable ni annulable depuis le
-            portail. Contactez Ecoworking pour un cas particulier.
-          </Alert>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-            <dt className="font-medium">Salle</dt>
-            <dd>{target.roomName}</dd>
-            <dt className="font-medium">Créneau</dt>
-            <dd>
-              {new Date(target.startsAt).toLocaleString('fr-FR', {
-                dateStyle: 'long',
-                timeStyle: 'short',
-              })}{' '}
-              – {hhmm(target.endsAt)}
-            </dd>
-            <dt className="font-medium">Libellé</dt>
-            <dd>{target.title ?? '—'}</dd>
-          </dl>
-        </div>
-      </Modal>
+      <Dialog open onOpenChange={(next) => !next && onClose()}>
+        {/* Pas de `DialogDescription` : le titre suffit à nommer la boîte, et
+            un `aria-describedby` pendouillant déclencherait un avertissement
+            Radix. */}
+        <DialogContent
+          aria-describedby={undefined}
+          // Le clic hors de la boîte ne ferme pas : l'ancienne `Modal` maison
+          // ne le faisait pas non plus, et une saisie de réservation à moitié
+          // remplie serait perdue. Échap et le bouton Fermer restent actifs.
+          onInteractOutside={(event) => event.preventDefault()}
+          className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
+        >
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Alert variant="info">
+              Cette réservation a déjà commencé : elle n’est plus modifiable ni annulable depuis le
+              portail. Contactez Ecoworking pour un cas particulier.
+            </Alert>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+              <dt className="font-medium">Salle</dt>
+              <dd>{target.roomName}</dd>
+              <dt className="font-medium">Créneau</dt>
+              <dd>
+                {new Date(target.startsAt).toLocaleString('fr-FR', {
+                  dateStyle: 'long',
+                  timeStyle: 'short',
+                })}{' '}
+                – {hhmm(target.endsAt)}
+              </dd>
+              <dt className="font-medium">Libellé</dt>
+              <dd>{target.title ?? '—'}</dd>
+            </dl>
+          </div>
+        </DialogContent>
+      </Dialog>
     )
   }
 
@@ -293,152 +308,165 @@ export function BookingDialog({ target, isExternal, onClose, onSuccess }: Bookin
   }
 
   return (
-    <Modal open title={title} onClose={onClose}>
-      <form
-        className="space-y-4"
-        onSubmit={(event) => {
-          void handleSubmit(onSubmit)(event)
-        }}
+    <Dialog open onOpenChange={(next) => !next && onClose()}>
+      <DialogContent
+        aria-describedby={undefined}
+        // Cf. ci-dessus : pas de fermeture au clic extérieur, le formulaire de
+        // réservation serait perdu.
+        onInteractOutside={(event) => event.preventDefault()}
+        className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
       >
-        {formError !== null && (
-          <Alert variant="error">
-            {formError}
-            {suggestion !== null && (
-              <span className="mt-2 block">
-                Créneau libre le plus proche :{' '}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setValue('kind', 'custom')
-                    setValue('start_time', hhmm(suggestion.start.toISOString()))
-                    setValue('end_time', hhmm(suggestion.end.toISOString()))
-                    setSuggestion(null)
-                    setFormError(null)
-                  }}
-                >
-                  {hhmm(suggestion.start.toISOString())} – {hhmm(suggestion.end.toISOString())}
-                </Button>
-              </span>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            void handleSubmit(onSubmit)(event)
+          }}
+        >
+          {formError !== null && (
+            <Alert variant="error">
+              {formError}
+              {suggestion !== null && (
+                <span className="mt-2 block">
+                  Créneau libre le plus proche :{' '}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setValue('kind', 'custom')
+                      setValue('start_time', hhmm(suggestion.start.toISOString()))
+                      setValue('end_time', hhmm(suggestion.end.toISOString()))
+                      setSuggestion(null)
+                      setFormError(null)
+                    }}
+                  >
+                    {hhmm(suggestion.start.toISOString())} – {hhmm(suggestion.end.toISOString())}
+                  </Button>
+                </span>
+              )}
+            </Alert>
+          )}
+
+          <div>
+            <Label htmlFor="booking-date">Date</Label>
+            <Input
+              id="booking-date"
+              type="date"
+              min={toIsoDate(new Date())}
+              aria-invalid={errors.date !== undefined}
+              aria-describedby={errors.date !== undefined ? 'booking-date-error' : undefined}
+              {...register('date')}
+            />
+            {errors.date && (
+              <p id="booking-date-error" className="mt-1 text-sm text-red-700 dark:text-red-300">
+                {errors.date.message}
+              </p>
             )}
-          </Alert>
-        )}
+          </div>
 
-        <div>
-          <Label htmlFor="booking-date">Date</Label>
-          <Input
-            id="booking-date"
-            type="date"
-            min={toIsoDate(new Date())}
-            aria-invalid={errors.date !== undefined}
-            aria-describedby={errors.date !== undefined ? 'booking-date-error' : undefined}
-            {...register('date')}
-          />
-          {errors.date && (
-            <p id="booking-date-error" className="mt-1 text-sm text-red-700 dark:text-red-300">
-              {errors.date.message}
-            </p>
-          )}
-        </div>
+          <fieldset>
+            <legend className="mb-1 block text-sm font-medium text-neutral-800 dark:text-neutral-200">
+              Créneau
+            </legend>
+            <div className="space-y-1">
+              {kinds.map((value) => (
+                <span key={value} className="flex items-center gap-2 text-sm">
+                  <input
+                    id={`booking-kind-${value}`}
+                    type="radio"
+                    value={value}
+                    className="size-4"
+                    {...register('kind')}
+                  />
+                  <label htmlFor={`booking-kind-${value}`}>{KIND_LABELS[value]}</label>
+                </span>
+              ))}
+            </div>
+          </fieldset>
 
-        <fieldset>
-          <legend className="mb-1 block text-sm font-medium text-neutral-800 dark:text-neutral-200">
-            Créneau
-          </legend>
-          <div className="space-y-1">
-            {kinds.map((value) => (
-              <span key={value} className="flex items-center gap-2 text-sm">
-                <input
-                  id={`booking-kind-${value}`}
-                  type="radio"
-                  value={value}
-                  className="size-4"
-                  {...register('kind')}
+          {!isExternal && kind === 'custom' && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="booking-start">Heure de début</Label>
+                <Input
+                  id="booking-start"
+                  type="time"
+                  step={900}
+                  aria-invalid={errors.start_time !== undefined}
+                  aria-describedby={
+                    errors.start_time !== undefined ? 'booking-start-error' : undefined
+                  }
+                  {...register('start_time')}
                 />
-                <label htmlFor={`booking-kind-${value}`}>{KIND_LABELS[value]}</label>
-              </span>
-            ))}
-          </div>
-        </fieldset>
-
-        {!isExternal && kind === 'custom' && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="booking-start">Heure de début</Label>
-              <Input
-                id="booking-start"
-                type="time"
-                step={900}
-                aria-invalid={errors.start_time !== undefined}
-                aria-describedby={
-                  errors.start_time !== undefined ? 'booking-start-error' : undefined
-                }
-                {...register('start_time')}
-              />
-              {errors.start_time && (
-                <p id="booking-start-error" className="mt-1 text-sm text-red-700 dark:text-red-300">
-                  {errors.start_time.message}
-                </p>
-              )}
+                {errors.start_time && (
+                  <p
+                    id="booking-start-error"
+                    className="mt-1 text-sm text-red-700 dark:text-red-300"
+                  >
+                    {errors.start_time.message}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="booking-end">Heure de fin</Label>
+                <Input
+                  id="booking-end"
+                  type="time"
+                  step={900}
+                  aria-invalid={errors.end_time !== undefined}
+                  aria-describedby={errors.end_time !== undefined ? 'booking-end-error' : undefined}
+                  {...register('end_time')}
+                />
+                {errors.end_time && (
+                  <p id="booking-end-error" className="mt-1 text-sm text-red-700 dark:text-red-300">
+                    {errors.end_time.message}
+                  </p>
+                )}
+              </div>
             </div>
-            <div>
-              <Label htmlFor="booking-end">Heure de fin</Label>
-              <Input
-                id="booking-end"
-                type="time"
-                step={900}
-                aria-invalid={errors.end_time !== undefined}
-                aria-describedby={errors.end_time !== undefined ? 'booking-end-error' : undefined}
-                {...register('end_time')}
-              />
-              {errors.end_time && (
-                <p id="booking-end-error" className="mt-1 text-sm text-red-700 dark:text-red-300">
-                  {errors.end_time.message}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+          )}
 
-        <div>
-          <Label htmlFor="booking-title">Libellé (optionnel)</Label>
-          <Input
-            id="booking-title"
-            maxLength={255}
-            placeholder="Réunion équipe…"
-            aria-invalid={errors.title !== undefined}
-            aria-describedby={errors.title !== undefined ? 'booking-title-error' : undefined}
-            {...register('title')}
-          />
-          {errors.title && (
-            <p id="booking-title-error" className="mt-1 text-sm text-red-700 dark:text-red-300">
-              {errors.title.message}
+          <div>
+            <Label htmlFor="booking-title">Libellé (optionnel)</Label>
+            <Input
+              id="booking-title"
+              maxLength={255}
+              placeholder="Réunion équipe…"
+              aria-invalid={errors.title !== undefined}
+              aria-describedby={errors.title !== undefined ? 'booking-title-error' : undefined}
+              {...register('title')}
+            />
+            {errors.title && (
+              <p id="booking-title-error" className="mt-1 text-sm text-red-700 dark:text-red-300">
+                {errors.title.message}
+              </p>
+            )}
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              Visible par les autres membres dans le calendrier.
             </p>
-          )}
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-            Visible par les autres membres dans le calendrier.
-          </p>
-        </div>
+          </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button type="submit" disabled={isSubmitting}>
-            {target.mode === 'create' ? 'Réserver' : 'Enregistrer les modifications'}
-          </Button>
-          {target.mode === 'edit' && target.cancellable && (
-            <ConfirmButton
-              variant="danger"
-              size="md"
-              disabled={cancelBooking.isPending}
-              confirmMessage="Supprimer cette réservation ?"
-              confirmLabel="Oui, supprimer"
-              cancelLabel="Non"
-              onConfirm={() => void onDelete()}
-            >
-              Supprimer
-            </ConfirmButton>
-          )}
-        </div>
-      </form>
-    </Modal>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Button type="submit" disabled={isSubmitting}>
+              {target.mode === 'create' ? 'Réserver' : 'Enregistrer les modifications'}
+            </Button>
+            {target.mode === 'edit' && target.cancellable && (
+              <ConfirmButton
+                variant="destructive"
+                disabled={cancelBooking.isPending}
+                confirmMessage="Supprimer cette réservation ?"
+                confirmLabel="Oui, supprimer"
+                cancelLabel="Non"
+                onConfirm={() => void onDelete()}
+              >
+                Supprimer
+              </ConfirmButton>
+            )}
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

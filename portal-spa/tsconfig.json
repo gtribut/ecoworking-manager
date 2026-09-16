@@ -1,4 +1,11 @@
 {
   "files": [],
-  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
+  // `paths` dupliqué ici (le vrai est dans tsconfig.app.json) : la CLI shadcn lit
+  // tsconfig.json pour résoudre l'alias `@/`. Sans ça elle écrit dans un dossier
+  // littéral `@/`. Inerte pour tsc (`files: []`).
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] }
+  }
 }

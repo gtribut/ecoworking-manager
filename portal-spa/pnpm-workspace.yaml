@@ -1,2 +1,5 @@
+# msw n'a pas besoin de son script postinstall ici (service worker navigateur
+# uniquement) : build refusé explicitement pour que `pnpm install` sorte en 0
+# (sinon ERR_PNPM_IGNORED_BUILDS fait échouer la CLI shadcn et `pnpm <script>`).
 allowBuilds:
-  msw: set this to true or false
+  msw: false

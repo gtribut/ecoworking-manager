@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { Select } from './Select'
+import { NativeSelect } from './native-select'
 
-describe('Select', () => {
+describe('NativeSelect', () => {
   it('avec une erreur : aria-invalid, message relié via aria-describedby', () => {
     render(
-      <Select id="period" aria-label="Période" error="Choisissez une période.">
+      <NativeSelect id="period" aria-label="Période" error="Choisissez une période.">
         <option value="am">Matin</option>
-      </Select>,
+      </NativeSelect>,
     )
     const select = screen.getByLabelText('Période')
 

@@ -548,7 +548,9 @@ describe('BookingsPage — calendrier des salles', () => {
     )
     const dialog = await screen.findByRole('dialog')
     await user.click(within(dialog).getByRole('button', { name: 'Supprimer' }))
-    await user.click(within(dialog).getByRole('button', { name: 'Oui, supprimer' }))
+    // La confirmation est un AlertDialog Radix : il est rendu dans un portail
+    // à la racine du document, pas dans le DOM de la modale de réservation.
+    await user.click(await screen.findByRole('button', { name: 'Oui, supprimer' }))
 
     await waitFor(() => expect(deleted).toHaveBeenCalledTimes(1))
     expect(await screen.findByText('Réservation annulée.')).toBeVisible()

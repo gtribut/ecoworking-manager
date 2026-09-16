@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { Input } from './Input'
+import { Input } from './input'
 
 describe('Input', () => {
   it('sans erreur : pas de aria-invalid ni de message', () => {

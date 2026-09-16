@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router'
-import { Spinner } from '@/components/ui/Spinner'
+import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from './useAuth'
 
 /**

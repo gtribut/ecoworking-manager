@@ -2,8 +2,8 @@ import { Download, FileText } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState } from '@/components/EmptyState'
 import { QueryError } from '@/components/QueryError'
-import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { usePageTitle } from '@/lib/usePageTitle'
 import { administrativeDocumentPdfUrl } from './api'
@@ -171,7 +171,7 @@ export function DocumentsPage() {
                   aria-label="Pagination des documents administratifs"
                 >
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     disabled={page <= 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -186,7 +186,7 @@ export function DocumentsPage() {
                     {administrative.data.meta.last_page}
                   </span>
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     disabled={page >= administrative.data.meta.last_page}
                     onClick={() => setPage((p) => p + 1)}

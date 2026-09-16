@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Alert } from '@/components/ui/Alert'
-import { Button } from '@/components/ui/Button'
-import { ConfirmButton } from '@/components/ui/ConfirmButton'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { ConfirmButton } from '@/components/ui/confirm-button'
 import { usePermissions } from '@/features/auth/usePermissions'
 import { getApiErrorMessage } from '@/lib/errors'
 import type { Announcement } from './types'
@@ -49,7 +49,7 @@ export function RsvpButton({ announcement }: { announcement: Announcement }) {
             Vous êtes inscrit(e) à cet événement.
           </p>
           <ConfirmButton
-            variant="secondary"
+            variant="outline"
             size="sm"
             disabled={pending}
             confirmMessage="Annuler votre inscription ?"

@@ -110,25 +110,53 @@ describe('FloorPlanPage', () => {
     expect(screen.getByText('Bureau 30 — libre')).toBeInTheDocument()
   })
 
-  it('navigue entre les étages (boutons pressés + zones SVG affichées)', async () => {
+  it('affiche les deux étages côte à côte, sans switch et sans id dupliqué', async () => {
     await renderPlan()
 
-    const floor1 = screen.getByRole('button', { name: 'Étage 1' })
-    const floor2 = screen.getByRole('button', { name: 'Étage 2' })
-    expect(floor1).toHaveAttribute('aria-pressed', 'true')
+    // Plus de boutons « Étage N » : les deux plans sont rendus simultanément.
+    expect(screen.queryByRole('button', { name: 'Étage 1' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Étage 2' })).not.toBeInTheDocument()
 
     await waitFor(() => {
-      expect((document.querySelector('#etage-2') as SVGGElement | null)?.style.display).toBe('none')
+      expect(screen.getByRole('group', { name: "Plan de l'étage 1" })).toBeInTheDocument()
+    })
+    expect(screen.getByRole('group', { name: "Plan de l'étage 2" })).toBeInTheDocument()
+
+    // Chaque carte ne garde que son étage : aucun id en double entre les deux.
+    expect(document.querySelectorAll('#etage-1')).toHaveLength(1)
+    expect(document.querySelectorAll('#etage-2')).toHaveLength(1)
+    expect(document.querySelectorAll('#desk-1')).toHaveLength(1)
+    expect(document.querySelectorAll('#desk-30')).toHaveLength(1)
+    // Bureau de l'étage 2 : décoré et focusable dans sa propre carte.
+    expect(document.querySelector('#desk-30')).toHaveAttribute('tabindex', '0')
+    expect(document.querySelector('#desk-30')).toHaveAttribute('data-status', 'free')
+  })
+
+  it('affiche un tooltip au survol : identité + entreprise, opt-out respecté', async () => {
+    await renderPlan()
+    await waitFor(() => {
+      expect(document.querySelector('#desk-1')).toHaveAttribute('role', 'button')
     })
 
     const user = userEvent.setup()
-    await user.click(floor2)
+    await user.hover(document.querySelector('#desk-1') as Element)
 
-    expect(floor2).toHaveAttribute('aria-pressed', 'true')
+    const tooltip = await screen.findByTestId('desk-tooltip')
+    expect(tooltip).toHaveTextContent('Marie Durand')
+    expect(tooltip).toHaveTextContent('Acme Studio')
+    // Décoratif : l'info est déjà portée par l'aria-label du bloc.
+    expect(tooltip).toHaveAttribute('aria-hidden', 'true')
+
+    // Opt-out annuaire : aucune identité dans le tooltip non plus (PRD §3.7.5).
+    await user.hover(document.querySelector('#desk-2') as Element)
+    expect(await screen.findByTestId('desk-tooltip')).toHaveTextContent(
+      'Coworker (souhaite rester discret)',
+    )
+
+    await user.unhover(document.querySelector('#desk-2') as Element)
     await waitFor(() => {
-      expect((document.querySelector('#etage-1') as SVGGElement | null)?.style.display).toBe('none')
+      expect(screen.queryByTestId('desk-tooltip')).not.toBeInTheDocument()
     })
-    expect((document.querySelector('#etage-2') as SVGGElement | null)?.style.display).toBe('')
   })
 
   it('ouvre la fiche du bureau au clic et à l’Entrée clavier, avec fermeture', async () => {

@@ -47,3 +47,23 @@ export function deskLabel(desk: PlanDesk): string {
 
   return `${desk.name} — ${detail}${own}`
 }
+
+/**
+ * Contenu du tooltip affiché au survol (ou au focus) d'un bureau sur le plan :
+ * identité + entreprise, dans le respect de l'opt-out annuaire (PRD §3.7.5).
+ * Purement décoratif — l'info reste portée par l'`aria-label` du bloc et par
+ * l'alternative texte, le tooltip est donc `aria-hidden`.
+ */
+export function deskTooltip(desk: PlanDesk): { title: string; subtitle: string | null } {
+  if (!desk.occupant) {
+    return { title: desk.name, subtitle: statusLabel(desk) }
+  }
+  if (!desk.occupant.visible) {
+    return { title: occupantDisplayName(desk) ?? desk.name, subtitle: null }
+  }
+
+  return {
+    title: `${desk.occupant.first_name} ${desk.occupant.last_name}`,
+    subtitle: desk.occupant.company,
+  }
+}

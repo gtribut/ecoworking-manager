@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { PageContainer } from '@/components/PageContainer'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryError } from '@/components/QueryError'
@@ -39,16 +39,18 @@ const LEGEND: { label: string; swatchClass: string }[] = [
   { label: 'Hors service', swatchClass: 'plan-swatch-out' },
 ]
 
+/** Étages affichés côte à côte (empilés en mobile) — cf. `FloorPlanSvg`. */
+const FLOORS = [1, 2]
+
 /**
  * Plan des étages (PRD §3.7.2) : occupation du jour bureau par bureau, avec
- * sélecteur de date, switch étage 1 / étage 2, panneau de détail au clic
+ * sélecteur de date, les deux étages côte à côte, panneau de détail au clic
  * (accessible clavier) et alternative texte obligatoire (CLAUDE.md §3.5).
  */
 export function FloorPlanPage() {
   usePageTitle('Plan des étages — Portail Ecoworking')
 
   const [date, setDate] = useState(() => toIsoDate(new Date()))
-  const [floor, setFloor] = useState(1)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   // Bloc bureau ayant ouvert le Sheet (clic ou clavier) : à qui rendre le
   // focus à la fermeture (cf. `DeskDetailPanel`, pas de `SheetTrigger` ici).
@@ -56,13 +58,6 @@ export function FloorPlanPage() {
   const { data, isLoading, isError, error, refetch } = useFloorPlan(date)
 
   const selectedDesk = data?.desks.find((desk) => desk.resource_id === selectedId) ?? null
-
-  // Un bureau sélectionné sur l'autre étage (via la liste) suit le switch.
-  useEffect(() => {
-    if (selectedDesk && selectedDesk.floor !== null && selectedDesk.floor !== floor) {
-      setFloor(selectedDesk.floor)
-    }
-  }, [selectedDesk, floor])
 
   return (
     <PageContainer width="full" className="space-y-6">
@@ -116,26 +111,6 @@ export function FloorPlanPage() {
 
       {data && (
         <>
-          <fieldset className="flex gap-1">
-            <legend className="sr-only">Choix de l’étage</legend>
-            {[1, 2].map((floorNumber) => (
-              <button
-                key={floorNumber}
-                type="button"
-                aria-pressed={floor === floorNumber}
-                className={cn(
-                  'rounded-md px-3 py-2 text-sm font-medium',
-                  floor === floorNumber
-                    ? 'bg-brand-600 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200',
-                )}
-                onClick={() => setFloor(floorNumber)}
-              >
-                Étage {floorNumber}
-              </button>
-            ))}
-          </fieldset>
-
           <ul aria-label="Légende du plan" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
             {LEGEND.map((item) => (
               <li key={item.label} className="inline-flex items-center gap-1.5">
@@ -149,18 +124,25 @@ export function FloorPlanPage() {
             Aller à l’équivalent texte du plan
           </a>
 
-          {/* Plan pleine largeur (lot U4b) : le détail d'un bureau s'ouvre
-              désormais dans un panneau latéral (`Sheet`), plus besoin de lui
-              réserver une colonne dans la mise en page. */}
-          <FloorPlanSvg
-            desks={data.desks}
-            floor={floor}
-            selectedId={selectedId}
-            onSelect={(desk) => {
-              openerRef.current = document.activeElement as HTMLElement | null
-              setSelectedId(desk.resource_id)
-            }}
-          />
+          {/* Les deux étages côte à côte (empilés sous `lg`) : plus de switch,
+              tout le plan est lisible d'un coup d'œil. Pas de titre au-dessus
+              des cartes : le numéro d'étage est déjà dessiné dans le SVG et
+              porté par l'`aria-label` de chaque groupe. Le détail d'un bureau
+              s'ouvre dans un panneau latéral (`Sheet`, lot U4b). */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            {FLOORS.map((floorNumber) => (
+              <FloorPlanSvg
+                key={floorNumber}
+                desks={data.desks}
+                floor={floorNumber}
+                selectedId={selectedId}
+                onSelect={(desk) => {
+                  openerRef.current = document.activeElement as HTMLElement | null
+                  setSelectedId(desk.resource_id)
+                }}
+              />
+            ))}
+          </div>
           <DeskDetailPanel
             desk={selectedDesk}
             onClose={() => setSelectedId(null)}

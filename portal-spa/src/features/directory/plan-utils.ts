@@ -25,7 +25,15 @@ export function statusLabel(desk: PlanDesk): string {
     case 'present':
       return desk.occupant ? 'présent(e)' : 'occupé'
     case 'partial':
-      return 'présent(e) une demi-journée'
+      // Recette R-08 : dire LAQUELLE des deux demi-journées, pas un générique.
+      switch (desk.present_period) {
+        case 'morning':
+          return 'présent(e) le matin seulement'
+        case 'afternoon':
+          return 'présent(e) l’après-midi seulement'
+        default:
+          return 'présent(e) une demi-journée'
+      }
     case 'absent':
       return 'absent(e)'
     case 'free':

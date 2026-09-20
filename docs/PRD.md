@@ -839,6 +839,8 @@ Annuaire visuel des coworkers basé sur un **plan des étages** où chaque burea
 
 > ✅ **Acté 2026-09-13** : un statut supplémentaire `partial` a été ajouté (bureau occupé une demi-journée seulement sur la date sélectionnée), représenté par une couleur unique dédiée, en complément des états du tableau ci-dessus.
 
+> ✅ **Précisé 2026-09-20 (recette R-08)** : le portail dit **laquelle** des deux demi-journées est occupée — « présent(e) le matin seulement » / « présent(e) l'après-midi seulement » — dans la fiche du bureau comme dans l'équivalent texte. L'API `GET /api/directory/floor-plan` expose pour cela `present_period` (`morning` / `afternoon`, `null` hors statut `partial`).
+
 #### 3.7.4 Interactions
 
 **Hover sur un bloc bureau occupé**

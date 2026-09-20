@@ -128,6 +128,7 @@ it('marque présent le résident attitré un jour ouvré sans absence, avec sa f
     $desk = collect($response->json('desks'))->firstWhere('resource_id', $profile->desk_id);
 
     expect($desk['status'])->toBe('present')
+        ->and($desk['present_period'])->toBeNull()
         ->and($desk['assignment'])->toBe('assigned_resident')
         ->and($desk['occupant']['visible'])->toBeTrue()
         ->and($desk['occupant']['first_name'])->toBe($profile->user->first_name)
@@ -171,7 +172,9 @@ it('signale une absence demi-journée comme présence partielle', function () {
 
     $desk = collect($response->json('desks'))->firstWhere('resource_id', $profile->desk_id);
 
-    expect($desk['status'])->toBe('partial');
+    // Absent le matin => présent l'après-midi seulement (recette R-08).
+    expect($desk['status'])->toBe('partial')
+        ->and($desk['present_period'])->toBe('afternoon');
 });
 
 it('anonymise le titulaire opt-out sur le plan : aucune donnée personnelle', function () {
@@ -243,6 +246,8 @@ it('ignore les occupations annulées et marque partielle une occupation demi-jou
     $state = collect($response->json('desks'))->firstWhere('resource_id', $desk->id);
 
     expect($state['status'])->toBe('partial')
+        // Seule l'occupation du matin tient (l'autre est annulée) — R-08.
+        ->and($state['present_period'])->toBe('morning')
         // External sans opt-in annuaire : présence connue mais identité masquée.
         ->and($state['occupant'])->toBe(['visible' => false]);
 });

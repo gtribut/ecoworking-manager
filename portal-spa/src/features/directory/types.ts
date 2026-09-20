@@ -45,6 +45,9 @@ export type DeskStatus = 'present' | 'partial' | 'absent' | 'free' | 'out_of_ser
 
 export type DeskAssignment = 'assigned_resident' | 'assigned_staff' | 'unassigned'
 
+/** Demi-journée occupée quand le bureau ne l'est qu'à moitié (statut `partial`). */
+export type DeskPeriod = 'morning' | 'afternoon'
+
 /** État d'un bureau sur le plan (GET /api/directory/floor-plan). */
 export interface PlanDesk {
   resource_id: number
@@ -54,6 +57,8 @@ export interface PlanDesk {
   assignment: DeskAssignment | null
   is_own: boolean
   status: DeskStatus
+  /** Renseigné uniquement si `status === 'partial'` (recette R-08). */
+  present_period: DeskPeriod | null
   occupant: PlanOccupant | null
 }
 

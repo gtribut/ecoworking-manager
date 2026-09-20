@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\InvoiceStatus;
 use App\Enums\ResourceType;
 use App\Models\Booking;
+use App\Models\DeskAbsence;
 use App\Models\InternalDocument;
 use App\Models\Invoice;
 use App\Models\MemberProfile;
@@ -213,6 +214,26 @@ final class AdminDashboardService
                     : 0.0,
             ])
             ->values();
+    }
+
+    /**
+     * Absences que les membres viennent de déclarer DEPUIS LE PORTAIL (PRD Q25,
+     * visibilité de l'admin sur les bureaux libérés). Une notification in-app
+     * part déjà vers les admins, mais le back-office n'a pas de cloche pour
+     * l'afficher (tranché 2026-09-20) : ce bloc du dashboard EST la surface de
+     * restitution. Saisie depuis le back-office (`created_by` ≠ titulaire)
+     * exclue : l'admin n'a pas à être notifié de sa propre saisie.
+     *
+     * @return Builder<DeskAbsence>
+     */
+    public function recentPortalAbsencesQuery(int $days = 14, int $limit = 5): Builder
+    {
+        return DeskAbsence::query()
+            ->whereColumn('created_by', 'user_id')
+            ->where('created_at', '>=', CarbonImmutable::now()->subDays($days))
+            ->with(['user', 'desk'])
+            ->latest('created_at')
+            ->limit($limit);
     }
 
     /**

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use App\Enums\SubscriptionStatus;
 use App\Models\Booking;
+use App\Models\DeskAbsence;
 use App\Models\InternalDocument;
 use App\Models\Invoice;
 use App\Models\MemberDocumentValidation;
 use App\Models\MemberProfile;
 use App\Models\Resource;
 use App\Models\Subscription;
+use App\Models\User;
 use App\Services\AdminDashboardService;
 use Carbon\CarbonImmutable;
 
@@ -192,6 +194,25 @@ it('liste les nouveaux membres arrivés cette semaine', function () {
     $arrivals = dashboardService()->newMembersThisWeekQuery()->get();
 
     expect($arrivals->pluck('id')->all())->toBe([$thisWeek->id]);
+});
+
+it('liste les absences déclarées depuis le portail, la plus récente en premier', function () {
+    $member = User::factory()->resident()->create();
+    $admin = User::factory()->admin()->create();
+
+    $old = DeskAbsence::factory()->create(['user_id' => $member->id, 'created_by' => $member->id]);
+    $old->forceFill(['created_at' => CarbonImmutable::now()->subDays(3)])->saveQuietly();
+    $recent = DeskAbsence::factory()->create(['user_id' => $member->id, 'created_by' => $member->id]);
+
+    // Saisie par l'accueil : l'admin n'a pas à être alerté de sa propre action.
+    DeskAbsence::factory()->create(['user_id' => $member->id, 'created_by' => $admin->id]);
+    // Hors fenêtre de 14 jours.
+    $stale = DeskAbsence::factory()->create(['user_id' => $member->id, 'created_by' => $member->id]);
+    $stale->forceFill(['created_at' => CarbonImmutable::now()->subDays(20)])->saveQuietly();
+
+    $absences = dashboardService()->recentPortalAbsencesQuery()->get();
+
+    expect($absences->pluck('id')->all())->toBe([$recent->id, $old->id]);
 });
 
 it('retourne les 10 dernières entrées d\'audit log, la plus récente en premier', function () {

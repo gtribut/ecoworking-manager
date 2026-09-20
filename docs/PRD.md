@@ -551,6 +551,8 @@ Trois modes d'absence :
 
 > ✅ **Résolu (Q25)** : notification admin **systématique** à chaque absence enregistrée via ce module. Le module ne sert qu'aux récurrences et aux absences longues en général → il est utile que l'admin ait l'info et la visibilité sur les bureaux libérés.
 
+> ✅ **Précisé 2026-09-20 (recette)** : la notification admin est bien enregistrée (`AbsenceDeclaredNotification` vers tous les admins), mais le back-office **n'a pas de cloche de notifications** — `absence.declared` est le seul événement du MVP qui vise un admin, la plomberie Filament (`databaseNotifications`) ne se justifiait pas pour un type unique. La surface de restitution de Q25 est le bloc **« Absences déclarées par les membres »** du dashboard admin (§4.1.2) : déclarations faites depuis le portail sur 14 jours, saisies back-office exclues.
+
 ### 3.5 Réservation de ressources
 
 #### 3.5.1 Architecture des ressources
@@ -1028,6 +1030,7 @@ Page d'accueil après login admin. Vue de pilotage rapide.
 **Vue rapide "Aujourd'hui"**
 - Liste des résa du jour (salles + bureaux nomades)
 - Liste des nouveaux membres arrivés cette semaine
+- **Absences déclarées par les membres** depuis le portail (14 derniers jours) — surface de restitution de Q25 (§3.4.6), le back-office n'ayant pas de cloche de notifications
 
 ### 4.2 Membres & profils
 

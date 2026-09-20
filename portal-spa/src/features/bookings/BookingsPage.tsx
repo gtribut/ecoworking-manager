@@ -1,5 +1,5 @@
 import { fr } from 'date-fns/locale'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { PageContainer } from '@/components/PageContainer'
 import { PageHeader } from '@/components/PageHeader'
@@ -33,13 +33,25 @@ export function BookingsPage() {
   usePageTitle('Réservations — Portail Ecoworking')
 
   const { isExternal } = usePermissions()
-  const tickets = useTickets()
+  // 403 pour un non-external : la requête n'a de sens que pour lui (§3.5.6).
+  const tickets = useTickets({ enabled: isExternal })
   const cancelBooking = useCancelBooking()
   const [notice, setNotice] = useState<Notice>(null)
+  const noticeRef = useRef<HTMLDivElement>(null)
   const [target, setTarget] = useState<DialogTarget | null>(null)
   const [date, setDate] = useState<Date>(() => atHour(new Date(), 0))
 
   const roomTickets = tickets.data?.balances.meeting_room_half_day ?? null
+
+  // Le message vit en tête de page alors que ce qui le déclenche (bouton
+  // « sur demande », clic sur un créneau) est dans l'agenda, plus bas : sans
+  // ça il s'affiche hors écran et passe inaperçu (recette 2026-09-20). Le
+  // focus sert aussi d'annonce au lecteur d'écran.
+  useEffect(() => {
+    if (notice === null) return
+    noticeRef.current?.scrollIntoView({ block: 'nearest' })
+    noticeRef.current?.focus()
+  }, [notice])
 
   /** External sans ticket : on le dit avant de proposer le formulaire (§3.5.3). */
   function blockedByTickets(): boolean {
@@ -124,7 +136,7 @@ export function BookingsPage() {
       <PageHeader title="Réservations de salles" />
 
       {notice !== null && (
-        <Alert variant="info">
+        <Alert variant="info" ref={noticeRef} tabIndex={-1}>
           {notice.message}
           {notice.mailto !== undefined && (
             <a

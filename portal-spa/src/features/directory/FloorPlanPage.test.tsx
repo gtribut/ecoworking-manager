@@ -38,6 +38,7 @@ function makeDesk(overrides: Partial<PlanDesk> = {}): PlanDesk {
     assignment: 'assigned_resident',
     is_own: false,
     status: 'present',
+    present_period: null,
     occupant: visibleOccupant(),
     ...overrides,
   }
@@ -130,6 +131,39 @@ describe('FloorPlanPage', () => {
     // Bureau de l'étage 2 : décoré et focusable dans sa propre carte.
     expect(document.querySelector('#desk-30')).toHaveAttribute('tabindex', '0')
     expect(document.querySelector('#desk-30')).toHaveAttribute('data-status', 'free')
+  })
+
+  it('précise la demi-journée d’une présence partielle (R-08)', async () => {
+    await renderPlan({
+      ...defaultPlan,
+      desks: [
+        makeDesk({ status: 'partial', present_period: 'afternoon' }),
+        makeDesk({
+          resource_id: 2,
+          svg_desk_id: 'desk-2',
+          name: 'Bureau 2',
+          status: 'partial',
+          present_period: 'morning',
+        }),
+      ],
+    })
+
+    // Alternative texte et aria-label du SVG : même libellé, toujours précis.
+    expect(
+      screen.getByText('Bureau 1 — Marie Durand (Acme Studio), présent(e) l’après-midi seulement'),
+    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(document.querySelector('#desk-2')?.getAttribute('aria-label')).toBe(
+        'Bureau 2 — Marie Durand (Acme Studio), présent(e) le matin seulement',
+      )
+    })
+
+    // Fiche détail du bureau (PRD §3.7.4).
+    const user = userEvent.setup()
+    await user.click(document.querySelector('#desk-1') as Element)
+    expect(
+      await screen.findByText('Statut : présent(e) l’après-midi seulement'),
+    ).toBeInTheDocument()
   })
 
   it('affiche un tooltip au survol : identité + entreprise, opt-out respecté', async () => {

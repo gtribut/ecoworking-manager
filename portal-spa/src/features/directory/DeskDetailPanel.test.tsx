@@ -14,6 +14,7 @@ const desk: PlanDesk = {
   assignment: 'unassigned',
   is_own: false,
   status: 'free',
+  present_period: null,
   occupant: null,
 }
 

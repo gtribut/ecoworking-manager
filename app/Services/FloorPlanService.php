@@ -118,7 +118,7 @@ final class FloorPlanService
         ];
 
         if ($desk->is_out_of_service) {
-            return $base + ['status' => 'out_of_service', 'occupant' => null];
+            return $base + ['status' => 'out_of_service', 'present_period' => null, 'occupant' => null];
         }
 
         $profile = $desk->assignedMemberProfile->first();
@@ -130,6 +130,7 @@ final class FloorPlanService
 
             return $base + [
                 'status' => $this->status($morning, $afternoon, 'absent'),
+                'present_period' => $this->presentPeriod($morning, $afternoon),
                 // Le titulaire reste identifié même absent (PRD §3.7.3 « Bureau
                 // de X (absent) ») — mais uniquement s'il est opt-in annuaire.
                 'occupant' => $this->occupantCard($profile->user, $profile),
@@ -143,6 +144,7 @@ final class FloorPlanService
 
         return $base + [
             'status' => $this->status($morning, $afternoon, 'free'),
+            'present_period' => $this->presentPeriod($morning, $afternoon),
             'occupant' => $first !== null
                 ? $this->occupantCard($first->user, $first->user?->memberProfile)
                 : null,
@@ -155,6 +157,22 @@ final class FloorPlanService
             $morning && $afternoon => 'present',
             $morning || $afternoon => 'partial',
             default => $emptyStatus,
+        };
+    }
+
+    /**
+     * Demi-journée effectivement occupée quand le bureau ne l'est qu'à moitié
+     * (statut `partial`) : le portail affiche « présent(e) le matin seulement »
+     * plutôt qu'un générique « une demi-journée » (recette R-08). `null` dès
+     * que le statut n'est pas `partial`.
+     */
+    private function presentPeriod(bool $morning, bool $afternoon): ?string
+    {
+        return match (true) {
+            $morning && $afternoon => null,
+            $morning => Period::Morning->value,
+            $afternoon => Period::Afternoon->value,
+            default => null,
         };
     }
 

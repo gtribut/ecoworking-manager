@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Filament\Widgets\DashboardKpisWidget;
+use App\Filament\Widgets\DeclaredAbsencesWidget;
 use App\Filament\Widgets\EndingSubscriptionsWidget;
 use App\Filament\Widgets\InternalDocumentValidationsWidget;
 use App\Filament\Widgets\NewMembersWidget;
@@ -11,6 +12,7 @@ use App\Filament\Widgets\RecentActivityWidget;
 use App\Filament\Widgets\TodayBookingsWidget;
 use App\Filament\Widgets\TodayDeskOccupationsWidget;
 use App\Models\Booking;
+use App\Models\DeskAbsence;
 use App\Models\DeskOccupation;
 use App\Models\InternalDocument;
 use App\Models\Invoice;
@@ -49,6 +51,7 @@ it('enregistre tous les widgets du dashboard sur le panel admin', function () {
         ->toContain(TodayBookingsWidget::class)
         ->toContain(TodayDeskOccupationsWidget::class)
         ->toContain(NewMembersWidget::class)
+        ->toContain(DeclaredAbsencesWidget::class)
         ->toContain(RecentActivityWidget::class);
 });
 
@@ -141,6 +144,15 @@ it('affiche les nouveaux membres de la semaine', function () {
     Livewire::test(NewMembersWidget::class)
         ->assertOk()
         ->assertSee('Camille Verne');
+});
+
+it('affiche les absences déclarées depuis le portail (surface de Q25)', function () {
+    $member = User::factory()->resident()->create(['first_name' => 'Inès', 'last_name' => 'Rahmani']);
+    DeskAbsence::factory()->create(['user_id' => $member->id, 'created_by' => $member->id]);
+
+    Livewire::test(DeclaredAbsencesWidget::class)
+        ->assertOk()
+        ->assertSee('Inès Rahmani');
 });
 
 it('affiche l\'activité récente issue de l\'audit log', function () {

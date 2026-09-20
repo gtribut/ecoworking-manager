@@ -15,7 +15,7 @@ use App\Models\DeskAbsence;
  * admins quand c'est le résident qui déclare (AbsenceDeclaredNotification, Q25).
  * Le ciblage (acteur ≠ propriétaire) est fait par DeskAbsenceObserver.
  *
- * Charge utile sans PII : dates et période, jamais la note interne de l'accueil
+ * Charge utile sans PII : dates et période, jamais la note de l'absence
  * (elle n'est déjà pas exposée au membre, cf. DeskAbsenceResource).
  */
 final class AbsenceRecordedNotification extends PortalNotification

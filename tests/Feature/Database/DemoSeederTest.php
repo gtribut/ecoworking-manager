@@ -105,7 +105,10 @@ it('charge le jeu de démo complet avec tous les états attendus par la recette'
     // --- Absences (récurrente + plage + demi-journée admin) ---------------------------
     expect(DeskAbsence::query()->count())->toBe(3)
         ->and(DeskAbsence::query()->where('recurrence_type', 'weekly')->count())->toBe(1)
-        ->and(DeskAbsence::query()->whereNotNull('created_by')->count())->toBe(1);
+        // Toutes tracent leur auteur comme les vrais chemins de création
+        // (portail = le membre, back-office = l'admin) — recette 2026-09-20.
+        ->and(DeskAbsence::query()->whereNotNull('created_by')->count())->toBe(3)
+        ->and(DeskAbsence::query()->whereHas('createdBy', fn ($query) => $query->where('email', DemoSeeder::ADMIN_EMAIL))->count())->toBe(1);
 
     // --- Annonces : publiées (info/alerte/événement) + 1 brouillon ---------------------
     expect(Announcement::query()->where('status', 'published')->count())->toBe(5)

@@ -294,9 +294,11 @@ it('refuse au membre la suppression d\'une absence passée (403, audit admin uni
     expect(DeskAbsence::query()->whereKey($absence->id)->exists())->toBeTrue();
 });
 
-// --- Confidentialité de la note ------------------------------------------
+// --- Note de l'absence ----------------------------------------------------
 
-it('ne renvoie au membre que la note qu\'il a écrite lui-même', function () {
+it('renvoie la note au titulaire quel que soit l\'auteur de la saisie', function () {
+    // Tranché 2026-09-20 (recette) : pas de note « interne » vs « membre »,
+    // c'est une simple description partagée entre le titulaire et Ecoworking.
     [$user, $desk] = presenceResident();
     $admin = User::factory()->admin()->create();
     $today = CarbonImmutable::today();
@@ -310,22 +312,26 @@ it('ne renvoie au membre que la note qu\'il a écrite lui-même', function () {
     $fromAdmin = DeskAbsence::factory()->create([
         'user_id' => $user->id, 'desk_id' => $desk->id,
         'date_start' => $today->addDays(4)->toDateString(),
-        'notes' => 'Absence signalée par téléphone — à confirmer',
+        'notes' => 'Absence signalée par téléphone',
         'created_by' => $admin->id,
+    ]);
+    // Ligne sans auteur (import, seed) : traitée comme les autres.
+    $orphan = DeskAbsence::factory()->create([
+        'user_id' => $user->id, 'desk_id' => $desk->id,
+        'date_start' => $today->addDays(6)->toDateString(),
+        'notes' => 'Congés',
+        'created_by' => null,
     ]);
 
     $response = $this->actingAs($user)->getJson('/api/presence?'.presenceRange())->assertOk();
     $absences = collect($response->json('absences'))->keyBy('id');
 
     expect($absences[$mine->id]['notes'])->toBe('Déplacement client')
-        ->and($absences[$fromAdmin->id]['notes'])->toBeNull();
-
-    $response->assertJsonMissing(['notes' => 'Absence signalée par téléphone — à confirmer']);
+        ->and($absences[$fromAdmin->id]['notes'])->toBe('Absence signalée par téléphone')
+        ->and($absences[$orphan->id]['notes'])->toBe('Congés');
 });
 
-it('préserve la note interne de l\'accueil quand le membre modifie l\'absence', function () {
-    // Le membre ne VOIT pas cette note : il ne doit pas pouvoir l'effacer en
-    // renvoyant le formulaire (le champ lui arrive vide).
+it('laisse le titulaire modifier la note d\'une absence saisie par l\'accueil', function () {
     [$user, $desk] = presenceResident();
     $admin = User::factory()->admin()->create();
     $absence = DeskAbsence::factory()->create([
@@ -337,7 +343,8 @@ it('préserve la note interne de l\'accueil quand le membre modifie l\'absence',
 
     $this->actingAs($user)->patchJson("/api/absences/{$absence->id}", [
         'date_start' => CarbonImmutable::today()->addDays(4)->toDateString(),
-    ])->assertOk()->assertJsonPath('data.notes', null);
+        'notes' => 'Congés posés',
+    ])->assertOk()->assertJsonPath('data.notes', 'Congés posés');
 
-    expect($absence->fresh()->notes)->toBe('Signalée par téléphone');
+    expect($absence->fresh()->notes)->toBe('Congés posés');
 });

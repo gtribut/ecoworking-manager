@@ -28,12 +28,10 @@ final class DeskAbsenceResource extends JsonResource
             'period' => $this->period,
             'recurrence_type' => $this->recurrence_type,
             'recurrence_day_of_week' => $this->recurrence_day_of_week,
-            // Confidentialité (PRD §3.4.6, « note visible admin only ») : le
-            // membre ne relit que SA propre note ; celle saisie par l'accueil
-            // pour lui reste interne au back-office.
-            'notes' => $this->created_by !== null && $this->created_by === $this->user_id
-                ? $this->notes
-                : null,
+            // Simple description de l'absence (PRD §3.4.6, tranché 2026-09-20) :
+            // ni note « membre » ni note « interne », le titulaire et l'équipe
+            // Ecoworking lisent et écrivent la même — jamais les autres membres.
+            'notes' => $this->notes,
             // Fenêtres d'action du MEMBRE, calculées en SQL par le contrôleur
             // (jamais `isPast()` en PHP : piège fuseau du dépôt) : édition
             // jusqu'à la veille du début, suppression jusqu'au début inclus.

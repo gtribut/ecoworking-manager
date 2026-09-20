@@ -24,7 +24,7 @@ final class DeskAbsenceObserver
 {
     use NotifiesOwnerOfAdminAction;
 
-    /** Champs métier visibles du résident (la note interne ne l'est pas). */
+    /** Champs dont la modification par un tiers vaut notification (pas la note). */
     private const array NOTIFIABLE_ATTRIBUTES = [
         'date_start', 'date_end', 'period', 'recurrence_type', 'recurrence_day_of_week',
     ];

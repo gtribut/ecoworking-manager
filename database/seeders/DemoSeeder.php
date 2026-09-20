@@ -705,6 +705,10 @@ final class DemoSeeder extends Seeder
             'recurrence_type' => DeskAbsenceRecurrence::Weekly,
             'recurrence_day_of_week' => 5,
             'notes' => 'Télétravail le vendredi',
+            // Déclarée par le membre depuis le portail : `created_by` renseigné
+            // comme le fait `PresenceController::store` (l'omettre laissait des
+            // absences sans auteur, introuvables en audit — recette 2026-09-20).
+            'created_by' => $ines->id,
         ]);
         // Plage : congés la semaine prochaine.
         $presence->declareAbsence([
@@ -713,6 +717,7 @@ final class DemoSeeder extends Seeder
             'date_end' => $this->today->addWeek()->endOfWeek(),
             'period' => Period::FullDay,
             'notes' => 'Congés',
+            'created_by' => $ines->id,
         ]);
         // Jour unique demi-journée, saisie par l'admin (PRD §4.8.2).
         $presence->declareAbsence([

@@ -99,16 +99,10 @@ final class PresenceController extends Controller
     /** Modification bornée au début de l'absence (DeskAbsencePolicy::update). */
     public function update(UpdateAbsenceRequest $request, DeskAbsence $absence, PresenceService $presence): JsonResponse
     {
-        $attributes = $this->absenceAttributes($request->validated());
-
-        // Une note interne saisie par l'accueil n'est PAS renvoyée au membre
-        // (cf. DeskAbsenceResource) : il ne peut donc pas l'écraser en
-        // renvoyant le formulaire, sans quoi elle disparaîtrait en silence.
-        if ($absence->created_by !== $absence->user_id) {
-            $attributes['notes'] = $absence->notes;
-        }
-
-        $updated = $presence->updateAbsence($absence, $attributes);
+        // La note est un champ de description ordinaire (PRD §3.4.6, tranché
+        // 2026-09-20) : le titulaire la relit et la modifie quel que soit
+        // l'auteur de la saisie — aucun gel selon `created_by`.
+        $updated = $presence->updateAbsence($absence, $this->absenceAttributes($request->validated()));
 
         $this->markEditability(new Collection([$updated]));
 

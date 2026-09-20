@@ -530,7 +530,9 @@ Trois modes d'absence :
 - Date début, date fin (si applicable)
 - Période (matin / après-midi / journée complète)
 - Récurrence (nullable) : `daily` | `weekly` (jour de semaine) | `none`
-- Note optionnelle (visible admin only, ex. "déplacement client")
+- Note optionnelle (jamais visible des autres membres, ex. "déplacement client")
+
+> ✅ **Tranché 2026-09-20 (recette)** : la note est une **simple description de l'absence**, pas une note interne. Le titulaire et l'équipe Ecoworking la lisent et la modifient indifféremment, quel que soit l'auteur de la saisie (portail ou back-office) — « visible admin only » du premier jet voulait seulement dire « pas visible des autres membres ». L'API ne masque donc plus la note et ne gèle plus sa modification selon `desk_absences.created_by` (qui ne sert plus qu'à l'audit).
 
 **Édition / suppression**
 - Possible jusqu'au début de l'absence

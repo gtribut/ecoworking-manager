@@ -169,7 +169,10 @@ it('exclut l\'entité où l\'utilisateur n\'est que résident, sans mandat de fa
     // profil membre — un contact facturation d'Alpha, résident de Beta, lisait
     // les coordonnées bancaires de Beta. Les données bancaires exigent un
     // `contacts.role = billing` sur CETTE entité.
-    $alpha = Company::factory()->create(['legal_name' => 'Alpha SAS']);
+    // SIRET figé : un SIRET aléatoire de 14 chiffres contient « 4242 » environ
+    // une fois sur mille, ce qui faisait échouer l'assertion « la réponse ne
+    // contient pas 4242 » au hasard des runs (vu en CI locale le 2026-09-20).
+    $alpha = Company::factory()->create(['legal_name' => 'Alpha SAS', 'siret' => '11111111111111']);
     $beta = Company::factory()->create([
         'legal_name' => 'Beta SARL',
         'preferred_payment_method' => 'sepa',
@@ -192,7 +195,7 @@ it('n\'expose pas les coordonnées bancaires de l\'entité où l\'utilisateur n\
         'preferred_payment_method' => 'sepa',
         'sepa_iban_last4' => '4242',
     ]);
-    $alpha = Company::factory()->create();
+    $alpha = Company::factory()->create(['siret' => '11111111111111']); // SIRET figé, cf. test précédent
 
     $user = User::factory()->resident()->create();
     $user->assignRole(Role::BillingContact->value);

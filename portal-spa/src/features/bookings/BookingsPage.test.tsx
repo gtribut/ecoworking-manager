@@ -399,13 +399,51 @@ describe('BookingsPage — agenda des salles', () => {
       await screen.findByRole('button', { name: 'Salle événementielle : sur demande' }),
     )
 
-    expect(await screen.findByText('Pour réserver cette salle, contactez-nous.')).toBeVisible()
+    const notice = await screen.findByText('Pour réserver cette salle, contactez-nous.')
+    expect(notice).toBeVisible()
     expect(screen.getByRole('link', { name: 'Nous contacter' })).toHaveAttribute(
       'href',
       'mailto:contact@ecoworking.fr?subject=[backend ecowo] Réservation salle événementielle',
     )
+    // Le message vit en tête de page, le bouton dans l'agenda plus bas : il
+    // prend le focus pour être vu (et annoncé) — recette 2026-09-20.
+    expect(notice.closest('[role="status"], [role="alert"], div[tabindex="-1"]')).toHaveFocus()
     // Aucune modale de réservation ne s'ouvre pour la salle event.
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('ne demande pas les soldes de tickets pour un non-external (403 côté API)', async () => {
+    const ticketsCalled = vi.fn()
+    setup()
+    server.use(
+      http.get('/api/tickets', () => {
+        ticketsCalled()
+        return new HttpResponse(null, { status: 403 })
+      }),
+    )
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    await screen.findByRole('button', { name: 'Salle événementielle : sur demande' })
+
+    expect(ticketsCalled).not.toHaveBeenCalled()
+  })
+
+  it('demande bien les soldes de tickets pour un external', async () => {
+    const ticketsCalled = vi.fn()
+    setup({ permissions: EXTERNAL_PERMISSIONS })
+    server.use(
+      http.get('/api/tickets', () => {
+        ticketsCalled()
+        return HttpResponse.json({
+          balances: { desk_half_day: 0, meeting_room_half_day: 2 },
+          tickets: [],
+        })
+      }),
+    )
+    renderWithProviders(<BookingsPage />, { withAuth: true })
+
+    expect(await screen.findByText(/Tickets salle de réunion disponibles/)).toBeVisible()
+    expect(ticketsCalled).toHaveBeenCalled()
   })
 
   it('renvoie le même message au clic sur un créneau de la salle événementielle', async () => {

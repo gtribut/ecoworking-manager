@@ -14,8 +14,18 @@ export const deskAvailabilityQueryKey = (date: string, period: DeskPeriod) =>
 export const deskOccupationsQueryKey = (scope: 'upcoming' | 'past', page: number) =>
   ['desk-occupations', scope, page] as const
 
-export function useTickets() {
-  return useQuery({ queryKey: ticketsQueryKey, queryFn: fetchTickets })
+/**
+ * Soldes de tickets — réservé aux `external` : `GET /api/tickets` répond 403
+ * aux autres rôles (recette 2026-09-20 : la page Réservations le demandait
+ * pour tout le monde et générait un 403 à chaque chargement / retour d'onglet).
+ * Les appelants passent donc `enabled: isExternal`.
+ */
+export function useTickets(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ticketsQueryKey,
+    queryFn: fetchTickets,
+    enabled: options.enabled ?? true,
+  })
 }
 
 export function useDeskAvailability(date: string, period: DeskPeriod, enabled: boolean) {

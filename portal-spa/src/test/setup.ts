@@ -33,6 +33,12 @@ if (typeof window.matchMedia !== 'function') {
   })
 }
 
+// jsdom n'implémente pas Element.scrollIntoView : no-op, le comportement réel
+// (amener un message hors écran sous les yeux) ne se teste qu'en navigateur.
+if (typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = () => undefined
+}
+
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())

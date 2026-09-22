@@ -18,6 +18,8 @@ Avant de coder ou de demander à Claude Code de coder, lire dans l'ordre :
 5. [`docs/adr/`](./docs/adr/) — décisions architecturales
 6. [`docs/SUIVI.md`](./docs/SUIVI.md) — **suivi des phases & tâches** (où on en est ; pour reprendre une session : « continue C1.4 »)
 
+Pour **présenter l'outil à une personne externe** (vision fonctionnelle + captures d'écran portail et back-office, ~5 min de lecture) : [`docs/presentation/`](./docs/presentation/README.md), aussi en [PDF](./docs/presentation/ecoworking-presentation.pdf). Régénération : `scripts/presentation/build.sh`.
+
 ---
 
 ## 🚀 Démarrage

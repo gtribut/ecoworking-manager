@@ -278,6 +278,7 @@ Si l'une de ces situations se présente, **arrêter et demander** :
 - `docs/SUIVI.md` — **suivi des phases & tâches** (état d'avancement, codes de tâches `C1.4`…)
 - `docs/data_model.md` — modèle de données détaillé (schéma Postgres)
 - `docs/adr/` — Architecture Decision Records
+- `docs/presentation/README.md` — **présentation fonctionnelle illustrée** (portail + back-office, captures dans `screenshots/`) : vue d'ensemble rapide de ce qui existe, à préférer au PRD pour se repérer. Captures + PDF régénérables via `scripts/presentation/build.sh` (base Postgres dédiée `presentation`, DemoSeeder) — à relancer après une évolution visible d'un écran
 - Doc Laravel : https://laravel.com/docs/13.x
 - Doc Filament 5 : https://filamentphp.com/docs/5.x
 - Doc Sanctum SPA : https://laravel.com/docs/13.x/sanctum#spa-authentication

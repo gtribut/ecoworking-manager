@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\MemberProfiles\Tables;
 
 use App\Enums\MemberProfileStatus;
+use App\Models\Company;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -57,7 +58,10 @@ class MemberProfilesTable
                 SelectFilter::make('company')
                     ->label('Entité')
                     ->relationship('company', 'legal_name')
-                    ->searchable()
+                    // Particulier : `legal_name` nul → libellé via l'accesseur `name`
+                    // (sinon TypeError Filament au preload des options).
+                    ->getOptionLabelFromRecordUsing(fn (Company $record): string => $record->name)
+                    ->searchable(['legal_name', 'first_name', 'last_name'])
                     ->preload(),
             ])
             ->recordActions([

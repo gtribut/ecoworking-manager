@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Contacts\Tables;
 
 use App\Enums\ContactRole;
+use App\Models\Company;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -53,7 +54,10 @@ class ContactsTable
                 SelectFilter::make('company')
                     ->label('Entité')
                     ->relationship('company', 'legal_name')
-                    ->searchable()
+                    // Particulier : `legal_name` nul → libellé via l'accesseur `name`
+                    // (sinon TypeError Filament au preload des options).
+                    ->getOptionLabelFromRecordUsing(fn (Company $record): string => $record->name)
+                    ->searchable(['legal_name', 'first_name', 'last_name'])
                     ->preload(),
             ])
             ->recordActions([

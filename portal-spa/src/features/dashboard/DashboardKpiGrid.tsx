@@ -93,7 +93,7 @@ function DeskKpi() {
     <KpiTile
       label="Mon bureau"
       loading={isLoading}
-      value={desk ? `Bureau ${desk.name}` : 'Bureau attitré'}
+      value={desk ? desk.name : 'Bureau attitré'}
       sub={
         <>
           {desk?.floor !== null && desk?.floor !== undefined ? `Étage ${desk.floor} · ` : ''}

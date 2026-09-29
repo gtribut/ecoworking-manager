@@ -81,7 +81,7 @@ describe('DashboardKpiGrid — mapping rôle → tuiles (PRD §3.3, maquette C14
             show_in_directory: false,
             newsletter_opt_in: false,
             arrival_date: null,
-            desk: { id: 4, name: '12', floor: 2 },
+            desk: { id: 4, name: 'Bureau 12', floor: 2 },
           },
           company: null,
         }),
@@ -95,6 +95,7 @@ describe('DashboardKpiGrid — mapping rôle → tuiles (PRD §3.3, maquette C14
     // les checks synchrones ci-dessous doivent donc venir après.
     expect(await screen.findByText('Salle de réunion 2 · Point client')).toBeInTheDocument()
     expect(await screen.findByText('Bureau 12')).toBeInTheDocument()
+    expect(screen.queryByText('Bureau Bureau 12')).not.toBeInTheDocument()
 
     // Libellé de tuile = heading (RGAA 9.1, navigation par titres) : la
     // grille est déjà une <section> titrée par un h2 sr-only (dashboard-kpis-title).

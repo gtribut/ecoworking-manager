@@ -193,6 +193,10 @@
 - [x] ✅ `SEED_ADMIN_PASSWORD` posé dans le `.env` local (15/09) — le mot de passe admin est donc stable d'un `migrate:fresh --seed` à l'autre, plus de mot de passe aléatoire affiché une seule fois.
 - [ ] 🟡 **En cours (15/09)** — dérouler `docs/recette.md`, cocher, remplir le journal §9, puis me dire « corrige R-nn ». Base reseedée et `queue:listen` lancé le 15/09.
   - [x] ✅ **Validé en recette le 15/09** : liens des emails de notification sur `portail.` (fix `PortalUrl`) et horaires du calendrier conformes aux données en base (fix de fuseau, ADR-0012). Les deux correctifs sont donc confirmés de bout en bout, pas seulement par les tests.
+- [ ] 🟠 **Fournir les contenus juridiques exacts des documents** (constaté en recette §3.7 le 29/09) : les PDF de démo sont des **pages blanches** générées par le `DemoSeeder` (`MINIMAL_PDF`) — le parcours (liste, téléchargement, droits) est validé, pas le contenu. À fournir avant la mise en prod / l'import Cosoft (V1.5) :
+  - **Documents administratifs** (par entité, uploadés dans le back-office) : modèle de **contrat de mise à disposition** (postes de travail) et de **contrat de domiciliation** — texte validé juridiquement (dont les mentions obligatoires propres à la domiciliation, ex. numéro d’agrément préfectoral)
+  - **Documents internes à valider** (§3.8) : **charte** du coworking, **CGU**, **autorisation droit à l'image**
+  - Une fois fournis : les uploader côté admin (AdministrativeDocuments / InternalDocuments) ; option : me les donner pour que le `DemoSeeder` utilise des PDF réalistes (versions anonymisées) au lieu des pages blanches
 
 ## C13.6 — Lots de conformité PRD §3 (2026-09-13, session orchestrateur)
 

@@ -103,57 +103,57 @@ Tester avec **Claire**, puis **Julien** (additional), puis **Léa** (external sa
 > comportement fonctionnel n'a pas changé — seul l'habillage visuel a bougé, mais une régression
 > de layout doit pouvoir être détectée.
 
-- [ ] Entête « Bonjour {prénom} », puis **rangée de tuiles KPI** (bento, jusqu'à 4 selon le rôle :
+- [x] Entête « Bonjour {prénom} », puis **rangée de tuiles KPI** (bento, jusqu'à 4 selon le rôle :
       prochaine résa, bureau attitré/tickets restants, documents à valider, dernière facture) —
       grille en 2 colonnes sur mobile, `auto-fit` au-delà de `lg` (pas de colonnes vides si < 4 tuiles)
 - [x] Bloc **Mes dernières factures** (Claire) : 3 max, numéro `EW-AAAA-NNNNN`, date, badge statut coloré, bouton PDF ; lien « Voir toutes mes factures »
 - [x] Bloc factures **masqué** pour Julien (pas billing_contact) et Marc
 - [x] Bloc **Actualités** : 3 dernières, badge Info / Alerte / Événement, lien « Voir toutes »
-- [ ] **Tuile KPI « Documents à valider »** (Claire, teinte ambre) : titre du premier document en
+- [x] **Tuile KPI « Documents à valider »** (Claire, teinte ambre) : titre du premier document en
       attente + lien « Lire et valider » vers `/documents` — **plus de bouton Télécharger/Valider
       directement sur l'accueil**, uniquement sur la page Documents (§3.8)
-- [ ] Tuile documents **entièrement masquée** chez Marc si rien à valider (recette R-06) — la
+- [x] Tuile documents **entièrement masquée** chez Marc si rien à valider (recette R-06) — la
       grille passe à 3 tuiles sans laisser de vide
 - [x] Bloc **Mes prochaines réservations** : 3 max, ressource + date + créneau ; résa annulée **absente**
-- [ ] États vides chez Léa : messages rassurants (aucune facture / résa / actualité restreinte aux résidents non visible)
-- [ ] **Bouton « Nous contacter » retiré de l'accueil** (desktop et mobile) : le lien `mailto:`
+- [x] États vides chez Léa : messages rassurants (aucune facture / résa / actualité restreinte aux résidents non visible)
+- [x] **Bouton « Nous contacter » retiré de l'accueil** (desktop et mobile) : le lien `mailto:`
       identique se trouve dans le **pied de page** (toutes tailles d'écran) et dans la **top bar**
       en desktop uniquement
 - [x] Skeletons pendant le chargement (throttling réseau « Slow 3G » dans DevTools), jamais de spinner plein écran
 
 ### 3.2 Profil (PRD §3.4)
 
-- [ ] Page organisée en **4 onglets** (Profil / Compte / Préférences / Entreprise), état dans
+- [x] Page organisée en **4 onglets** (Profil / Compte / Préférences / Entreprise), état dans
       l'URL (`?tab=`) — recharger la page sur `/profile?tab=compte` rouvre directement cet onglet
-- [ ] Soumettre le formulaire d'un onglet avec un champ en erreur pendant qu'un autre onglet est
+- [x] Soumettre le formulaire d'un onglet avec un champ en erreur pendant qu'un autre onglet est
       affiché → **bascule automatiquement** sur l'onglet contenant l'erreur
-- [ ] Onglet **Entreprise** toujours présent (jamais masqué) ; pour un compte sans entité
+- [x] Onglet **Entreprise** toujours présent (jamais masqué) ; pour un compte sans entité
       rattachée, affiche un message explicite au lieu du bloc entité
-- [ ] Nom / prénom **en lecture seule** ; **email non modifiable** (décision D : admin only) — aucun champ email éditable
-- [ ] Éditer poste, présentation, centres d'intérêt, LinkedIn, site web → enregistrer → toast succès → rechargement : valeurs persistées
-- [ ] URL LinkedIn invalide (`pas-une-url`) → erreur de validation lisible sous le champ (422), pas de toast succès
-- [ ] Toggle **Afficher mon profil dans l'annuaire** : décocher chez Claire → vérifier dans l'annuaire (Marc connecté) qu'elle devient « Coworker (souhaite rester discret) » → recocher
-- [ ] Toggle newsletter persiste
-- [ ] **Préférences de notification** : email / in-app indépendants, activés par défaut ; décocher email chez Sophie puis émettre une facture Studio Verger côté admin (§4.11) → notif in-app oui, mail Mailpit non
-- [ ] Bloc **Mon entreprise** (Claire) : raison sociale, forme, SIRET, TVA, email factu, adresse — lecture seule ; bouton « Demander une modification » = mailto
-- [ ] Bloc entreprise chez Thomas (particulier) : libellé adapté (« Mes données de facturation »), pas de SIRET/TVA
-- [ ] **Changement de mot de passe** : ancien mot de passe faux → erreur ; OK → reconnexion avec le nouveau
-- [ ] **Thème** clair / sombre / système : le choix persiste après rechargement et après déconnexion/reconnexion
-- [ ] Photo de profil : upload JPG < 2 Mo OK, avatar initiales si absente, fichier > 2 Mo ou PDF refusé proprement *(si l'upload photo est livré — sinon noter « non implémenté MVP »)*
+- [x] Nom / prénom **en lecture seule** ; **email non modifiable** (décision D : admin only) — aucun champ email éditable
+- [x] Éditer poste, présentation, centres d'intérêt, LinkedIn, site web → enregistrer → toast succès → rechargement : valeurs persistées
+- [x] URL LinkedIn invalide (`pas-une-url`) → erreur de validation lisible sous le champ (422), pas de toast succès
+- [x] Toggle **Afficher mon profil dans l'annuaire** : décocher chez Claire → vérifier dans l'annuaire (Marc connecté) qu'elle devient « Coworker (souhaite rester discret) » → recocher
+- [x] Toggle newsletter persiste
+- [x] **Préférences de notification** : email / in-app indépendants, activés par défaut ; décocher email chez Sophie puis émettre une facture Studio Verger côté admin (§4.11) → notif in-app oui, mail Mailpit non
+- [x] Bloc **Mon entreprise** (Claire) : raison sociale, forme, SIRET, TVA, email factu, adresse — lecture seule ; bouton « Demander une modification » = mailto
+- [x] Bloc entreprise chez Thomas (particulier) : libellé adapté (« Mes données de facturation »), pas de SIRET/TVA
+- [x] **Changement de mot de passe** : ancien mot de passe faux → erreur ; OK → reconnexion avec le nouveau
+- [x] **Thème** clair / sombre / système : le choix persiste après rechargement et après déconnexion/reconnexion
+- [x] Photo de profil : upload JPG < 2 Mo OK, avatar initiales si absente, fichier > 2 Mo ou PDF refusé proprement *(si l'upload photo est livré — sinon noter « non implémenté MVP »)*
 
 ### 3.3 Mon bureau & mes absences (PRD §3.4.6 — resident / staff)
 
 Compte : **Inès**, puis **Camille** (staff), puis **Julien** (ne doit pas voir la section).
 
-- [ ] Section visible pour Inès et Camille, **absente** pour Julien, Thomas, Léa
-- [ ] Bureau attitré affiché (Bureau 3, étage 1)
-- [ ] Liste des absences à venir : récurrence « tous les vendredis jusqu'au … » + plage « congés du … au … »
-- [ ] Déclarer **jour unique** demain matin → apparaît dans la liste → visible sur le plan des étages (§3.7) comme vacant le matin
-- [ ] Déclarer une **plage** → OK ; date de fin < date de début → erreur de validation
-- [ ] Déclarer une **récurrence hebdo** sur une plage → OK ; jour de semaine obligatoire
-- [ ] Supprimer une absence à venir → disparaît ; supprimer une absence passée → avertissement (ou refus) selon PRD
-- [ ] Badge « État du jour » : un **week-end** (ou date système décalée) sans absence → « Présent(e) aujourd'hui » (présence 7 j/7, ré-acté 2026-09-17) ; avec une absence posée ce jour-là → « Absent(e) aujourd'hui » (ou « ce matin » / « cet après-midi » selon la période)
-- [ ] Côté admin : chaque déclaration a généré une **notification in-app admin** (« absence déclarée », Q25) — vérifier sur le dashboard / la cloche admin
+- [x] Section visible pour Inès et Camille, **absente** pour Julien, Thomas, Léa
+- [x] Bureau attitré affiché (Bureau 3, étage 1)
+- [x] Liste des absences à venir : récurrence « tous les vendredis jusqu'au … » + plage « congés du … au … »
+- [x] Déclarer **jour unique** demain matin → apparaît dans la liste → visible sur le plan des étages (§3.7) comme vacant le matin
+- [x] Déclarer une **plage** → OK ; date de fin < date de début → erreur de validation
+- [x] Déclarer une **récurrence hebdo** sur une plage → OK ; jour de semaine obligatoire
+- [x] Supprimer une absence à venir → disparaît ; supprimer une absence passée → avertissement (ou refus) selon PRD
+- [x] Badge « État du jour » : un **week-end** (ou date système décalée) sans absence → « Présent(e) aujourd'hui » (présence 7 j/7, ré-acté 2026-09-17) ; avec une absence posée ce jour-là → « Absent(e) aujourd'hui » (ou « ce matin » / « cet après-midi » selon la période)
+- [x] Côté admin : chaque déclaration apparaît dans le bloc **« Absences déclarées par les membres »** du dashboard admin (§4.2, surface de Q25 — il n'y a **pas** de cloche de notifications côté back-office) ; une absence saisie par l'accueil depuis le back-office n'y figure **pas**
 
 ### 3.4 Réservation de salles (PRD §3.5, C5.5)
 
@@ -164,61 +164,61 @@ Compte : **Inès**, puis **Camille** (staff), puis **Julien** (ne doit pas voir 
 
 Compte : **Claire** (resident).
 
-- [ ] Grille FullCalendar : les 3 salles + la salle événementielle affichées simultanément, une
+- [x] Grille FullCalendar : les 3 salles + la salle événementielle affichées simultanément, une
       **chip de filtre par salle** (masquer/afficher), sélecteur **Jour / Semaine** uniquement
       (vue Mois retirée en recette 16/09 — illisible sur cette grille), vue semaine par défaut,
       jour < 768 px, navigation « Période précédente/suivante/Aujourd'hui », **mini-mois**
       (panneau droit) pour sauter à une date arbitraire
-- [ ] Lignes horaires nettement plus hautes qu'avant (recette 16/09, +50 %) : le contenu d'un
+- [x] Lignes horaires nettement plus hautes qu'avant (recette 16/09, +50 %) : le contenu d'un
       créneau d'1 h (titre, horaire · salle, occupant) tient confortablement sans être tassé
-- [ ] Toggle « Voir 24 h » (resident/additional) bascule la plage horaire 8 h–20 h ↔ 0 h–24 h
-- [ ] **Glisser-déposer** sur un créneau libre de la grille ouvre la modale de résa, salle
+- [x] Toggle « Voir 24 h » (resident/additional) bascule la plage horaire 8 h–20 h ↔ 0 h–24 h
+- [x] **Glisser-déposer** sur un créneau libre de la grille ouvre la modale de résa, salle
       pré-remplie avec la **première salle réservable affichée** (pas nécessairement celle du
       créneau glissé — modifiable dans la modale avant de valider)
-- [ ] Bouton **« Nouvelle réservation »** (toujours visible, hors grille) ouvre la même modale en
+- [x] Bouton **« Nouvelle réservation »** (toujours visible, hors grille) ouvre la même modale en
       saisie 100 % manuelle (date, heure début/fin, salle) — c'est l'**alternative accessible**
       complète à la grille (D4), à tester spécifiquement au clavier/lecteur d'écran
-- [ ] Liste **« Mes prochaines réservations »** (sous la grille, dans la colonne de l'agenda —
+- [x] Liste **« Mes prochaines réservations »** (sous la grille, dans la colonne de l'agenda —
       recette 16/09 : plus dans le panneau droit ni tout en bas de page) : entièrement
       accessible, synchronisée avec la grille, actions Modifier/Annuler
-- [ ] Résas des autres visibles dans la grille ; clic → **popover** → prénom + nom + entité +
+- [x] Résas des autres visibles dans la grille ; clic → **popover** → prénom + nom + entité +
       libellé (transparence Q4) ; aucune action Modifier/Annuler (résa d'un tiers)
-- [ ] Clic sur **sa propre résa** dans la grille → popover avec boutons **Modifier** / **Annuler**
+- [x] Clic sur **sa propre résa** dans la grille → popover avec boutons **Modifier** / **Annuler**
       (confirmation en deux temps pour Annuler)
-- [ ] Ses propres résas mises en avant (contour renforcé + couleur brand pleine dans le bloc)
-- [ ] **Afterwork Ecoworking** (salle événementielle, résa interne admin) visible en lecture seule,
+- [x] Ses propres résas mises en avant (contour renforcé + couleur brand pleine dans le bloc)
+- [x] **Afterwork Ecoworking** (salle événementielle, résa interne admin) visible en lecture seule,
       distinguée visuellement par un motif hachuré (pas la couleur seule)
-- [ ] Bouton dédié « [Salle événementielle] : sur demande » **et** clic sur un bloc **occupé** de
+- [x] Bouton dédié « [Salle événementielle] : sur demande » **et** clic sur un bloc **occupé** de
       la salle event → même message « contactez-nous » + mailto, jamais de formulaire de résa
-- [ ] Créer une résa (modale, glisser ou bouton) : demain 15 h–17 h, salle 1, libellé → toast
+- [x] Créer une résa (modale, glisser ou bouton) : demain 15 h–17 h, salle 1, libellé → toast
       succès, grille rafraîchie, résa dans « Mes prochaines réservations »
-- [ ] Toggles Journée / Matin / Après-midi / Créneau perso (dans la modale) pré-remplissent correctement
-- [ ] Résa **hors heures ouvrées** (23 h–1 h) acceptée pour un resident (24/7, toggle 24 h activé)
-- [ ] **Conflit** : tenter la salle 3 le jour de la journée complète de Sophie → 409, message clair, aucune résa créée
-- [ ] Course : ouvrir 2 onglets, créer la même résa dans chacun → un seul succès, l'autre 409 (backstop GiST)
-- [ ] Fin ≤ début → erreur de validation 422 lisible
-- [ ] **Annuler** sa résa à venir (popover grille **ou** liste) → confirmation → disparaît ;
+- [x] Toggles Journée / Matin / Après-midi / Créneau perso (dans la modale) pré-remplissent correctement
+- [x] Résa **hors heures ouvrées** (23 h–1 h) acceptée pour un resident (24/7, toggle 24 h activé)
+- [x] **Conflit** : tenter la salle 3 le jour de la journée complète de Sophie → 409, message clair, aucune résa créée
+- [x] Course : ouvrir 2 onglets, créer la même résa dans chacun → un seul succès, l'autre 409 (backstop GiST)
+- [x] Fin ≤ début → erreur de validation 422 lisible
+- [x] **Annuler** sa résa à venir (popover grille **ou** liste) → confirmation → disparaît ;
       tenter d'annuler une résa **passée** (Kick-off refonte site) → impossible (bouton absent ou 422)
-- [ ] Résa de Marc : aucun bouton modifier/annuler pour Claire, ni dans le popover ni dans la liste
-- [ ] Vérifier côté admin (Bookings) : la résa créée porte `user` = Claire, statut confirmée, prix vide (gratuit resident) ; l'annulation est **dans l'audit log**
-- [ ] Mobile 390 px : la page réservations tient sans scroll horizontal (vue jour par défaut)
+- [x] Résa de Marc : aucun bouton modifier/annuler pour Claire, ni dans le popover ni dans la liste
+- [x] Vérifier côté admin (Bookings) : la résa créée porte `user` = Claire, statut confirmée, prix vide (gratuit resident) ; l'annulation est **dans l'audit log**
+- [x] Mobile 390 px : la page réservations tient sans scroll horizontal (vue jour par défaut)
 
 Compte : **Julien** (additional) — même flow gratuit, une résa créée OK.
 
 Compte : **Thomas** (external, 1 ticket salle dispo).
 
-- [ ] Calendrier restreint 9 h–18 h ; seuls créneaux **matin 9–13** / **après-midi 14–18**, **jours ouvrés** proposés
-- [ ] Sa résa existante « Entretiens de recrutement » indique le **ticket consommé**
-- [ ] Réserver un après-midi → succès → solde tickets salle passe à **0**
-- [ ] Nouvelle tentative sans ticket → message « contactez Ecoworking » (pas d'achat en ligne), aucune résa
-- [ ] Tenter un samedi ou un créneau 10 h–12 h (via l'UI ou en forgeant la requête) → 422 métier
-- [ ] **Annuler** la résa avec ticket (avant le début) → ticket **restitué** (solde salle repasse à 1)
+- [x] Calendrier restreint 9 h–18 h ; seuls créneaux **matin 9–13** / **après-midi 14–18**, **jours ouvrés** proposés
+- [x] Sa résa existante « Entretiens de recrutement » indique le **ticket consommé**
+- [x] Réserver un après-midi → succès → solde tickets salle passe à **0**
+- [x] Nouvelle tentative sans ticket → message « contactez Ecoworking » (pas d'achat en ligne), aucune résa
+- [x] Tenter un samedi ou un créneau 10 h–12 h (via l'UI ou en forgeant la requête) → 422 métier
+- [x] **Annuler** la résa avec ticket (avant le début) → ticket **restitué** (solde salle repasse à 1)
 
 Compte : **Léa** (0 ticket) : message d'invitation à contacter Ecoworking dès l'ouverture du module, aucune résa possible.
 
 ### 3.5 Abonnement agenda iCal (PRD §3.5.8, C9.2)
 
-- [ ] Sur la page Réservations : 2 URLs (« Mes réservations », « Réservations de mon entité »), bouton copier
+- [x] Sur la page Réservations : 2 URLs (« Mes réservations », « Réservations de mon entité »), bouton copier
 - [ ] Ouvrir l'URL perso dans le navigateur → fichier `.ics` valide (importer dans Google Agenda / Thunderbird) contenant uniquement ses résas salles
 - [ ] URL entité (Claire) → contient aussi les résas de Marc et Inès (Atelier Lumière), pas celles de Sophie
 - [ ] **Régénérer** le token → ancienne URL → 404, nouvelle OK
@@ -244,20 +244,20 @@ Compte : **Thomas**.
 
 Compte : **Claire**, puis **Sophie**, puis **Thomas**. Puis **Marc** (ne doit rien voir).
 
-- [ ] Module **absent de la navigation** pour Marc, Inès, Julien, Léa ; URL directe `/invoices` → liste vide ou 403, jamais les factures d'autrui
-- [ ] Claire : liste des factures **Atelier Lumière** uniquement (M-3, M-2, M-1 payées + la facture annulée + son avoir) — aucune facture Studio Verger, aucun brouillon du mois courant
-- [ ] Liste rendue en **DataTable** (tri par colonne au clic sur l'en-tête, `aria-sort` mis à jour,
+- [x] Module **absent de la navigation** pour Marc, Inès, Julien, Léa ; URL directe `/invoices` → liste vide ou 403, jamais les factures d'autrui
+- [x] Claire : liste des factures **Atelier Lumière** uniquement (M-3, M-2, M-1 payées + la facture annulée + son avoir) — aucune facture Studio Verger, aucun brouillon du mois courant
+- [x] Liste rendue en **DataTable** (tri par colonne au clic sur l'en-tête, `aria-sort` mis à jour,
       focus restauré sur le bouton de tri après le rechargement des données)
-- [ ] Colonnes : numéro, date d'émission, statut (badge), total TTC, PDF ; tri date décroissante par défaut ; pagination
-- [ ] Filtres : statut, mois/année ; recherche par numéro
-- [ ] **Facture annulée** : statut « annulée », avoir associé visible (numéro suivant, montants négatifs)
-- [ ] Télécharger un PDF → ouvre le PDF : en-tête Ecoworking, mentions CGI art. 289, adresse facturation snapshotée, lignes regroupées par prestation (3 × Bureau résident, 1 × Personne supplémentaire, Domiciliation), **remise 10 %** visible, TVA 20 %, totaux corrects au centime
-- [ ] Vérifier un calcul : Bureau résident 328,50 × 3 − 10 % = 886,95 HT → TVA 177,39 → 1 064,34 TTC (ligne seule ; recouper avec le total de la facture)
-- [ ] Sophie : facture **M-1 en retard** (badge rouge, rien payé), **M-2 en retard avec acompte** (montant payé / restant dû affichés), M-3 payée ; les factures incluent la ligne de Paul sur M-3/M-2 (avant son départ)
-- [ ] Thomas : facture tickets (pack 10 bureau 140 € + 2 salle 71 € = 282 € HT, 338,40 € TTC) **partiellement payée** (acompte 100 €, échéance à venir), au nom du particulier sans SIRET/TVA
-- [ ] **Documents administratifs** (Claire) : « Contrat de mise à disposition — 3 postes » + « Contrat de domiciliation », téléchargement PDF OK ; Sophie : 1 contrat ; Thomas : aucun (état vide)
-- [ ] Forger l'URL `/api/invoices/{id}/pdf` d'une facture Studio Verger connecté en Claire → **403**
-- [ ] Bloc **Mon entreprise** : IBAN affiché **uniquement** par ses 4 derniers chiffres (`•••• 4821`), mode de paiement SEPA
+- [x] Colonnes : numéro, date d'émission, statut (badge), total TTC, PDF ; tri date décroissante par défaut ; pagination
+- [x] Filtres : statut, mois/année ; recherche par numéro
+- [x] **Facture annulée** : statut « annulée », avoir associé visible (numéro suivant, montants négatifs)
+- [x] Télécharger un PDF → ouvre le PDF : en-tête Ecoworking, mentions CGI art. 289, adresse facturation snapshotée, lignes regroupées par prestation (3 × Bureau résident, 1 × Personne supplémentaire, Domiciliation), **remise 10 %** visible, TVA 20 %, totaux corrects au centime
+- [x] Vérifier un calcul : Bureau résident 328,50 × 3 − 10 % = 886,95 HT → TVA 177,39 → 1 064,34 TTC (ligne seule ; recouper avec le total de la facture)
+- [x] Sophie : facture **M-1 en retard** (badge rouge, rien payé), **M-2 en retard avec acompte** (colonne « Reste dû » = 50 % du TTC ; vide sur les factures soldées — R-12), M-3 payée ; **dans le PDF** (le portail n'affiche pas les lignes), ligne « Bureau résident » en quantité **3** sur M-3/M-2 (Sophie, Karim, Paul avant son départ) et **2** sur M-1 — lignes regroupées, aucun nom affiché (R-13/R-14)
+- [x] Thomas : facture tickets (pack 10 bureau 140 € + 2 salle 71 € = 282 € HT, 338,40 € TTC) **partiellement payée** (acompte 100 €, échéance à venir), au nom du particulier sans SIRET/TVA
+- [x] **Documents administratifs** (Claire) : « Contrat de mise à disposition — 3 postes » + « Contrat de domiciliation », téléchargement PDF OK ; Sophie : 1 contrat ; Thomas : aucun (état vide). ⚠️ PDF de démo = **pages blanches** (seeder) : seul le parcours est testé, contenus juridiques à fournir (`todo_guillaume.md` §C13)
+- [x] Forger l'URL `/api/invoices/{id}/pdf` d'une facture Studio Verger connecté en Claire → **403**
+- [x] Bloc **Mon entreprise** : IBAN affiché **uniquement** par ses 4 derniers chiffres (`•••• 4821`), mode de paiement SEPA
 
 ### 3.8 Documents internes à valider (PRD §5.3, C12.4)
 
@@ -390,6 +390,7 @@ Compte : `admin@ecoworking.fr`.
 - [ ] Widget **factures en retard** : Studio Verger M-1 listée, lien vers la facture
 - [ ] Widget **abonnements se terminant sous 30 j** : vide (ou tester en posant une `ends_at` proche)
 - [ ] Widget **documents non validés** : charte v2.0 avec % de validation
+- [ ] Widget **Absences déclarées par les membres** : les déclarations faites depuis le portail ces 14 derniers jours (membre, bureau, dates, période, date de déclaration), clic → fiche de l'absence ; les absences saisies par l'admin en sont absentes
 - [ ] Widget **activité récente** : émissions de factures, anonymisation de Paul… lien « Voir tout l'audit log »
 - [ ] Widgets **Aujourd'hui** : résas salles du jour, occupations bureau du jour, nouveaux membres de la semaine (Léa)
 - [ ] Aucune requête N+1 visible (Pulse → requêtes lentes vide après chargement)

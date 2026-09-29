@@ -79,7 +79,10 @@ class SubscriptionForm
                         DatePicker::make('ends_at')
                             ->label('Fin')
                             ->after('starts_at')
-                            ->helperText('Vide = sans terme.'),
+                            // R-14 : un « terminé » est facturé jusqu'à sa date de fin ;
+                            // sans elle il sortirait de la facturation sans signal.
+                            ->requiredIf('status', SubscriptionStatus::Ended->value)
+                            ->helperText('Vide = sans terme. Obligatoire si « Terminé » : facturé jusqu\'à cette date.'),
                         TextInput::make('billing_day')
                             ->label('Jour de facturation')
                             ->numeric()

@@ -1602,6 +1602,8 @@ Page de référence quotidienne pour l'admin, accessible en un clic depuis le da
 
 **Étapes (cron mensuel)** — ✅ **une facture PAR ENTITÉ, lignes regroupées par prestation** (décidé 2026-06-07 ; cf. « Regroupement par entité » ci-dessous) :
 1. Déterminer les **entités à facturer** : toute entité facturée (`billable` = `company`, ou `user` facturé en nom propre) ayant **≥ 1 abonnement/service `status=active`** facturable sur la période.
+
+   > ✅ **Acté 2026-09-29 (recette R-14)** : la facturation suit la **date de fin**, pas le statut. Un abonnement `ended` reste facturable tant que sa `ends_at` chevauche la période (prorata jusqu'à `ends_at`) — un membre résilié au 31/07 et passé « Terminé » avant le cron du 1er juillet paie bien juillet. `ended` **exige** une `ends_at` (formulaire admin) ; `paused` et `cancelled` ne sont pas facturés.
 2. Pour chaque **entité** :
    - **Idempotence** : vérifier qu'aucune facture (hors avoir) ne couvre déjà cette **entité + période** — sinon passer (cf. encadré idempotence).
    - Créer **une seule** facture brouillon adressée à l'entité (`billable` = l'entité).

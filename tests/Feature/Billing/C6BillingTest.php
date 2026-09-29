@@ -385,3 +385,52 @@ it('applique la remise négociée de l\'entité facturée', function () {
 
     expect($invoice->subtotal_ht)->toBe('90.00'); // 100 − 10 %
 });
+
+// --- R-14 Abonnement terminé : facturé jusqu'à ends_at, pas selon son statut -
+
+it('facture jusqu\'à ends_at un abonnement déjà passé « terminé » (R-14)', function () {
+    $company = Company::factory()->create();
+    $offer = Offer::factory()->subscription()->create(['unit_price_ht' => 300, 'vat_rate' => 20]);
+    // Résilié au 15/04 et passé « terminé » AVANT le run du 1er avril.
+    Subscription::factory()->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'status' => 'ended', 'starts_at' => '2026-01-01', 'ends_at' => '2026-04-15',
+    ]);
+
+    $invoice = app(MonthlyBillingService::class)->generateForEntity(
+        'company', $company->id,
+        CarbonImmutable::parse('2026-04-01'), CarbonImmutable::parse('2026-04-30'),
+    );
+
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->subtotal_ht)->toBe('150.00') // 300 × 15/30
+        ->and($invoice->lines->first()->description)->toContain('prorata 15/30 j');
+});
+
+it('ne facture plus un abonnement terminé au-delà de ends_at (R-14)', function () {
+    $company = Company::factory()->create();
+    $offer = Offer::factory()->subscription()->create(['unit_price_ht' => 300, 'vat_rate' => 20]);
+    Subscription::factory()->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'status' => 'ended', 'starts_at' => '2026-01-01', 'ends_at' => '2026-03-31',
+    ]);
+
+    $created = app(MonthlyBillingService::class)->generateMonth(CarbonImmutable::parse('2026-04-01'));
+
+    expect($created)->toHaveCount(0);
+});
+
+it('ne facture ni un terminé sans date de fin, ni une pause, ni un annulé (R-14)', function (string $status, ?string $endsAt) {
+    $company = Company::factory()->create();
+    $offer = Offer::factory()->subscription()->create(['unit_price_ht' => 300, 'vat_rate' => 20]);
+    Subscription::factory()->create([
+        'offer_id' => $offer->id, 'billable_type' => 'company', 'billable_id' => $company->id,
+        'status' => $status, 'starts_at' => '2026-01-01', 'ends_at' => $endsAt,
+    ]);
+
+    expect(app(MonthlyBillingService::class)->generateMonth(CarbonImmutable::parse('2026-04-01')))->toHaveCount(0);
+})->with([
+    'terminé sans ends_at' => ['ended', null],
+    'en pause' => ['paused', null],
+    'annulé' => ['cancelled', '2026-06-30'],
+]);

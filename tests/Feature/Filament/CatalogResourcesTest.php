@@ -115,3 +115,14 @@ it('génère les tickets du bénéficiaire à la création d\'un achat (admin)',
             && $ticket->type === TicketType::MeetingRoomHalfDay
             && $ticket->status === TicketStatus::Available))->toBeTrue();
 });
+
+it('exige une date de fin pour passer un abonnement « terminé » (R-14)', function () {
+    $subscription = Subscription::factory()->create(['ends_at' => null]);
+
+    Livewire::test(EditSubscription::class, ['record' => $subscription->getRouteKey()])
+        ->fillForm(['status' => 'ended', 'ends_at' => null])
+        ->call('save')
+        ->assertHasFormErrors(['ends_at']);
+
+    expect($subscription->fresh()->status->value)->toBe('active');
+});

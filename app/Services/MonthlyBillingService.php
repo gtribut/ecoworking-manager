@@ -19,7 +19,7 @@ use Illuminate\Support\Collection;
  * Facturation mensuelle récurrente des abonnements (C6.5, PRD §5.1).
  *
  * Règle d'or (figée 2026-06-07) : la récurrente produit **une facture PAR
- * ENTITÉ** (`billable`), jamais une par abonnement. Tous les abonnements actifs
+ * ENTITÉ** (`billable`), jamais une par abonnement. Tous les abonnements facturables
  * d'une même entité sur la période sont **consolidés** : une ligne par
  * prestation (= même offre, même période/prorata), `quantity` = nb d'abos
  * regroupés. Le détail abo-par-abo (période + quote-part HT) vit dans
@@ -290,14 +290,24 @@ final class MonthlyBillingService
     }
 
     /**
-     * Abonnements actifs facturables chevauchant la période (query réutilisable).
+     * Abonnements facturables chevauchant la période (query réutilisable) :
+     * actifs, ou **terminés** avec une `ends_at` dans la période (R-14). La
+     * facturation suit la date de fin, pas le statut : un abonnement résilié
+     * au 31/07 et passé « terminé » avant le run du 1er juillet doit encore
+     * payer juillet (prorata jusqu'à `ends_at`, cf. planFor). Un terminé sans
+     * date de fin n'est pas facturable (fin inconnue) ; pause et annulé non plus.
      *
      * @return Builder<Subscription>
      */
     private function billableSubscriptions(CarbonImmutable $periodStart, CarbonImmutable $periodEnd): Builder
     {
         return Subscription::query()
-            ->where('status', SubscriptionStatus::Active->value)
+            ->where(function ($q): void {
+                $q->where('status', SubscriptionStatus::Active->value)
+                    ->orWhere(fn ($ended) => $ended
+                        ->where('status', SubscriptionStatus::Ended->value)
+                        ->whereNotNull('ends_at'));
+            })
             ->whereDate('starts_at', '<=', $periodEnd->toDateString())
             ->where(function ($q) use ($periodStart): void {
                 $q->whereNull('ends_at')->orWhereDate('ends_at', '>=', $periodStart->toDateString());

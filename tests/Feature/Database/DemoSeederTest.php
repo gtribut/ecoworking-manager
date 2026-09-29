@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 use App\Enums\InvoiceStatus;
 use App\Enums\ResourceAssignment;
+use App\Enums\SubscriptionStatus;
 use App\Enums\TicketStatus;
 use App\Enums\TicketType;
 use App\Models\Announcement;
+use App\Models\Company;
 use App\Models\DeskAbsence;
 use App\Models\DeskOccupation;
 use App\Models\Invoice;
+use App\Models\InvoiceLine;
 use App\Models\Resource;
+use App\Models\Subscription;
 use App\Models\Ticket;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\Storage;
 
@@ -117,4 +122,29 @@ it('charge le jeu de démo complet avec tous les états attendus par la recette'
 
     // Publication → notifications in-app pour l'audience (observer, queue sync).
     expect($claire->notifications()->count())->toBeGreaterThan(0);
+});
+
+it('facture Karim (pause récente) et Paul (parti fin M-2) sur les mois passés (R-13)', function (): void {
+    $this->seed(DemoSeeder::class);
+
+    $studio = Company::query()->where('legal_name', 'Studio Verger')->firstOrFail();
+    $today = CarbonImmutable::today();
+
+    // Bureaux résident facturés à Studio Verger par mois : Sophie + Karim + Paul
+    // jusqu'à M-2 (départ fin M-2, R-14), Sophie + Karim en M-1.
+    foreach ([3 => '3.00', 2 => '3.00', 1 => '2.00'] as $monthsAgo => $expected) {
+        $month = $today->subMonths($monthsAgo)->startOfMonth();
+        $line = InvoiceLine::query()
+            ->whereHas('invoice', fn ($q) => $q->where('billable_type', 'company')->where('billable_id', $studio->id)->whereNotNull('number'))
+            ->whereDate('period_start', $month->toDateString())
+            ->where('description', 'like', 'Bureau résident%')
+            ->firstOrFail();
+
+        expect($line->quantity)->toBe($expected, "M-{$monthsAgo}");
+    }
+
+    // Statuts finaux conservés : Karim en pause, Paul terminé.
+    $karim = User::query()->where('email', DemoSeeder::KARIM_EMAIL)->firstOrFail();
+    expect(Subscription::query()->where('subscriber_type', 'user')->where('subscriber_id', $karim->id)->value('status'))
+        ->toBe(SubscriptionStatus::Paused);
 });

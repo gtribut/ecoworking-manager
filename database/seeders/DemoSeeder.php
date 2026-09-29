@@ -138,7 +138,7 @@ final class DemoSeeder extends Seeder
         $this->seedLeaExternalSansTicket();
         $this->seedStaff();
 
-        $this->seedBilling($atelier['company'], $studio['company'], $thomas['user'], $thomas['company']);
+        $this->seedBilling($atelier['company'], $studio['company'], $thomas['user'], $thomas['company'], $studio['karim_subscription']);
         $this->seedBookings($atelier, $studio, $thomas['user'], $thomas['company']);
         $this->seedDeskOccupations($thomas['user']);
         $this->seedAbsences($atelier['ines'], $studio['sophie']);
@@ -252,7 +252,7 @@ final class DemoSeeder extends Seeder
      * Paul (parti, abonnement terminé) est créé ICI pour apparaître sur les
      * factures passées ; son anonymisation intervient en fin de run.
      *
-     * @return array{company: Company, sophie: User, karim: User, paul: User}
+     * @return array{company: Company, sophie: User, karim: User, paul: User, karim_subscription: Subscription}
      */
     private function seedStudioVerger(): array
     {
@@ -294,11 +294,10 @@ final class DemoSeeder extends Seeder
 
         $start = $this->today->subMonths(4)->startOfMonth()->toDateString();
         $this->subscription('resident_desk', $sophie, $company, $start);
-        $this->subscription('resident_desk', $karim, $company, $start, [
-            'status' => SubscriptionStatus::Paused->value,
-            'paused_at' => $this->today->subDays(10),
-            'notes' => 'Pause 2 mois (mission à Paris).',
-        ]);
+        // Créé ACTIF : la pause (récente) n'intervient qu'après la facturation
+        // des mois passés, cf. seedBilling (R-13) — sinon Karim disparaîtrait
+        // rétroactivement de M-3/M-2/M-1.
+        $karimSubscription = $this->subscription('resident_desk', $karim, $company, $start);
 
         $paul = $this->member(self::PAUL_EMAIL, 'Paul', 'Ancien', Role::Resident, $company, desk: null, profile: [
             'job_title' => 'Géomètre',
@@ -311,7 +310,7 @@ final class DemoSeeder extends Seeder
             'ends_at' => $this->today->subMonths(2)->endOfMonth()->toDateString(),
         ]);
 
-        return compact('company', 'sophie', 'karim', 'paul');
+        return [...compact('company', 'sophie', 'karim', 'paul'), 'karim_subscription' => $karimSubscription];
     }
 
     /**
@@ -456,13 +455,15 @@ final class DemoSeeder extends Seeder
     /**
      * 3 mois de facturation récurrente émis via le vrai pipeline (numérotation
      * chronologique, PDF, notif), puis paiements gradués :
+     *   Studio Verger : Sophie + Karim + Paul en M-3/M-2 (Paul parti fin M-2,
+     *   facturé jusqu'à ends_at — R-14), Sophie + Karim en M-1.
      *   M-3 : tout payé · M-2 : Atelier payé, Studio acompte 50 % (→ en retard,
      *   partiellement payée) · M-1 : Atelier payé, Studio impayé (→ en retard) ·
      *   mois courant : brouillons non émis.
      * + facture tickets de Thomas (échéance future, acompte CB → « partielle »)
      * + une facture annulée avec avoir.
      */
-    private function seedBilling(Company $atelier, Company $studio, User $thomas, Company $thomasEntity): void
+    private function seedBilling(Company $atelier, Company $studio, User $thomas, Company $thomasEntity, Subscription $karimSubscription): void
     {
         $billing = app(MonthlyBillingService::class);
         $issue = app(IssueInvoiceService::class);
@@ -485,6 +486,14 @@ final class DemoSeeder extends Seeder
                 // M-1 Studio : rien → passera `overdue` via invoices:update-overdue.
             }
         }
+
+        // Pause de Karim APRÈS la facturation des mois passés (R-13) : en réel,
+        // chaque cron du 1er l'a trouvé actif. Il sort donc du mois courant.
+        $karimSubscription->update([
+            'status' => SubscriptionStatus::Paused->value,
+            'paused_at' => $this->today->subDays(10),
+            'notes' => 'Pause 2 mois (mission à Paris).',
+        ]);
 
         // Brouillons du mois courant : visibles côté admin, invisibles côté portail.
         $billing->generateMonth($this->today->startOfMonth());

@@ -9,6 +9,8 @@ export interface Invoice {
   total_vat: string
   total_ttc: string
   amount_paid: string
+  /** Reste à payer calculé côté serveur ; `null` si soldée, annulée ou avoir (R-12). */
+  amount_due: string | null
   pdf_available: boolean
 }
 

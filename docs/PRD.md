@@ -775,6 +775,10 @@ Pour réserver un bureau, l'external doit avoir des **tickets bureau crédités*
 > (`aria-sort`, focus restauré après tri), pagination et filtres existants conservés à l'identique
 > côté API. Le bloc « Mon entreprise » (§3.6.4) reste au-dessus de la table.
 
+> ✅ **Acté 2026-09-29 (recette R-12)** : colonne **« Reste dû »** ajoutée après le total TTC,
+> remplie **uniquement** s'il reste un montant à payer (facture partiellement réglée ou impayée),
+> vide sinon (soldée, annulée, avoir). Montant calculé côté serveur (`amount_due` de l'API).
+
 #### 3.6.3 Section "Mes documents administratifs"
 
 - Listing des documents administratifs rattachés à l'entité juridique : contrats, avenants, contrat de domiciliation

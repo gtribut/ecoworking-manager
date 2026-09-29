@@ -120,6 +120,16 @@ export function invoiceColumns() {
       meta: { align: 'right' },
       cell: (info) => euros.format(Number(info.getValue())),
     }),
+    columnHelper.accessor('amount_due', {
+      id: 'amount_due',
+      header: 'Reste dû',
+      meta: { align: 'right' },
+      // Vide quand rien n'est à payer (R-12) : seul un restant dû attire l'œil.
+      cell: (info) => {
+        const due = info.getValue()
+        return due === null ? null : euros.format(Number(due))
+      },
+    }),
     columnHelper.display({
       id: 'pdf',
       header: 'PDF',

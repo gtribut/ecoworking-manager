@@ -18,6 +18,7 @@ function invoice(id: number, overrides: Partial<Invoice> = {}): Invoice {
     total_vat: '20.00',
     total_ttc: '120.00',
     amount_paid: '120.00',
+    amount_due: null,
     pdf_available: true,
     ...overrides,
   }

@@ -18,6 +18,7 @@ function makeInvoice(overrides: Record<string, unknown> = {}) {
     total_vat: '20.00',
     total_ttc: '120.00',
     amount_paid: '120.00',
+    amount_due: null,
     pdf_available: true,
     ...overrides,
   }
@@ -50,6 +51,34 @@ describe('InvoicesPage', () => {
     expect(within(table).getByText('Payée')).toBeInTheDocument()
     const link = screen.getByRole('link', { name: /télécharger/i })
     expect(link).toHaveAttribute('href', '/api/invoices/1/pdf')
+  })
+
+  it('affiche le reste dû uniquement pour une facture non soldée (R-12)', async () => {
+    server.use(
+      http.get('/api/invoices', () =>
+        page([
+          makeInvoice(),
+          makeInvoice({
+            id: 2,
+            number: 'EW-2026-00004',
+            status: 'overdue',
+            total_ttc: '1064.34',
+            amount_paid: '532.17',
+            amount_due: '532.17',
+          }),
+        ]),
+      ),
+    )
+
+    renderWithProviders(<InvoicesPage />)
+
+    expect(await screen.findByText('EW-2026-00004')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Reste dû' })).toBeInTheDocument()
+    // 1re colonne = rowheader (numéro) : « Reste dû » est la 4e cellule `td`.
+    const dueCell = (index: number) =>
+      within(screen.getAllByRole('row')[index] as HTMLElement).getAllByRole('cell')[3]
+    expect(dueCell(1)).toBeEmptyDOMElement()
+    expect(dueCell(2)).toHaveTextContent(/532,17\s€/)
   })
 
   it('affiche un message quand aucune facture', async () => {

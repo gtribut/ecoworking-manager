@@ -355,3 +355,24 @@ it('tolère des paramètres vides envoyés par la SPA (selects « Tous »)', fun
 
     expect($response->json('data'))->toHaveCount(1);
 });
+
+it('expose le reste dû calculé côté serveur, null si rien à payer (R-12)', function () {
+    $company = Company::factory()->create();
+    $user = apiBillingContactFor($company);
+    $billable = ['billable_type' => 'company', 'billable_id' => $company->id];
+
+    $partial = Invoice::factory()->issued()->create([...$billable, 'status' => 'overdue', 'total_ttc' => '1064.34', 'amount_paid' => '532.17']);
+    $unpaid = Invoice::factory()->issued()->create([...$billable, 'total_ttc' => '120.00', 'amount_paid' => '0.00']);
+    $paid = Invoice::factory()->paid()->create([...$billable, 'total_ttc' => '120.00', 'amount_paid' => '120.00']);
+    $cancelled = Invoice::factory()->issued()->create([...$billable, 'status' => 'cancelled', 'total_ttc' => '120.00', 'amount_paid' => '0.00']);
+    $creditNote = Invoice::factory()->issued()->creditNote()->create([...$billable, 'total_ttc' => '-120.00', 'amount_paid' => '0.00']);
+
+    $due = collect($this->actingAs($user)->getJson('/api/invoices')->assertOk()->json('data'))
+        ->pluck('amount_due', 'id');
+
+    expect($due[$partial->id])->toBe('532.17')
+        ->and($due[$unpaid->id])->toBe('120.00')
+        ->and($due[$paid->id])->toBeNull()
+        ->and($due[$cancelled->id])->toBeNull()
+        ->and($due[$creditNote->id])->toBeNull();
+});

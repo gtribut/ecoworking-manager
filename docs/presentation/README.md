@@ -283,7 +283,7 @@ Détails : [`BRIEF.md`](../BRIEF.md) (technique), [`PRD.md`](../PRD.md) (fonctio
 
 ## 6. Comment le projet a été construit
 
-- **Développement agentique** : le code est écrit avec Claude Code, l'agent de développement d'Anthropic. 322 des 330 commits du dépôt portent la mention de co-auteur Claude.
+- **Développement agentique** : le code est écrit avec Claude Code, l'agent de développement d'Anthropic. La quasi-totalité des commits du dépôt porte la mention de co-auteur Claude.
 - **Rôle humain** : conception fonctionnelle (PRD, modèle de données), choix d'architecture, relecture et validation de chaque changement avant commit, recette manuelle de l'outil.
 - **Décisions documentées** : 13 ADR dans [`docs/adr/`](../adr/) ; [`CLAUDE.md`](../../CLAUDE.md) fixe pour l'agent les règles non négociables (isolation des données, facturation, RGPD, accessibilité) et les conventions de code ; [`SUIVI.md`](../SUIVI.md) trace l'avancement tâche par tâche.
 - **Stratégie de tests** : TDD sur le schéma et la logique métier, tests d'isolation entre membres, tests de composants, parcours navigateur avec audits d'accessibilité, CI sur chaque push.

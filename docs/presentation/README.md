@@ -4,7 +4,7 @@
 > Il remplace Cosoft et couvre tout le quotidien : membres et entreprises, abonnements, facturation, réservations de salles, bureaux nomades, présence, documents et communication.
 >
 > Ce document donne une vision **fonctionnelle et visuelle** complète en une lecture rapide. Les captures sont prises sur un jeu de données de démonstration (personnes et entreprises fictives).
-> Version PDF : [`ecoworking-presentation.pdf`](./ecoworking-presentation.pdf). État : MVP complet et testé, mise en production à venir (V1.5).
+> Version PDF : [`ecoworking-presentation.pdf`](./ecoworking-presentation.pdf). État : MVP complet, en recette, mise en production prévue (V1.5).
 
 ---
 
@@ -268,7 +268,7 @@ Sidebar remplacée par une barre d'onglets ; mêmes fonctions.
 
 **Accessibilité** : cible RGAA 4.1 niveau AA. Audits axe-core en clair et en sombre sans violation, Lighthouse accessibilité 100/100 sur les écrans clés, alternatives accessibles pour l'agenda et le plan SVG.
 
-**Qualité (au 17/09/2026)** : 668 tests Pest, 288 tests Vitest, 52 tests navigateur Playwright dont 26 audits d'accessibilité. Lint et tests bloquants en CI.
+**Qualité (au 14/10/2026)** : 683 tests Pest, 293 tests Vitest, 52 tests navigateur Playwright (portail) dont 34 avec audit d'accessibilité axe-core, 6 tests navigateur Pest (back-office). Lint, audit des dépendances et tests unitaires bloquants en CI ; tests navigateur exécutés en CI, non bloquants pour l'instant.
 
 **Modèle de données (~25 tables)**
 - Identité : `users`, `member_profiles`, `companies`, `contacts`, `consents`
@@ -281,7 +281,23 @@ Détails : [`BRIEF.md`](../BRIEF.md) (technique), [`PRD.md`](../PRD.md) (fonctio
 
 ---
 
-## 6. Hors périmètre actuel
+## 6. Comment le projet a été construit
+
+- **Développement agentique** : le code est écrit avec Claude Code, l'agent de développement d'Anthropic. 322 des 330 commits du dépôt portent la mention de co-auteur Claude.
+- **Rôle humain** : conception fonctionnelle (PRD, modèle de données), choix d'architecture, relecture et validation de chaque changement avant commit, recette manuelle de l'outil.
+- **Décisions documentées** : 13 ADR dans [`docs/adr/`](../adr/) ; [`CLAUDE.md`](../../CLAUDE.md) fixe pour l'agent les règles non négociables (isolation des données, facturation, RGPD, accessibilité) et les conventions de code ; [`SUIVI.md`](../SUIVI.md) trace l'avancement tâche par tâche.
+- **Stratégie de tests** : TDD sur le schéma et la logique métier, tests d'isolation entre membres, tests de composants, parcours navigateur avec audits d'accessibilité, CI sur chaque push.
+- **Revue** : revue complète du projet (architecture, sécurité, facturation, backend, SPA, base de données et tests) en juillet 2026, dont les constats ont été corrigés.
+- **Durée**, d'après l'historique git :
+
+| Période | Contenu | Jours avec commits |
+|---|---|---|
+| 3-4 juin 2026 | Spécifications, modèle de données, 8 premiers ADR | 2 |
+| 5-8 juin 2026 | Socle Laravel, base de données, back-office, API portail, facturation, CI | 4 |
+| 2-3 juillet 2026 | Revue complète, corrections et modules MVP restants | 2 |
+| 12-29 septembre 2026 | Jeu de démonstration, recette, refonte de l'interface du portail, corrections | 10 |
+
+## 7. Hors périmètre actuel
 
 - Mise en production Clever Cloud et import des données Cosoft (V1.5).
 - Synchronisation sortante Google Calendar (V1.5) : les liens iCal existent déjà.
@@ -292,7 +308,7 @@ Détails : [`BRIEF.md`](../BRIEF.md) (technique), [`PRD.md`](../PRD.md) (fonctio
 
 ---
 
-## 7. Régénérer ce document
+## 8. Régénérer ce document
 
 Captures et PDF sont produits par script sur une base Postgres dédiée `presentation`, reseedée avec le jeu de démonstration (dates relatives au jour de la capture). La base de développement n'est pas touchée.
 
